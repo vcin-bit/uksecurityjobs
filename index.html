@@ -86,7 +86,7 @@ input, select, button { -webkit-appearance: none; appearance: none; border-radiu
   --chrome:  #c8d4df;
   --silver:  #8fa3b4;
   --steel:   #4a6880;
-  --white:   #eef2f7;
+  --white:   #ffffff;
   --dim:     #6b7f94;
   --border:  rgba(100,140,180,0.15);
   --border-hi: rgba(100,160,220,0.28);
@@ -511,7 +511,7 @@ select:focus-visible {
           <div class="rcard-eyebrow">Candidate Registration</div>
           <div class="rcard-title">Join Free Today</div>
           <div class="rcard-sub">Create your verified member profile and access exclusive benefits</div>
-          <form action="/api/register" method="POST" novalidate>
+          <form id="registerForm" action="https://uksecurityjobs-production.up.railway.app/api/register" method="POST" novalidate>
             <div class="field">
               <label for="fullname">Full Name</label>
               <input type="text" id="fullname" name="fullname" placeholder="Your full name" autocomplete="name" required>
@@ -802,6 +802,39 @@ select:focus-visible {
 </footer>
 
 <script>
+// Registration form AJAX submission
+const registerForm = document.getElementById('registerForm');
+if (registerForm) {
+  registerForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = registerForm.querySelector('.btn-reg');
+    const original = btn.textContent;
+    btn.textContent = 'Submitting...';
+    btn.disabled = true;
+    try {
+      const formData = new FormData(registerForm);
+      const data = Object.fromEntries(formData.entries());
+      const response = await fetch('https://uksecurityjobs-production.up.railway.app/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      if (response.ok) {
+        registerForm.innerHTML = '<div style="text-align:center;padding:2rem 0"><div style="font-family:Rajdhani,sans-serif;font-size:2rem;font-weight:800;color:#60a5fa;text-transform:uppercase;margin-bottom:0.5rem">✓ Registered</div><p style="color:#8fa3b4;font-size:0.9rem">Welcome to UKSecurityJobs. We\'ll be in touch shortly.</p></div>';
+      } else {
+        btn.textContent = original;
+        btn.disabled = false;
+        alert(result.error || 'Something went wrong. Please try again.');
+      }
+    } catch (err) {
+      btn.textContent = original;
+      btn.disabled = false;
+      alert('Connection error. Please try again.');
+    }
+  });
+}
+
 // Mobile menu toggle
 const menuBtn = document.getElementById('menuToggle');
 const mobileMenu = document.getElementById('mobileMenu');
