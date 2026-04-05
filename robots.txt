@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://www.uksecurityjobs.co.uk/sitemap.xml
