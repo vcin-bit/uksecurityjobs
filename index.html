@@ -452,6 +452,35 @@ footer{background:#fff;border-top:1px solid var(--border);padding:4rem 2rem 2.5r
   .stat:first-child{border-top:none;}
   .foot-nav{grid-template-columns:1fr;}
 }
+
+/* FAQ ACCORDION */
+.faq-section{background:#fff;padding:80px 2rem;border-top:1px solid var(--border);}
+.faq-inner{max-width:860px;margin:0 auto;}
+.faq-intro{font-size:1rem;color:var(--body);line-height:1.8;max-width:600px;margin-bottom:3rem;}
+.faq-item{border-bottom:1px solid var(--border);}
+.faq-q{
+  width:100%;text-align:left;padding:1.4rem 0;
+  font-size:1rem;font-weight:700;color:var(--navy);
+  background:none;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  transition:color 0.15s;
+}
+.faq-q:hover{color:var(--blue);}
+.faq-icon{
+  width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-size:1rem;color:var(--mid);
+  transition:all 0.2s;
+}
+.faq-item.open .faq-icon{background:var(--blue);border-color:var(--blue);color:#fff;transform:rotate(45deg);}
+.faq-a{
+  max-height:0;overflow:hidden;
+  transition:max-height 0.35s ease;
+}
+.faq-item.open .faq-a{max-height:400px;}
+.faq-a-inner{padding:0 0 1.4rem;font-size:0.95rem;color:var(--body);line-height:1.8;}
+.faq-a-inner strong{color:var(--navy);}
+.faq-a-inner a{color:var(--blue);font-weight:600;}
 </style>
 </head>
 <body>
@@ -824,6 +853,187 @@ footer{background:#fff;border-top:1px solid var(--border);padding:4rem 2rem 2.5r
 </div>
 
 <!-- FOOTER -->
+
+<!-- FAQ SECTION -->
+<section class="faq-section" itemscope itemtype="https://schema.org/FAQPage">
+  <div class="faq-inner">
+    <div class="over">Frequently Asked Questions</div>
+    <h2>Security Jobs UK &mdash; <span style="color:var(--blue)">Everything You Need to Know</span></h2>
+    <p class="faq-intro">Everything you need to know about UK Security Jobs, SIA licence verification, BS7858 vetting and how our verified security jobs platform works.</p>
+
+    <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <button class="faq-q" aria-expanded="false">
+        <span itemprop="name">What is UKSecurityJobs.co.uk?</span>
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <div class="faq-a-inner" itemprop="text">
+          <strong>UK Security Jobs</strong> is the UK's only verified security jobs platform built exclusively for the security industry. Unlike generic job boards, every candidate on UKSecurityJobs is SIA licensed, professionally assessed and BS7858 ready before they can apply for any role. Security companies get access to pre-vetted, qualified candidates. Security professionals get access to verified employers and exclusive member benefits.
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <button class="faq-q" aria-expanded="false">
+        <span itemprop="name">What security jobs are available on UKSecurityJobs?</span>
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <div class="faq-a-inner" itemprop="text">
+          UK Security Jobs lists vacancies across all SIA licence types including <strong>Door Supervisor jobs</strong>, <strong>Security Guard jobs</strong>, <strong>CCTV Operator jobs</strong>, <strong>Close Protection jobs</strong>, <strong>Cash and Valuables in Transit jobs</strong> and <strong>Key Holding roles</strong>. All security vacancies are posted by verified security companies and are only visible to SIA licensed candidates.
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <button class="faq-q" aria-expanded="false">
+        <span itemprop="name">How does SIA licence verification work?</span>
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <div class="faq-a-inner" itemprop="text">
+          When you register on UK Security Jobs, your SIA licence number is verified in real time against the <strong>SIA public register</strong>. If your licence is not valid, active or has expired, you cannot access the platform. This means every candidate on UK Security Jobs is confirmed as a currently licensed security professional — giving employers complete confidence before they even see a CV.
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <button class="faq-q" aria-expanded="false">
+        <span itemprop="name">What is BS7858 vetting and why does it matter for security jobs?</span>
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <div class="faq-a-inner" itemprop="text">
+          <strong>BS7858</strong> is the British Standard for the screening of individuals working in a secure environment. It requires a full 5-year employment and address history with no unexplained gaps, right to work verification, and character references. Every candidate profile on UK Security Jobs is structured around BS7858 requirements, making the vetting process significantly faster for security companies.
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <button class="faq-q" aria-expanded="false">
+        <span itemprop="name">What is a Vettability Score?</span>
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <div class="faq-a-inner" itemprop="text">
+          The <strong>Vettability Score</strong> is a live score out of 100 that reflects how complete and BS7858-ready a candidate's profile is. It covers SIA licence verification, employment history, address history, right to work documents, referees and more. Candidates scoring below 60 cannot apply for roles. Those scoring 80 and above unlock premium security vacancies. The score updates in real time as candidates complete their profile.
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <button class="faq-q" aria-expanded="false">
+        <span itemprop="name">How do I register for security jobs on UKSecurityJobs?</span>
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <div class="faq-a-inner" itemprop="text">
+          Registration is free for security professionals. Create your account, verify your SIA licence, and build your profile step by step. Once your Vettability Score reaches 60, your profile goes live and you can apply for security vacancies. The full profile includes your employment history, address history, qualifications, right to work documents and referees — everything a security company needs to start vetting immediately.
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <button class="faq-q" aria-expanded="false">
+        <span itemprop="name">How do security companies post jobs on UK Security Jobs?</span>
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <div class="faq-a-inner" itemprop="text">
+          Security companies register and are verified before gaining access to the candidate pool. Once verified, you can post security vacancies and set a minimum Vettability Score for applicants. Every candidate who applies has already been SIA verified and professionally assessed — meaning you only speak to candidates who are genuinely qualified, vettable and serious about the role.
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <button class="faq-q" aria-expanded="false">
+        <span itemprop="name">What member benefits do security professionals get?</span>
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <div class="faq-a-inner" itemprop="text">
+          Verified members of UK Security Jobs get access to exclusive benefits including <strong>breakdown cover</strong> at preferential rates, <strong>mobile phone and SIM deals</strong>, <strong>PPE and uniform discounts</strong>, <strong>legal cover</strong> for employment rights, <strong>gym and fitness discounts</strong>, <strong>mental health support</strong>, <strong>CPD and SIA training guidance</strong> and <strong>career mentoring</strong> from experienced industry professionals.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- FAQ JSON-LD SCHEMA -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is UKSecurityJobs.co.uk?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "UK Security Jobs is the UK's only verified security jobs platform built exclusively for the security industry. Every candidate is SIA licensed, professionally assessed and BS7858 ready before they can apply for any role."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What security jobs are available on UKSecurityJobs?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "UK Security Jobs lists vacancies across all SIA licence types including Door Supervisor jobs, Security Guard jobs, CCTV Operator jobs, Close Protection jobs, Cash and Valuables in Transit jobs and Key Holding roles."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does SIA licence verification work?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "When you register, your SIA licence number is verified in real time against the SIA public register. If your licence is not valid, active or has expired, you cannot access the platform."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is BS7858 vetting and why does it matter for security jobs?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "BS7858 is the British Standard for the screening of individuals working in a secure environment. It requires a full 5-year employment and address history with no unexplained gaps, right to work verification, and character references."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is a Vettability Score?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The Vettability Score is a live score out of 100 that reflects how complete and BS7858-ready a candidate profile is. Candidates scoring below 60 cannot apply for roles. Those scoring 80 and above unlock premium security vacancies."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I register for security jobs on UKSecurityJobs?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Registration is free for security professionals. Create your account, verify your SIA licence, and build your profile step by step. Once your Vettability Score reaches 60, your profile goes live and you can apply for security vacancies."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do security companies post jobs on UK Security Jobs?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Security companies register and are verified before gaining access to the candidate pool. Every candidate who applies has already been SIA verified and professionally assessed."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What member benefits do security professionals get?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Verified members get access to exclusive benefits including breakdown cover, mobile phone deals, PPE and uniform discounts, legal cover, gym discounts, mental health support, CPD and SIA training guidance and career mentoring."
+      }
+    }
+  ]
+}
+</script>
+
 <footer>
   <div class="foot-top">
     <div>
@@ -880,6 +1090,23 @@ function closeMenu(){mobMenu.classList.remove('open');document.body.style.overfl
 menuBtn.addEventListener('click',openMenu);
 menuClose.addEventListener('click',closeMenu);
 mobMenu.querySelectorAll('a').forEach(a=>a.addEventListener('click',closeMenu));
+</script>
+<script>
+// FAQ Accordion
+document.querySelectorAll('.faq-q').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.parentElement;
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => {
+      i.classList.remove('open');
+      i.querySelector('.faq-q').setAttribute('aria-expanded', 'false');
+    });
+    if (!isOpen) {
+      item.classList.add('open');
+      btn.setAttribute('aria-expanded', 'true');
+    }
+  });
+});
 </script>
 </body>
 </html>
