@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register as a Security Professional | UKSecurityJobs.co.uk</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-23Z2MEN8N5"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-23Z2MEN8N5');</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:#f9fafb;color:#0b1222;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;}
+a{text-decoration:none;color:inherit}
+:root{--navy:#0b1222;--blue:#1a52a8;--blue2:#1e60c8;--off:#f9fafb;--body:#4a5568;--mid:#8a97a8;--border:#e2e8f0;--green:#10b981;}
+
+.logo{display:inline-flex;align-items:baseline;font-size:1.15rem;font-weight:800;letter-spacing:0.01em;}
+.logo .uk{color:var(--blue);}.logo .sec{color:var(--navy);}.logo .job{color:var(--blue);}
+
+nav{background:#fff;border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;}
+.nav-inner{max-width:1160px;margin:0 auto;width:100%;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;}
+.nav-back{color:var(--body);font-size:0.82rem;font-weight:500;display:flex;align-items:center;gap:0.4rem;}
+.nav-back:hover{color:var(--navy);}
+
+.page{flex:1;display:flex;align-items:center;justify-content:center;padding:3rem 1.5rem;}
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;width:100%;max-width:460px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);}
+.card-top{height:4px;background:linear-gradient(90deg,var(--blue),#60a5fa);}
+.card-body{padding:2.5rem;}
+.card-logo{text-align:center;margin-bottom:1.8rem;}
+.card-title{font-size:1.5rem;font-weight:900;color:var(--navy);letter-spacing:-0.02em;margin-bottom:0.3rem;text-align:center;}
+.card-sub{font-size:0.88rem;color:var(--mid);text-align:center;margin-bottom:2rem;}
+
+.field{margin-bottom:1rem;}
+.field label{display:block;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--mid);margin-bottom:0.4rem;}
+.field input,.field select{width:100%;padding:0.8rem 1rem;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;color:var(--navy);background:var(--off);outline:none;transition:border-color 0.15s,box-shadow 0.15s;-webkit-appearance:none;font-family:inherit;}
+.field input:focus,.field select:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(26,82,168,0.1);}
+.field input::placeholder{color:var(--mid);}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238a97a8' d='M5 6L0 0h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;padding-right:2.5rem;}
+.field select option{background:#fff;}
+.name-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;}
+
+.btn{width:100%;padding:0.9rem;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;transition:background 0.15s;margin-top:0.5rem;font-family:inherit;}
+.btn:hover{background:var(--blue2);}
+.btn:disabled{opacity:0.6;cursor:not-allowed;}
+
+.divider{display:flex;align-items:center;gap:1rem;margin:1.2rem 0;color:var(--mid);font-size:0.78rem;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.card-footer{text-align:center;font-size:0.85rem;color:var(--body);margin-top:1rem;}
+.card-footer a{color:var(--blue);font-weight:600;}
+
+.error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;border-radius:8px;padding:0.8rem 1rem;font-size:0.85rem;margin-bottom:1rem;display:none;}
+.error.show{display:block;}
+.success{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;border-radius:8px;padding:0.8rem 1rem;font-size:0.85rem;margin-bottom:1rem;display:none;}
+.success.show{display:block;}
+
+.step2{display:none;}
+.step2.show{display:block;}
+.step1.hide{display:none;}
+
+.verify-input{text-align:center;font-size:1.5rem;letter-spacing:0.3em;font-weight:700;}
+
+.note{font-size:0.72rem;color:var(--mid);text-align:center;margin-top:0.8rem;line-height:1.5;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a>
+    <a class="nav-back" href="/">&#8592; Back to home</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="card">
+    <div class="card-top"></div>
+    <div class="card-body">
+      <div class="card-logo"><a href="/" class="logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a></div>
+
+      <!-- STEP 1: REGISTER -->
+      <div class="step1" id="step1">
+        <div class="card-title">Create Your Profile</div>
+        <div class="card-sub">Join the UK's only verified security jobs platform</div>
+        <div class="error" id="regError"></div>
+        <form id="regForm" novalidate>
+          <div class="name-row">
+            <div class="field"><label>First Name</label><input type="text" id="firstName" placeholder="John" autocomplete="given-name" required></div>
+            <div class="field"><label>Last Name</label><input type="text" id="lastName" placeholder="Smith" autocomplete="family-name" required></div>
+          </div>
+          <div class="field"><label>Email Address</label><input type="email" id="email" placeholder="your@email.com" autocomplete="email" required></div>
+          <div class="field"><label>Password</label><input type="password" id="password" placeholder="Minimum 8 characters" autocomplete="new-password" required minlength="8"></div>
+          <div class="field">
+            <label>Primary SIA Licence Type</label>
+            <select id="licenceType" required>
+              <option value="">Select your licence type</option>
+              <option value="ds">Door Supervisor</option>
+              <option value="sg">Security Guard</option>
+              <option value="cctv">CCTV Operator</option>
+              <option value="cp">Close Protection</option>
+              <option value="cvit">Cash &amp; Valuables in Transit</option>
+              <option value="kh">Key Holding</option>
+              <option value="none">Not yet licensed</option>
+            </select>
+          </div>
+          <button type="submit" class="btn" id="regBtn">Create My Profile &rsaquo;</button>
+        </form>
+        <div class="note">By registering you agree to our <a href="/terms" style="color:var(--blue)">Terms</a> and <a href="/privacy" style="color:var(--blue)">Privacy Policy</a></div>
+        <div class="card-footer" style="margin-top:1.2rem;">Already registered? <a href="/sign-in">Sign in</a></div>
+      </div>
+
+      <!-- STEP 2: VERIFY EMAIL -->
+      <div class="step2" id="step2">
+        <div class="card-title">Check Your Email</div>
+        <div class="card-sub" id="verifySubText">We sent a 6-digit code to your email address</div>
+        <div class="error" id="verifyError"></div>
+        <div class="success" id="verifySuccess"></div>
+        <form id="verifyForm" novalidate>
+          <div class="field">
+            <label>Verification Code</label>
+            <input type="text" id="verifyCode" class="verify-input" placeholder="000000" maxlength="6" autocomplete="one-time-code" required inputmode="numeric">
+          </div>
+          <button type="submit" class="btn" id="verifyBtn">Verify &amp; Continue &rsaquo;</button>
+        </form>
+        <div class="card-footer" style="margin-top:1.2rem;"><a href="#" id="backToReg">&#8592; Change email address</a></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Clerk JS -->
+<script>
+const CLERK_KEY = 'pk_test_ZXhjaXRpbmctdXJjaGluLTQxLmNsZXJrLmFjY291bnRzLmRldiQ';
+let signUpResource = null;
+
+// Load Clerk
+const script = document.createElement('script');
+script.src = 'https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
+script.async = true;
+script.onload = async () => {
+  const clerk = new window.Clerk(CLERK_KEY);
+  await clerk.load();
+
+  // If already signed in, redirect to dashboard
+  if (clerk.user) {
+    window.location.href = 'https://app.uksecurityjobs.co.uk/dashboard';
+    return;
+  }
+
+  // REGISTER FORM
+  document.getElementById('regForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('regBtn');
+    const err = document.getElementById('regError');
+    err.className = 'error';
+
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName = document.getElementById('lastName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const licenceType = document.getElementById('licenceType').value;
+
+    if (!firstName || !lastName || !email || !password || !licenceType) {
+      err.textContent = 'Please fill in all fields.';
+      err.className = 'error show';
+      return;
+    }
+    if (password.length < 8) {
+      err.textContent = 'Password must be at least 8 characters.';
+      err.className = 'error show';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Creating your profile...';
+
+    try {
+      signUpResource = await clerk.client.signUp.create({
+        firstName,
+        lastName,
+        emailAddress: email,
+        password,
+        unsafeMetadata: { licenceType, status: 'pending', score: 5, registeredAt: new Date().toISOString() }
+      });
+      await signUpResource.prepareEmailAddressVerification({ strategy: 'email_code' });
+
+      // Show verify step
+      document.getElementById('step1').className = 'step1 hide';
+      document.getElementById('step2').className = 'step2 show';
+      document.getElementById('verifySubText').textContent = 'We sent a 6-digit code to ' + email;
+
+    } catch (clerkErr) {
+      const msg = clerkErr.errors?.[0]?.longMessage || clerkErr.errors?.[0]?.message || 'Something went wrong. Please try again.';
+      err.textContent = msg;
+      err.className = 'error show';
+      btn.disabled = false;
+      btn.textContent = 'Create My Profile ›';
+    }
+  });
+
+  // VERIFY FORM
+  document.getElementById('verifyForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('verifyBtn');
+    const err = document.getElementById('verifyError');
+    err.className = 'error';
+
+    const code = document.getElementById('verifyCode').value.trim();
+    if (!code || code.length < 6) {
+      err.textContent = 'Please enter the 6-digit code from your email.';
+      err.className = 'error show';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Verifying...';
+
+    try {
+      const result = await signUpResource.attemptEmailAddressVerification({ code });
+      if (result.status === 'complete') {
+        await clerk.setActive({ session: result.createdSessionId });
+        window.location.href = 'https://app.uksecurityjobs.co.uk/dashboard';
+      } else {
+        err.textContent = 'Verification incomplete. Please try again.';
+        err.className = 'error show';
+        btn.disabled = false;
+        btn.textContent = 'Verify & Continue ›';
+      }
+    } catch (clerkErr) {
+      const msg = clerkErr.errors?.[0]?.longMessage || clerkErr.errors?.[0]?.message || 'Invalid code. Please check and try again.';
+      err.textContent = msg;
+      err.className = 'error show';
+      btn.disabled = false;
+      btn.textContent = 'Verify & Continue ›';
+    }
+  });
+
+  // Back to register
+  document.getElementById('backToReg').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('step1').className = 'step1';
+    document.getElementById('step2').className = 'step2';
+    document.getElementById('regBtn').disabled = false;
+    document.getElementById('regBtn').textContent = 'Create My Profile ›';
+  });
+};
+document.head.appendChild(script);
+</script>
+</body>
+</html>

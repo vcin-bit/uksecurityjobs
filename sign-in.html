@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In | UKSecurityJobs.co.uk</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#f9fafb;color:#0b1222;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;}
+a{text-decoration:none;color:inherit}
+:root{--navy:#0b1222;--blue:#1a52a8;--blue2:#1e60c8;--off:#f9fafb;--body:#4a5568;--mid:#8a97a8;--border:#e2e8f0;}
+.logo{display:inline-flex;align-items:baseline;font-size:1.15rem;font-weight:800;letter-spacing:0.01em;}
+.logo .uk{color:var(--blue);}.logo .sec{color:var(--navy);}.logo .job{color:var(--blue);}
+nav{background:#fff;border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;}
+.nav-inner{max-width:1160px;margin:0 auto;width:100%;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;}
+.nav-back{color:var(--body);font-size:0.82rem;font-weight:500;}
+.nav-back:hover{color:var(--navy);}
+.page{flex:1;display:flex;align-items:center;justify-content:center;padding:3rem 1.5rem;}
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;width:100%;max-width:420px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);}
+.card-top{height:4px;background:linear-gradient(90deg,var(--blue),#60a5fa);}
+.card-body{padding:2.5rem;}
+.card-logo{text-align:center;margin-bottom:1.8rem;}
+.card-title{font-size:1.5rem;font-weight:900;color:var(--navy);letter-spacing:-0.02em;margin-bottom:0.3rem;text-align:center;}
+.card-sub{font-size:0.88rem;color:var(--mid);text-align:center;margin-bottom:2rem;}
+.field{margin-bottom:1rem;}
+.field label{display:block;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--mid);margin-bottom:0.4rem;}
+.field input{width:100%;padding:0.8rem 1rem;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;color:var(--navy);background:var(--off);outline:none;transition:border-color 0.15s,box-shadow 0.15s;font-family:inherit;}
+.field input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(26,82,168,0.1);}
+.field input::placeholder{color:var(--mid);}
+.forgot{text-align:right;margin-bottom:0.5rem;}
+.forgot a{font-size:0.82rem;color:var(--blue);font-weight:600;}
+.btn{width:100%;padding:0.9rem;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;transition:background 0.15s;font-family:inherit;}
+.btn:hover{background:var(--blue2);}
+.btn:disabled{opacity:0.6;cursor:not-allowed;}
+.error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;border-radius:8px;padding:0.8rem 1rem;font-size:0.85rem;margin-bottom:1rem;display:none;}
+.error.show{display:block;}
+.card-footer{text-align:center;font-size:0.85rem;color:var(--body);margin-top:1.2rem;}
+.card-footer a{color:var(--blue);font-weight:600;}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a>
+    <a class="nav-back" href="/">&#8592; Back to home</a>
+  </div>
+</nav>
+<div class="page">
+  <div class="card">
+    <div class="card-top"></div>
+    <div class="card-body">
+      <div class="card-logo"><a href="/" class="logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a></div>
+      <div class="card-title">Welcome Back</div>
+      <div class="card-sub">Sign in to your UKSecurityJobs account</div>
+      <div class="error" id="signInError"></div>
+      <form id="signInForm" novalidate>
+        <div class="field"><label>Email Address</label><input type="email" id="email" placeholder="your@email.com" autocomplete="email" required></div>
+        <div class="field"><label>Password</label><input type="password" id="password" placeholder="Your password" autocomplete="current-password" required></div>
+        <div class="forgot"><a href="/forgot-password">Forgot password?</a></div>
+        <button type="submit" class="btn" id="signInBtn">Sign In &rsaquo;</button>
+      </form>
+      <div class="card-footer">Not registered? <a href="/register">Create your profile</a></div>
+    </div>
+  </div>
+</div>
+<script>
+const CLERK_KEY = 'pk_test_ZXhjaXRpbmctdXJjaGluLTQxLmNsZXJrLmFjY291bnRzLmRldiQ';
+const script = document.createElement('script');
+script.src = 'https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
+script.async = true;
+script.onload = async () => {
+  const clerk = new window.Clerk(CLERK_KEY);
+  await clerk.load();
+  if (clerk.user) { window.location.href = 'https://app.uksecurityjobs.co.uk/dashboard'; return; }
+
+  document.getElementById('signInForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('signInBtn');
+    const err = document.getElementById('signInError');
+    err.className = 'error';
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
+    try {
+      const result = await clerk.client.signIn.create({
+        identifier: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value
+      });
+      await clerk.setActive({ session: result.createdSessionId });
+      window.location.href = 'https://app.uksecurityjobs.co.uk/dashboard';
+    } catch (clerkErr) {
+      const msg = clerkErr.errors?.[0]?.longMessage || clerkErr.errors?.[0]?.message || 'Invalid email or password.';
+      err.textContent = msg;
+      err.className = 'error show';
+      btn.disabled = false;
+      btn.textContent = 'Sign In ›';
+    }
+  });
+};
+document.head.appendChild(script);
+</script>
+</body>
+</html>
