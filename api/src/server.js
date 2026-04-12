@@ -45,7 +45,7 @@ app.get('/debug/admin', (req, res) => {
   const incoming = req.headers['x-admin-key'];
   const stored = process.env.ADMIN_SECRET;
   res.json({
-    incoming_key: incoming,
+    incoming_key: incoming || 'NOT SENT',
     stored_key: stored,
     match: incoming === stored
   });

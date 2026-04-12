@@ -145,13 +145,19 @@ async function api(path, method='GET', body=null) {
 }
 
 function login() {
-  ADMIN_KEY = document.getElementById('adminPassword').value;
-  api('/admin/api/stats').then(() => {
-    sessionStorage.setItem('adminKey', ADMIN_KEY);
-    document.getElementById('loginWrap').style.display = 'none';
-    document.getElementById('app').classList.add('visible');
-    document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-    loadStats(); loadQueue();
+  ADMIN_KEY = document.getElementById('adminPassword').value.trim();
+  fetch(API + '/debug/admin', {
+    headers: { 'x-admin-key': ADMIN_KEY }
+  }).then(r => r.json()).then(d => {
+    if (d.match) {
+      sessionStorage.setItem('adminKey', ADMIN_KEY);
+      document.getElementById('loginWrap').style.display = 'none';
+      document.getElementById('app').classList.add('visible');
+      document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+      loadStats(); loadQueue();
+    } else {
+      document.getElementById('loginError').style.display = 'block';
+    }
   }).catch(() => {
     document.getElementById('loginError').style.display = 'block';
   });
