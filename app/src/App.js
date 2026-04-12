@@ -485,16 +485,17 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
   };
 
   if (isComplete && !editing) {
+    const d = data.personal || {};
     return (
       <CompletedStep
         title="Personal Details"
         summary={[
-          { label:'Phone', value: form.phone },
-          { label:'Date of Birth', value: form.dobDay && form.dobMonth && form.dobYear ? `${form.dobDay}/${form.dobMonth}/${form.dobYear}` : '' },
-          { label:'NI Number', value: form.ni ? '••••••••' : '' },
-          { label:'Address', value: [form.address1, form.town, form.postcode].filter(Boolean).join(', ') },
-          { label:'Moved In', value: form.movedInMonth && form.movedInYear ? `${form.movedInMonth}/${form.movedInYear}` : '' },
-          { label:'SIA Address Match', value: form.siaAddress === 'yes' ? 'Yes' : form.siaAddress === 'no' ? 'No — update needed' : form.siaAddress === 'na' ? 'Not applicable' : '' },
+          { label:'Phone', value: d.phone || '' },
+          { label:'Date of Birth', value: d.date_of_birth || d.dob || '' },
+          { label:'NI Number', value: d.ni_number || d.ni ? '••••••••' : '' },
+          { label:'Address', value: [d.address_line1||d.address1, d.city||d.town, d.postcode].filter(Boolean).join(', ') },
+          { label:'Moved In', value: d.move_in_date || d.movedIn || '' },
+          { label:'SIA Address Match', value: d.sia_address_match === true ? 'Yes' : d.sia_address_match === false ? 'No — update needed' : d.siaAddress === 'yes' ? 'Yes' : d.siaAddress === 'no' ? 'No' : '' },
         ]}
         onEdit={() => setEditing(true)}
         onBack={onBack}
@@ -741,7 +742,7 @@ function StepDriving({ data, onChange, onBack, onNext, isComplete }) {
     return (
       <CompletedStep
         title="Driving & Transport"
-        summary={[{label:"Has Licence",value:form.hasLicence=="yes"?"Yes":"No"},{label:"Licence Type",value:form.licenceType},{label:"Has Transport",value:form.hasTransport=="yes"?"Yes":"No"},{label:"Travel Radius",value:form.travelRadius},{label:"DVLA Address",value:form.dvlaAddress=="yes"?"Matches":form.dvlaAddress=="no"?"Mismatch":"No licence"}]}
+        summary={(() => { const d=data.driving||{}; return [{label:"Driving Licence",value:d.hasLicence=="yes"||d.has_driving_licence?"Yes":"No"},{label:"Licence Type",value:d.licenceType||d.licence_type||""},{label:"Own Transport",value:d.hasTransport=="yes"||d.has_own_vehicle?"Yes":"No"},{label:"Travel Radius",value:d.travelRadius||d.travel_radius_miles?d.travelRadius||d.travel_radius_miles+" miles":""},{label:"DVLA Address",value:d.dvlaAddress=="yes"?"Matches":d.dvlaAddress=="no"?"Mismatch":""}]; })()}
         onEdit={() => setEditing(true)}
         onBack={onBack}
         onNext={onNext}
@@ -882,7 +883,7 @@ function StepSectors({ data, onChange, onBack, onNext, isComplete }) {
     return (
       <CompletedStep
         title="Sectors & Availability"
-        summary={[{label:"Sectors",value:(form.sectors||[]).join(", ")||"None selected"},{label:"Employment Type",value:form.employmentType},{label:"Availability",value:(form.availability||[]).join(", ")}]}
+        summary={(() => { const d=data.sectors||{}; return [{label:"Sectors",value:(d.sectors||[]).slice(0,3).join(", ")||"None selected"},{label:"Employment Type",value:d.employmentType||""},{label:"Availability",value:Array.isArray(d.availability)?d.availability.join(", "):d.preferred_shift||""}]; })()}
         onEdit={() => setEditing(true)}
         onBack={onBack}
         onNext={onNext}
@@ -959,7 +960,7 @@ function StepQualifications({ data, onChange, onBack, onNext, isComplete }) {
     return (
       <CompletedStep
         title="Qualifications"
-        summary={[{label:"First Aid",value:form.hasFirstAid=="yes"?form.certType||"Yes":"No"},{label:"SIA Trainer",value:form.isSIATrainer=="yes"?"Yes":"No"},{label:"Security Clearance",value:form.clearanceLevel||"None"}]}
+        summary={(() => { const d=data.qualifications||{}; return [{label:"First Aid",value:d.has_efaw||d.has_faw||d.hasFirstAid=="yes"?"Yes":"No"},{label:"SIA Trainer",value:d.is_sia_trainer||d.isSIATrainer=="yes"?"Yes":"No"},{label:"Security Clearance",value:d.security_clearance||d.clearanceLevel||"None"}]; })()}
         onEdit={() => setEditing(true)}
         onBack={onBack}
         onNext={onNext}
@@ -1045,7 +1046,7 @@ function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
     return (
       <CompletedStep
         title="Professional Background"
-        summary={[{label:"Forces/Police",value:form.hasForces=="yes"?form.forcesBranch:"No"},{label:"Criminal Record",value:form.hasCriminal=="yes"?"Yes — declared":"No"}]}
+        summary={(() => { const d=data.background||{}; return [{label:"Forces/Police",value:d.served_in_forces||d.hasForces=="yes"?d.forces_branch||d.forcesBranch||"Yes":"No"},{label:"Criminal Record",value:d.has_criminal_record||d.hasCriminal=="yes"?"Yes — declared":"No"}]; })()}
         onEdit={() => setEditing(true)}
         onBack={onBack}
         onNext={onNext}
