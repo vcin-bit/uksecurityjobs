@@ -226,7 +226,7 @@ function StepSIA({ data, onChange, onBack, onNext }) {
 
 // ── STEP 3: PERSONAL DETAILS ──
 function StepPersonal({ data, onChange, onBack, onNext }) {
-  const [form, setForm] = useState(data.personal || { phone:'', dob:'', gender:'', ni:'', postcode:'', town:'' });
+  const [form, setForm] = useState(data.personal || { phone:'', dob:'', gender:'', ni:'', address1:'', address2:'', town:'', county:'', postcode:'' });
   const u = (f,v) => setForm({...form,[f]:v});
   const save = () => { onChange({ personal: form }); onNext(); };
   return (
@@ -246,9 +246,27 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
           </Select>
         </Field>
       </div>
+      <div className="divider"></div>
+      <Field label="Current Address Line 1"><Input type="text" placeholder="House number and street name" value={form.address1} onChange={e=>u('address1',e.target.value)}/></Field>
+      <Field label="Address Line 2" hint="Flat, apartment, building name (if applicable)"><Input type="text" placeholder="Optional" value={form.address2} onChange={e=>u('address2',e.target.value)}/></Field>
       <div className="field-row">
-        <Field label="Current Postcode"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={e=>u('postcode',e.target.value)}/></Field>
         <Field label="Town / City"><Input type="text" placeholder="London" value={form.town} onChange={e=>u('town',e.target.value)}/></Field>
+        <Field label="County"><Input type="text" placeholder="Greater London" value={form.county} onChange={e=>u('county',e.target.value)}/></Field>
+        <Field label="Postcode"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={e=>u('postcode',e.target.value)}/></Field>
+      </div>
+      <div className="prepare-notice">
+        <div className="prepare-notice-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+          Now is a good time to prepare your proof of address
+        </div>
+        <p>Later in your profile you will need to upload proof that you live at this address. Start gathering these now so they are ready when you need them.</p>
+        <div className="prepare-docs">
+          <div className="prepare-doc"><span className="pd-check">✓</span> Bank statement — no older than 3 months</div>
+          <div className="prepare-doc"><span className="pd-check">✓</span> Utility bill (gas, electric, water) — no older than 3 months</div>
+          <div className="prepare-doc"><span className="pd-check">✓</span> Council tax letter — current year</div>
+          <div className="prepare-doc"><span className="pd-check">✓</span> HMRC correspondence — dated within 12 months</div>
+        </div>
+        <p className="prepare-note">Documents must show your full name and current address. Screenshots are not accepted — originals or clear photos of originals only.</p>
       </div>
     </StepShell>
   );
