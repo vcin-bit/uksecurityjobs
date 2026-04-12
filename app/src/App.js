@@ -954,66 +954,108 @@ function StepBackground({ data, onChange, onBack, onNext }) {
 
 // ── STEP 8: EMPLOYMENT HISTORY ──
 function StepEmployment({ data, onChange, onBack, onNext }) {
-  const [jobs, setJobs] = useState(data.employment || [{ employer:'', role:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false, reason:'' }]);
-  const addJob = () => setJobs([...jobs,{ employer:'', role:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false, reason:'' }]);
+  const emptyJob = () => ({
+    employer:'', role:'', sector:'', duties:'',
+    address1:'', address2:'', town:'', county:'', postcode:'', website:'',
+    contactName:'', contactTitle:'', contactEmail:'', contactPhone:'',
+    fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false, reason:''
+  });
+  const [jobs, setJobs] = useState(data.employment?.length ? data.employment : [emptyJob()]);
+  const addJob = () => setJobs([...jobs, emptyJob()]);
   const update = (i,f,v) => setJobs(jobs.map((j,idx)=>idx===i?{...j,[f]:v}:j));
   const remove = (i) => setJobs(jobs.filter((_,idx)=>idx!==i));
-  const save = () => {
-    const mapped = jobs.map(j => ({
-      ...j,
-      from: j.fromYear && j.fromMonth ? `${j.fromYear}-${j.fromMonth}` : j.from || '',
-      to: j.toYear && j.toMonth ? `${j.toYear}-${j.toMonth}` : j.to || '',
-    }));
-    onChange({ employment: mapped });
-    onNext();
-  };
+  const sectors = ['Door Supervisor / Manned Guarding','CCTV / Control Room','Close Protection','Retail Security','Shopping Centre','Events / Festivals','Corporate / Commercial','Distribution / Logistics / Warehousing','Construction','Healthcare / Hospital','Education','Government / MOD','Residential / Concierge','Transport Hub','Cash in Transit','Key Holding / Mobile Patrol','Nightlife / Licensed Premises','Self Employed','Unemployed / Career Break','Other'];
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const years = Array.from({length:20},(_,i)=>new Date().getFullYear()-i);
-
+  const isIncomplete = (j) => !j.employer?.trim() || !j.role?.trim() || !j.sector || !j.address1?.trim() || !j.town?.trim() || !j.postcode?.trim() || !j.contactName?.trim() || !j.contactEmail?.trim() || !j.contactPhone?.trim() || !j.fromMonth || !j.fromYear || (!j.current && (!j.toMonth || !j.toYear));
+  const anyIncomplete = jobs.some(isIncomplete);
+  const save = () => {
+    if (anyIncomplete) return;
+    const mapped = jobs.map(j => ({...j, from: j.fromYear&&j.fromMonth ? j.fromYear+'-'+j.fromMonth : '', to: j.toYear&&j.toMonth ? j.toYear+'-'+j.toMonth : ''}));
+    onChange({ employment: mapped }); onNext();
+  };
   return (
-    <StepShell step={8} total={11} title="Employment History"
-      why="We know this is the tedious one. But a complete 5-year employment history is what makes you BS7858 ready — and that is what gets you hired faster than anyone else on any platform. No gaps. Every month accounted for."
-      onBack={onBack} onNext={save}>
-      <div className="history-note">Cover the last <strong>5 years</strong> in full. No gaps allowed — if you were unemployed or self-employed, include that too.</div>
+    <StepShell step={8} total={11} title='Employment History'
+      why='A complete employment history with verified contact details is what makes vetting possible. Missing details stop the process.'
+      onBack={onBack} onNext={save} nextLabel={anyIncomplete ? 'Complete all required fields' : 'Save & Continue'}>
+      <div className='history-note'>Cover the last <strong>5 years</strong> in full. No gaps — include self-employment, unemployment and career breaks.</div>
       {jobs.map((job, i) => (
-        <div key={i} className="history-block">
-          <div className="history-block-header">
-            <span>Position {i+1}</span>
-            {i>0 && <button className="btn-remove" onClick={()=>remove(i)}>Remove</button>}
+        <div key={i} className='history-block'>
+          <div className='history-block-header'>
+            <span>Position {i+1}{job.employer ? ' — '+job.employer : ''}</span>
+            {i>0 && <button className='btn-remove' onClick={()=>remove(i)}>Remove</button>}
           </div>
-          <div className="field-row">
-            <Field label="Employer Name"><Input type="text" placeholder="Company name" value={job.employer} onChange={v=>update(i,'employer',v)}/></Field>
-            <Field label="Your Role / Job Title"><Input type="text" placeholder="e.g. Door Supervisor" value={job.role} onChange={v=>update(i,'role',v)}/></Field>
+          <div className='field-row'>
+            <Field label='Employer / Organisation Name *'><Input type='text' placeholder='Company name' value={job.employer} onChange={v=>update(i,'employer',v)}/></Field>
+            <Field label='Your Job Title *'><Input type='text' placeholder='e.g. Door Supervisor' value={job.role} onChange={v=>update(i,'role',v)}/></Field>
           </div>
-          <div className="field-row">
-            <Field label="Start Date">
-              <div className="field-row" style={{gap:'0.5rem',marginBottom:0}}>
+          <Field label='Sector *'>
+            <Select value={job.sector||''} onChange={v=>update(i,'sector',v)}>
+              <option value=''>Select sector</option>
+              {sectors.map(s=><option key={s}>{s}</option>)}
+            </Select>
+          </Field>
+          <Field label='Brief outline of duties'>
+            <textarea className='f-textarea' rows={2} placeholder='e.g. Manned guarding, access control, CCTV monitoring, incident reporting' value={job.duties||''} onChange={e=>update(i,'duties',e.target.value)}/>
+          </Field>
+          <div className='divider' style={{margin:'1rem 0 0.75rem'}}></div>
+          <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222',marginBottom:'0.75rem'}}>Employer Address *</div>
+          <Field label='Address Line 1 *'><Input type='text' placeholder='Building/street' value={job.address1||''} onChange={v=>update(i,'address1',v)}/></Field>
+          <Field label='Address Line 2'><Input type='text' placeholder='Optional' value={job.address2||''} onChange={v=>update(i,'address2',v)}/></Field>
+          <div className='field-row'>
+            <Field label='Town / City *'><Input type='text' value={job.town||''} onChange={v=>update(i,'town',v)}/></Field>
+            <Field label='County'><Input type='text' value={job.county||''} onChange={v=>update(i,'county',v)}/></Field>
+            <Field label='Postcode *'><Input type='text' value={job.postcode||''} onChange={v=>update(i,'postcode',v)}/></Field>
+          </div>
+          <Field label='Company Website or Generic Email' hint='e.g. www.company.com or hr@company.com'>
+            <Input type='text' placeholder='www.company.com' value={job.website||''} onChange={v=>update(i,'website',v)}/>
+          </Field>
+          <div className='divider' style={{margin:'1rem 0 0.75rem'}}></div>
+          <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222',marginBottom:'0.25rem'}}>Reference Contact *</div>
+          <div style={{fontSize:'0.78rem',color:'#64748b',marginBottom:'0.75rem'}}>HR manager, Operations manager or line manager who can verify your employment.</div>
+          <div className='field-row'>
+            <Field label='Contact Name *'><Input type='text' placeholder='Full name' value={job.contactName||''} onChange={v=>update(i,'contactName',v)}/></Field>
+            <Field label='Job Title'><Input type='text' placeholder='e.g. HR Manager' value={job.contactTitle||''} onChange={v=>update(i,'contactTitle',v)}/></Field>
+          </div>
+          <div className='field-row'>
+            <Field label='Email Address *'><Input type='email' placeholder='hr@company.com' value={job.contactEmail||''} onChange={v=>update(i,'contactEmail',v)}/></Field>
+            <Field label='Phone Number *'><Input type='tel' placeholder='01234 567890' value={job.contactPhone||''} onChange={v=>update(i,'contactPhone',v)}/></Field>
+          </div>
+          <div className='divider' style={{margin:'1rem 0 0.75rem'}}></div>
+          <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222',marginBottom:'0.75rem'}}>Dates of Employment *</div>
+          <div className='field-row'>
+            <Field label='Start Date *'>
+              <div className='field-row' style={{gap:'0.5rem',marginBottom:0}}>
                 <Select value={job.fromMonth||''} onChange={v=>update(i,'fromMonth',v)}>
-                  <option value="">Month</option>
+                  <option value=''>Month</option>
                   {months.map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,'0')}>{m}</option>)}
                 </Select>
-                <Input type="number" placeholder="Year" min="2000" max={new Date().getFullYear()} value={job.fromYear||''} onChange={v=>update(i,'fromYear',v)} style={{width:'90px'}}/>
+                <Input type='number' placeholder='Year' min='2000' max={new Date().getFullYear()} value={job.fromYear||''} onChange={v=>update(i,'fromYear',v)} style={{width:'90px'}}/>
               </div>
             </Field>
-            {!job.current && <Field label="End Date">
-              <div className="field-row" style={{gap:'0.5rem',marginBottom:0}}>
+            {!job.current && <Field label='End Date *'>
+              <div className='field-row' style={{gap:'0.5rem',marginBottom:0}}>
                 <Select value={job.toMonth||''} onChange={v=>update(i,'toMonth',v)}>
-                  <option value="">Month</option>
+                  <option value=''>Month</option>
                   {months.map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,'0')}>{m}</option>)}
                 </Select>
-                <Input type="number" placeholder="Year" min="2000" max={new Date().getFullYear()} value={job.toYear||''} onChange={v=>update(i,'toYear',v)} style={{width:'90px'}}/>
+                <Input type='number' placeholder='Year' min='2000' max={new Date().getFullYear()} value={job.toYear||''} onChange={v=>update(i,'toYear',v)} style={{width:'90px'}}/>
               </div>
             </Field>}
-            <Field label=" "><div style={{paddingTop:'1.8rem'}}>
-              <Checkbox label="Current employer" checked={job.current} onChange={()=>update(i,'current',!job.current)}/>
+            <Field label=' '><div style={{paddingTop:'1.8rem'}}>
+              <Checkbox label='Current employer' checked={job.current} onChange={()=>update(i,'current',!job.current)}/>
             </div></Field>
           </div>
-          <Field label="Reason for leaving" hint="Not required for current employer">
-            <Input type="text" placeholder="e.g. Contract ended, career progression" value={job.reason} onChange={v=>update(i,'reason',v)}/>
-          </Field>
+          {!job.current && <Field label='Reason for leaving'>
+            <Input type='text' placeholder='e.g. Contract ended, career progression, redundancy' value={job.reason||''} onChange={v=>update(i,'reason',v)}/>
+          </Field>}
+          {isIncomplete(job) && (
+            <div style={{background:'#fef9c3',border:'1px solid #fde047',borderRadius:'6px',padding:'0.6rem 0.875rem',marginTop:'0.75rem',fontSize:'0.78rem',color:'#854d0e',fontWeight:600}}>
+              Complete all required fields marked * before continuing.
+            </div>
+          )}
         </div>
       ))}
-      <button className="btn-add" onClick={addJob}>+ Add Another Position</button>
+      <button className='btn-add' onClick={addJob}>+ Add Another Position</button>
     </StepShell>
   );
 }
