@@ -132,10 +132,24 @@ function Input({ onChange, ...props }) { return <input className="f-input" onCha
 function Select({ children, onChange, ...props }) { return <select className="f-select" onChange={e => onChange && onChange(e.target.value)} {...props}>{children}</select>; }
 function Radio({ name, value, label, checked, onChange }) {
   return (
-    <label className="f-radio">
-      <input type="radio" name={name} value={value} checked={checked} onChange={() => onChange(value)}/>
-      <span>{label}</span>
-    </label>
+    <button
+      type="button"
+      onClick={() => onChange(value)}
+      style={{
+        padding:'0.45rem 1.1rem',
+        borderRadius:'6px',
+        border: checked ? '2px solid #1a52a8' : '1.5px solid #e2e8f0',
+        background: checked ? '#eff6ff' : '#fff',
+        color: checked ? '#1a52a8' : '#4a5568',
+        fontWeight: checked ? 700 : 500,
+        cursor:'pointer',
+        fontSize:'0.88rem',
+        fontFamily:'inherit',
+        transition:'all 0.15s'
+      }}
+    >
+      {label}
+    </button>
   );
 }
 function Checkbox({ label, checked, onChange }) {
