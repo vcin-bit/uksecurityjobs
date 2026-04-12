@@ -671,7 +671,7 @@ function ProfileBuilder() {
   const [step, setStep] = useState(0);
   const [profileData, setProfileData] = useState({});
   const sections = [
-    { name:'SIA Licence', short:'SIA', complete: !!profileData.licences?.[0]?.number, started: !!profileData.licences },
+    { name:'SIA Licence', short:'SIA', complete: profileData.licences?.[0]?.verified === true, started: !!profileData.licences?.[0]?.number },
     { name:'Personal Details', short:'Info', complete: !!profileData.personal?.phone, started: !!profileData.personal },
     { name:'Driving & Transport', short:'Drive', complete: profileData.driving?.hasLicence !== undefined, started: !!profileData.driving },
     { name:'Sectors & Availability', short:'Work', complete: profileData.sectors?.sectors?.length > 0, started: !!profileData.sectors },
@@ -754,7 +754,7 @@ function Dashboard() {
   // Build sections based on user metadata
   const meta = user?.unsafeMetadata || {};
   const sections = [
-    { name:'SIA Licence', short:'SIA', complete: !!meta.licences?.[0]?.number, started: !!meta.licences },
+    { name:'SIA Licence', short:'SIA', complete: meta.licences?.[0]?.verified === true, started: !!meta.licences?.[0]?.number },
     { name:'Personal Details', short:'Info', complete: !!meta.personal?.phone, started: !!meta.personal },
     { name:'Driving & Transport', short:'Drive', complete: meta.driving?.hasLicence !== undefined, started: !!meta.driving },
     { name:'Sectors & Availability', short:'Work', complete: meta.sectors?.sectors?.length > 0, started: !!meta.sectors },
