@@ -697,21 +697,91 @@ function ProfileBuilder() {
   return <StepComplete name={user?.firstName || 'there'}/>;
 }
 
+// ── INDUSTRY FACTS ──
+const industryFacts = [
+  { stat: '350,000+', fact: 'Active SIA licensed security professionals work in the UK — making it one of the largest regulated workforces in the country.' },
+  { stat: '£4.3bn', fact: 'The UK private security industry generates over £4.3 billion annually, with demand growing year on year.' },
+  { stat: '3 years', fact: 'Every SIA licence is valid for 3 years. Renewing early keeps you continuously employable with no gaps.' },
+  { stat: 'BS7858', fact: 'The BS7858 vetting standard was first introduced in 1996. Today it is a contractual requirement on most UK security contracts.' },
+  { stat: '£184', fact: 'The cost of an SIA licence application. One of the most cost-effective professional licences in any regulated UK industry.' },
+  { stat: '60%', fact: 'Of security professionals in the UK hold more than one SIA licence type — increasing their employment options significantly.' },
+  { stat: '1 in 12', fact: 'Every 1 in 12 people employed in the UK works in a role that involves an element of security or loss prevention.' },
+  { stat: '2001', fact: 'The Private Security Industry Act 2001 established mandatory SIA licensing — making UK security one of the most regulated industries in Europe.' },
+];
+
 // ── DASHBOARD ──
 function Dashboard() {
   const { user } = useUser();
   const navigate = useNavigate();
+
+  // Pick a random fact on load
+  const [fact] = React.useState(() => industryFacts[Math.floor(Math.random() * industryFacts.length)]);
+
+  // Build sections based on user metadata
+  const meta = user?.unsafeMetadata || {};
+  const sections = [
+    { name:'SIA Licence', short:'SIA', complete: !!meta.licences?.[0]?.number, started: !!meta.licences },
+    { name:'Personal Details', short:'Info', complete: !!meta.personal?.phone, started: !!meta.personal },
+    { name:'Driving & Transport', short:'Drive', complete: meta.driving?.hasLicence !== undefined, started: !!meta.driving },
+    { name:'Sectors & Availability', short:'Work', complete: meta.sectors?.sectors?.length > 0, started: !!meta.sectors },
+    { name:'Qualifications', short:'Quals', complete: meta.qualifications?.hasFirstAid !== undefined, started: !!meta.qualifications },
+    { name:'Background', short:'BG', complete: meta.background?.hasForces !== undefined, started: !!meta.background },
+    { name:'Photo', short:'Photo', complete: !!meta.photo?.uploaded, started: !!meta.photo },
+    { name:'Employment', short:'Jobs', complete: meta.employment?.length > 0, started: !!meta.employment },
+    { name:'Address', short:'Addr', complete: meta.addresses?.length > 0, started: !!meta.addresses },
+  ];
+
+  const completed = sections.filter(s => s.complete).length;
+  const total = sections.length;
+  const pct = Math.round((completed / total) * 100);
+  const scoreLabel = pct >= 80 ? 'Premium roles unlocked' : pct >= 60 ? 'Standard roles unlocked' : 'Complete your profile to unlock roles';
+  const scoreColor = pct >= 80 ? '#10b981' : pct >= 60 ? '#f59e0b' : '#1a52a8';
+
   return (
     <div className="page" style={{background:'var(--off)'}}>
       <Nav/>
       <div className="dashboard">
         <div className="dash-header">
-          <div className="dash-greeting">Welcome back, {user?.firstName || 'Officer'}</div>
+          <div className="dash-greeting">Welcome back, {user?.firstName || 'Officer'} &#128075;</div>
           <div className="dash-sub">Complete your profile to unlock security vacancies and exclusive member benefits.</div>
         </div>
-        <div className="dash-actions">
-          <button className="btn-next" onClick={()=>navigate('/profile')}>Continue Building My Profile &#8250;</button>
+
+        <div className="dash-main">
+          {/* PROGRESS RINGS */}
+          <div className="dash-progress-card">
+            <div className="dash-progress-top">
+              <div>
+                <div className="dash-progress-label">Your Vettability Score</div>
+                <div className="dash-progress-status" style={{color:scoreColor}}>{scoreLabel}</div>
+              </div>
+              <button className="btn-next" style={{whiteSpace:'nowrap'}} onClick={()=>navigate('/profile')}>
+                Continue Profile ›
+              </button>
+            </div>
+            <ProgressRings sections={sections}/>
+          </div>
+
+          {/* DID YOU KNOW */}
+          <div className="dash-fact-card">
+            <div className="dash-fact-label">Did you know?</div>
+            <div className="dash-fact-stat">{fact.stat}</div>
+            <div className="dash-fact-text">{fact.fact}</div>
+          </div>
         </div>
+
+        {/* SECTION STATUS */}
+        <div className="dash-sections">
+          {sections.map((s, i) => (
+            <div key={i} className={'dash-section-item' + (s.complete ? ' done' : s.started ? ' started' : '')}
+              onClick={()=>navigate('/profile')}>
+              <div className="dsi-indicator" style={{background: s.complete ? '#10b981' : s.started ? '#f59e0b' : '#e2e8f0'}}></div>
+              <div className="dsi-name">{s.name}</div>
+              <div className="dsi-status">{s.complete ? 'Complete' : s.started ? 'In progress' : 'To do'}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* INFO CARDS */}
         <div className="dash-info">
           <div className="info-card">
             <div className="info-card-icon">&#9200;</div>
