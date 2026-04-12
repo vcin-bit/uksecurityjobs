@@ -1098,6 +1098,7 @@ function ProfileBuilder() {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [completedSteps, setCompletedSteps] = useState(new Set());
 
   const [profileData, setProfileData] = useState({
     licences: null, personal: null, driving: null, sectors: null,
@@ -1120,17 +1121,30 @@ function ProfileBuilder() {
           apiRequest('/api/profile/employment', 'GET', null, getToken),
           apiRequest('/api/profile/addresses', 'GET', null, getToken),
         ]);
-        setProfileData({
-          licences: siaRes.status === 'fulfilled' ? siaRes.value.licences : null,
-          personal: personalRes.status === 'fulfilled' ? personalRes.value.personal : null,
-          driving: drivingRes.status === 'fulfilled' ? drivingRes.value.driving : null,
-          sectors: sectorsRes.status === 'fulfilled' ? sectorsRes.value.sectors : null,
-          qualifications: qualsRes.status === 'fulfilled' ? qualsRes.value.qualifications : null,
-          background: bgRes.status === 'fulfilled' ? bgRes.value.background : null,
-          employment: empRes.status === 'fulfilled' ? empRes.value.employment : null,
-          photo: null,
-          addresses: addrRes.status === 'fulfilled' ? addrRes.value.addresses : null,
-        });
+
+        const licences = siaRes.status === 'fulfilled' ? siaRes.value.licences : null;
+        const personal = personalRes.status === 'fulfilled' ? personalRes.value.personal : null;
+        const driving = drivingRes.status === 'fulfilled' ? drivingRes.value.driving : null;
+        const sectors = sectorsRes.status === 'fulfilled' ? sectorsRes.value.sectors : null;
+        const qualifications = qualsRes.status === 'fulfilled' ? qualsRes.value.qualifications : null;
+        const background = bgRes.status === 'fulfilled' ? bgRes.value.background : null;
+        const employment = empRes.status === 'fulfilled' ? empRes.value.employment : null;
+        const addresses = addrRes.status === 'fulfilled' ? addrRes.value.addresses : null;
+
+        setProfileData({ licences, personal, driving, sectors, qualifications, background, employment, photo: null, addresses });
+
+        // Infer which steps are already complete from API data
+        const completed = new Set();
+        if (licences?.length) completed.add('licences');
+        if (personal?.phone || personal?.first_name) completed.add('personal');
+        if (driving) completed.add('driving');
+        if (sectors) completed.add('sectors');
+        if (qualifications) completed.add('qualifications');
+        if (background) completed.add('background');
+        if (employment?.length) completed.add('employment');
+        if (addresses?.length) completed.add('addresses');
+        setCompletedSteps(completed);
+
         if (candidateRes.status === 'fulfilled') {
           setStep(candidateRes.value.candidate?.profile_step || 0);
         }
@@ -1143,23 +1157,29 @@ function ProfileBuilder() {
   }, []);
 
   const sections = [
-    { name:'SIA Licence', short:'SIA', complete: profileData.licences?.[0]?.verified === true, started: !!profileData.licences?.[0] },
-    { name:'Personal Details', short:'Info', complete: !!profileData.personal?.phone, started: !!profileData.personal },
-    { name:'Driving & Transport', short:'Drive', complete: !!profileData.driving, started: !!profileData.driving },
-    { name:'Sectors & Availability', short:'Work', complete: profileData.sectors?.sectors?.length > 0, started: !!profileData.sectors },
-    { name:'Qualifications', short:'Quals', complete: !!profileData.qualifications, started: !!profileData.qualifications },
-    { name:'Background', short:'BG', complete: !!profileData.background, started: !!profileData.background },
-    { name:'Employment History', short:'Jobs', complete: profileData.employment?.length > 0, started: !!profileData.employment },
-    { name:'Photo', short:'Photo', complete: !!profileData.photo?.uploaded, started: !!profileData.photo },
-    { name:'Address History', short:'Addr', complete: profileData.addresses?.length > 0, started: !!profileData.addresses },
+    { name:'SIA Licence', short:'SIA', complete: completedSteps.has('licences'), started: completedSteps.has('licences') || !!profileData.licences?.[0] },
+    { name:'Personal Details', short:'Info', complete: completedSteps.has('personal'), started: completedSteps.has('personal') || !!profileData.personal },
+    { name:'Driving & Transport', short:'Drive', complete: completedSteps.has('driving'), started: completedSteps.has('driving') || !!profileData.driving },
+    { name:'Sectors & Availability', short:'Work', complete: completedSteps.has('sectors'), started: completedSteps.has('sectors') || !!profileData.sectors },
+    { name:'Qualifications', short:'Quals', complete: completedSteps.has('qualifications'), started: completedSteps.has('qualifications') || !!profileData.qualifications },
+    { name:'Background', short:'BG', complete: completedSteps.has('background'), started: completedSteps.has('background') || !!profileData.background },
+    { name:'Employment History', short:'Jobs', complete: completedSteps.has('employment'), started: completedSteps.has('employment') || !!profileData.employment?.length },
+    { name:'Photo', short:'Photo', complete: completedSteps.has('photo'), started: completedSteps.has('photo') || !!profileData.photo?.uploaded },
+    { name:'Address History', short:'Addr', complete: completedSteps.has('addresses'), started: completedSteps.has('addresses') || !!profileData.addresses?.length },
   ];
 
   const update = async (d) => {
     const merged = { ...profileData, ...d };
     setProfileData(merged);
+
+    // Mark the step as complete immediately when saved
+    const stepKey = Object.keys(d)[0];
+    if (stepKey) {
+      setCompletedSteps(prev => new Set([...prev, stepKey]));
+    }
+
     setSaving(true);
     try {
-      // Save to the correct API endpoint based on what changed
       if (d.personal) await apiRequest('/api/candidates/me/personal', 'PUT', d.personal, getToken);
       if (d.licences) {
         for (const lic of d.licences) {
@@ -1180,7 +1200,6 @@ function ProfileBuilder() {
           await apiRequest('/api/profile/addresses', 'POST', { address_line1: addr.line1, address_line2: addr.line2, city: addr.town, postcode: addr.postcode, moved_in_date: addr.from, moved_out_date: addr.to || null, is_current: addr.current }, getToken);
         }
       }
-      // Update step progress
       await apiRequest('/api/candidates/me/step', 'PATCH', { profile_step: step + 1 }, getToken);
     } catch(err) {
       console.error('Save error:', err);
