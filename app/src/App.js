@@ -386,10 +386,7 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
               <option value="">Month</option>
               {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m,i)=><option key={i} value={String(i+1).padStart(2,'0')}>{m}</option>)}
             </Select>
-            <Select value={form.dobYear} onChange={v=>u('dobYear',v)}>
-              <option value="">Year</option>
-              {Array.from({length:60},(_,i)=>{const y=new Date().getFullYear()-18-i; return <option key={y} value={String(y)}>{y}</option>})}
-            </Select>
+            <Input type="number" placeholder="Year e.g. 1990" min="1940" max={new Date().getFullYear()-16} value={form.dobYear} onChange={v=>u('dobYear',v)} style={{width:'130px'}}/>
           </div>
         </Field>
       </div>
@@ -420,10 +417,7 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
             <option value="">Month</option>
             {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m,i)=><option key={i} value={String(i+1).padStart(2,'0')}>{m}</option>)}
           </Select>
-          <Select value={form.movedInYear} onChange={v=>{const m=form.movedInMonth; setForm(prev=>({...prev,movedInYear:v,movedIn:m?v+'-'+m:''}));}}>
-            <option value="">Year</option>
-            {Array.from({length:20},(_,i)=>{const y=new Date().getFullYear()-i; return <option key={y} value={String(y)}>{y}</option>})}
-          </Select>
+          <Input type="number" placeholder="Year e.g. 2020" min="2000" max={new Date().getFullYear()} value={form.movedInYear} onChange={v=>{const m=form.movedInMonth; setForm(prev=>({...prev,movedInYear:v,movedIn:m?v+'-'+m:''}));}} style={{width:'130px'}}/>
         </div>
       </Field>
 
@@ -503,10 +497,7 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
                       <option value="">Month</option>
                       {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,'0')}>{m}</option>)}
                     </Select>
-                    <Select value={addr.fromYear||''} onChange={v=>updatePrevAddr(i,'fromYear',v)}>
-                      <option value="">Year</option>
-                      {Array.from({length:20},(_,yi)=>{const y=new Date().getFullYear()-yi; return <option key={y} value={String(y)}>{y}</option>})}
-                    </Select>
+                    <Input type="number" placeholder="Year" min="2000" max={new Date().getFullYear()} value={addr.fromYear||''} onChange={v=>updatePrevAddr(i,'fromYear',v)} style={{width:'100px'}}/>
                   </div>
                 </Field>
                 <Field label="Month Moved Out">
@@ -515,10 +506,7 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
                       <option value="">Month</option>
                       {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,'0')}>{m}</option>)}
                     </Select>
-                    <Select value={addr.toYear||''} onChange={v=>updatePrevAddr(i,'toYear',v)}>
-                      <option value="">Year</option>
-                      {Array.from({length:20},(_,yi)=>{const y=new Date().getFullYear()-yi; return <option key={y} value={String(y)}>{y}</option>})}
-                    </Select>
+                    <Input type="number" placeholder="Year" min="2000" max={new Date().getFullYear()} value={addr.toYear||''} onChange={v=>updatePrevAddr(i,'toYear',v)} style={{width:'100px'}}/>
                   </div>
                 </Field>
               </div>
@@ -673,47 +661,6 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
           )}
         </div>
       )}
-
-      <div className="divider"></div>
-
-      <Field label="Is your SIA licence registered to this address?">
-        <div className="radio-row">
-          <Radio name="siaAddress" value="yes" label="Yes" checked={form.siaAddress==='yes'} onChange={v=>u('siaAddress',v)}/>
-          <Radio name="siaAddress" value="no" label="No" checked={form.siaAddress==='no'} onChange={v=>u('siaAddress',v)}/>
-          <Radio name="siaAddress" value="na" label="Not applicable" checked={form.siaAddress==='na'} onChange={v=>u('siaAddress',v)}/>
-        </div>
-      </Field>
-      {form.siaAddress === 'no' && (
-        <div className="address-warning" style={{marginTop:'0.5rem'}}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
-          <span>Your SIA licence address should match your current address. A mismatch can raise a flag during identity verification. Update it through your <a href="https://services.sia.homeoffice.gov.uk/" target="_blank" rel="noopener noreferrer" className="inline-link">SIA online account</a>.</span>
-        </div>
-      )}
-
-      <Field label="Is your driving licence registered to this address?" hint="If you hold a driving licence">
-        <div className="radio-row">
-          <Radio name="dvlaAddress" value="yes" label="Yes" checked={form.dvlaAddress==='yes'} onChange={v=>u('dvlaAddress',v)}/>
-          <Radio name="dvlaAddress" value="no" label="No" checked={form.dvlaAddress==='no'} onChange={v=>u('dvlaAddress',v)}/>
-          <Radio name="dvlaAddress" value="na" label="No driving licence" checked={form.dvlaAddress==='na'} onChange={v=>u('dvlaAddress',v)}/>
-        </div>
-      </Field>
-      {form.dvlaAddress === 'no' && (
-        <div className="address-warning" style={{marginTop:'0.5rem'}}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
-          <span>
-            Your driving licence must show your current address by law — carries a £1,000 DVLA fine if not updated within 3 months of moving.
-            <br/>
-            <a href="https://www.gov.uk/change-address-driving-licence" target="_blank" rel="noopener noreferrer" className="inline-link">&#8250; Update your driving licence address on GOV.UK</a>
-          </span>
-        </div>
-      )}
-
-      <div className="prepare-notice">
-        <div className="prepare-notice-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
-          Now is a good time to prepare your proof of address
-        </div>
-        <p>Later in your profile you will need to upload proof that you live at this address. Start gathering these now so they are ready when you need them — and make sure you have them with you at any interview.</p>
         <div className="prepare-docs">
           <div className="prepare-doc"><span className="pd-check">✓</span> Bank statement — no older than 3 months</div>
           <div className="prepare-doc"><span className="pd-check">✓</span> Utility bill (gas, electric, water) — no older than 3 months</div>
