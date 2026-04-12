@@ -242,9 +242,9 @@ async function req(path, method='GET', body=null) {
 
 function login() {
   KEY = document.getElementById('adminPw').value.trim();
-  fetch(API + '/debug/admin', { headers: { 'x-admin-key': KEY } })
-    .then(r => r.json()).then(d => {
-      if (d.match) {
+  fetch(API + '/admin/api/stats', { headers: { 'Content-Type': 'application/json', 'x-admin-key': KEY } })
+    .then(r => {
+      if (r.ok) {
         sessionStorage.setItem('ak', KEY);
         document.getElementById('loginPage').style.display = 'none';
         document.getElementById('app').classList.add('visible');
