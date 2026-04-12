@@ -21,9 +21,14 @@ app.use(helmet());
 app.use(cors({
   origin: [
     'https://app.uksecurityjobs.co.uk',
-    'http://localhost:3000'
+    'https://www.uksecurityjobs.co.uk',
+    'https://uksecurityjobs.co.uk',
+    'http://localhost:3000',
+    'http://localhost:5500',
+    'null'
   ],
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key']
 }));
 
 // Rate limiting — 100 requests per 15 minutes per IP
