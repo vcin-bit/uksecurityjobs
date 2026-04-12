@@ -954,11 +954,21 @@ function StepBackground({ data, onChange, onBack, onNext }) {
 
 // ── STEP 8: EMPLOYMENT HISTORY ──
 function StepEmployment({ data, onChange, onBack, onNext }) {
-  const [jobs, setJobs] = useState(data.employment || [{ employer:'', role:'', from:'', to:'', current:false, reason:'' }]);
-  const addJob = () => setJobs([...jobs,{ employer:'', role:'', from:'', to:'', current:false, reason:'' }]);
+  const [jobs, setJobs] = useState(data.employment || [{ employer:'', role:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false, reason:'' }]);
+  const addJob = () => setJobs([...jobs,{ employer:'', role:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false, reason:'' }]);
   const update = (i,f,v) => setJobs(jobs.map((j,idx)=>idx===i?{...j,[f]:v}:j));
   const remove = (i) => setJobs(jobs.filter((_,idx)=>idx!==i));
-  const save = () => { onChange({ employment: jobs }); onNext(); };
+  const save = () => {
+    const mapped = jobs.map(j => ({
+      ...j,
+      from: j.fromYear && j.fromMonth ? `${j.fromYear}-${j.fromMonth}` : j.from || '',
+      to: j.toYear && j.toMonth ? `${j.toYear}-${j.toMonth}` : j.to || '',
+    }));
+    onChange({ employment: mapped });
+    onNext();
+  };
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const years = Array.from({length:20},(_,i)=>new Date().getFullYear()-i);
 
   return (
     <StepShell step={8} total={11} title="Employment History"
@@ -972,16 +982,34 @@ function StepEmployment({ data, onChange, onBack, onNext }) {
             {i>0 && <button className="btn-remove" onClick={()=>remove(i)}>Remove</button>}
           </div>
           <div className="field-row">
-            <Field label="Employer Name"><Input type="text" placeholder="Company name" value={job.employer} onChange={e=>update(i,'employer',e.target.value)}/></Field>
-            <Field label="Your Role / Job Title"><Input type="text" placeholder="e.g. Door Supervisor" value={job.role} onChange={e=>update(i,'role',e.target.value)}/></Field>
+            <Field label="Employer Name"><Input type="text" placeholder="Company name" value={job.employer} onChange={v=>update(i,'employer',v)}/></Field>
+            <Field label="Your Role / Job Title"><Input type="text" placeholder="e.g. Door Supervisor" value={job.role} onChange={v=>update(i,'role',v)}/></Field>
           </div>
           <div className="field-row">
-            <Field label="Start Date"><Input type="month" value={job.from} onChange={e=>update(i,'from',e.target.value)}/></Field>
-            {!job.current && <Field label="End Date"><Input type="month" value={job.to} onChange={e=>update(i,'to',e.target.value)}/></Field>}
-            <Field label=""><div style={{paddingTop:'1.8rem'}}><Checkbox label="Current employer" checked={job.current} onChange={e=>update(i,'current',e.target.checked)}/></div></Field>
+            <Field label="Start Date">
+              <div className="field-row" style={{gap:'0.5rem',marginBottom:0}}>
+                <Select value={job.fromMonth||''} onChange={v=>update(i,'fromMonth',v)}>
+                  <option value="">Month</option>
+                  {months.map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,'0')}>{m}</option>)}
+                </Select>
+                <Input type="number" placeholder="Year" min="2000" max={new Date().getFullYear()} value={job.fromYear||''} onChange={v=>update(i,'fromYear',v)} style={{width:'90px'}}/>
+              </div>
+            </Field>
+            {!job.current && <Field label="End Date">
+              <div className="field-row" style={{gap:'0.5rem',marginBottom:0}}>
+                <Select value={job.toMonth||''} onChange={v=>update(i,'toMonth',v)}>
+                  <option value="">Month</option>
+                  {months.map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,'0')}>{m}</option>)}
+                </Select>
+                <Input type="number" placeholder="Year" min="2000" max={new Date().getFullYear()} value={job.toYear||''} onChange={v=>update(i,'toYear',v)} style={{width:'90px'}}/>
+              </div>
+            </Field>}
+            <Field label=" "><div style={{paddingTop:'1.8rem'}}>
+              <Checkbox label="Current employer" checked={job.current} onChange={()=>update(i,'current',!job.current)}/>
+            </div></Field>
           </div>
           <Field label="Reason for leaving" hint="Not required for current employer">
-            <Input type="text" placeholder="e.g. Contract ended, career progression" value={job.reason} onChange={e=>update(i,'reason',e.target.value)}/>
+            <Input type="text" placeholder="e.g. Contract ended, career progression" value={job.reason} onChange={v=>update(i,'reason',v)}/>
           </Field>
         </div>
       ))}
@@ -992,11 +1020,20 @@ function StepEmployment({ data, onChange, onBack, onNext }) {
 
 // ── STEP 9: ADDRESS HISTORY ──
 function StepAddress({ data, onChange, onBack, onNext }) {
-  const [addresses, setAddresses] = useState(data.addresses || [{ line1:'', line2:'', town:'', postcode:'', from:'', to:'', current:false }]);
-  const add = () => setAddresses([...addresses,{ line1:'', line2:'', town:'', postcode:'', from:'', to:'', current:false }]);
+  const [addresses, setAddresses] = useState(data.addresses || [{ line1:'', line2:'', town:'', postcode:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false }]);
+  const add = () => setAddresses([...addresses,{ line1:'', line2:'', town:'', postcode:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false }]);
   const update = (i,f,v) => setAddresses(addresses.map((a,idx)=>idx===i?{...a,[f]:v}:a));
   const remove = (i) => setAddresses(addresses.filter((_,idx)=>idx!==i));
-  const save = () => { onChange({ addresses }); onNext(); };
+  const save = () => {
+    const mapped = addresses.map(a => ({
+      ...a,
+      from: a.fromYear && a.fromMonth ? `${a.fromYear}-${a.fromMonth}` : a.from || '',
+      to: a.toYear && a.toMonth ? `${a.toYear}-${a.toMonth}` : a.to || '',
+    }));
+    onChange({ addresses: mapped });
+    onNext();
+  };
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   return (
     <StepShell step={9} total={11} title="Address History"
@@ -1010,17 +1047,35 @@ function StepAddress({ data, onChange, onBack, onNext }) {
             {i>0 && <button className="btn-remove" onClick={()=>remove(i)}>Remove</button>}
           </div>
           <div className="field-row">
-            <Field label="Address Line 1"><Input type="text" placeholder="House number and street" value={addr.line1} onChange={e=>update(i,'line1',e.target.value)}/></Field>
-            <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={addr.line2} onChange={e=>update(i,'line2',e.target.value)}/></Field>
+            <Field label="Address Line 1"><Input type="text" placeholder="House number and street" value={addr.line1} onChange={v=>update(i,'line1',v)}/></Field>
+            <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={addr.line2} onChange={v=>update(i,'line2',v)}/></Field>
           </div>
           <div className="field-row">
-            <Field label="Town / City"><Input type="text" value={addr.town} onChange={e=>update(i,'town',e.target.value)}/></Field>
-            <Field label="Postcode"><Input type="text" value={addr.postcode} onChange={e=>update(i,'postcode',e.target.value)}/></Field>
+            <Field label="Town / City"><Input type="text" value={addr.town} onChange={v=>update(i,'town',v)}/></Field>
+            <Field label="Postcode"><Input type="text" value={addr.postcode} onChange={v=>update(i,'postcode',v)}/></Field>
           </div>
           <div className="field-row">
-            <Field label="Move-in Date"><Input type="month" value={addr.from} onChange={e=>update(i,'from',e.target.value)}/></Field>
-            {!addr.current && <Field label="Move-out Date"><Input type="month" value={addr.to} onChange={e=>update(i,'to',e.target.value)}/></Field>}
-            <Field label=""><div style={{paddingTop:'1.8rem'}}><Checkbox label="Current address" checked={addr.current} onChange={e=>update(i,'current',e.target.checked)}/></div></Field>
+            <Field label="Move-in Date">
+              <div className="field-row" style={{gap:'0.5rem',marginBottom:0}}>
+                <Select value={addr.fromMonth||''} onChange={v=>update(i,'fromMonth',v)}>
+                  <option value="">Month</option>
+                  {months.map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,'0')}>{m}</option>)}
+                </Select>
+                <Input type="number" placeholder="Year" min="2000" max={new Date().getFullYear()} value={addr.fromYear||''} onChange={v=>update(i,'fromYear',v)} style={{width:'90px'}}/>
+              </div>
+            </Field>
+            {!addr.current && <Field label="Move-out Date">
+              <div className="field-row" style={{gap:'0.5rem',marginBottom:0}}>
+                <Select value={addr.toMonth||''} onChange={v=>update(i,'toMonth',v)}>
+                  <option value="">Month</option>
+                  {months.map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,'0')}>{m}</option>)}
+                </Select>
+                <Input type="number" placeholder="Year" min="2000" max={new Date().getFullYear()} value={addr.toYear||''} onChange={v=>update(i,'toYear',v)} style={{width:'90px'}}/>
+              </div>
+            </Field>}
+            <Field label=" "><div style={{paddingTop:'1.8rem'}}>
+              <Checkbox label="Current address" checked={addr.current} onChange={()=>update(i,'current',!addr.current)}/>
+            </div></Field>
           </div>
         </div>
       ))}
