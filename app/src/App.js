@@ -227,7 +227,23 @@ function StepSIA({ data, onChange, onBack, onNext }) {
 
 // ── STEP 3: PERSONAL DETAILS ──
 function StepPersonal({ data, onChange, onBack, onNext }) {
-  const [form, setForm] = useState(data.personal || { phone:'', dob:'', gender:'', ni:'', address1:'', address2:'', town:'', county:'', postcode:'', movedIn:'', movedOut:'', currentAddr:'', siaAddress:'', dvlaAddress:'', prevAddresses:[] });
+  const raw = data.personal;
+  const [form, setForm] = useState({
+    phone: raw?.phone || '',
+    dob: raw?.date_of_birth || raw?.dob || '',
+    gender: raw?.gender || '',
+    ni: raw?.ni_number || raw?.ni || '',
+    address1: raw?.address_line1 || raw?.address1 || '',
+    address2: raw?.address_line2 || raw?.address2 || '',
+    town: raw?.city || raw?.town || '',
+    county: raw?.county || '',
+    postcode: raw?.postcode || '',
+    movedIn: raw?.move_in_date || raw?.movedIn || '',
+    movedOut: raw?.movedOut || '',
+    currentAddr: raw?.currentAddr || '',
+    siaAddress: raw?.siaAddress || (raw?.sia_address_match === true ? 'yes' : raw?.sia_address_match === false ? 'no' : ''),
+    dvlaAddress: raw?.dvlaAddress || (raw?.dvla_address_match === true ? 'yes' : raw?.dvla_address_match === false ? 'no' : ''),
+  });
   const u = (f,v) => setForm(prev => ({...prev,[f]:v}));
   const addPrevAddress = () => setForm(prev => ({...prev, prevAddresses:[...(prev.prevAddresses||[]),{line1:'',line2:'',town:'',county:'',postcode:'',from:'',to:''}]}));
   const updatePrevAddr = (i,f,v) => setForm(prev => { const arr=[...(prev.prevAddresses||[])]; arr[i]={...arr[i],[f]:v}; return {...prev,prevAddresses:arr}; });
