@@ -191,7 +191,7 @@ function StepSIA({ data, onChange, onBack, onNext }) {
   const licenceTypes = ['Door Supervisor','Security Guard','CCTV Operator','Close Protection','Cash & Valuables in Transit','Key Holding','Non-Front Line'];
 
   return (
-    <StepShell step={2} total={10} title="SIA Licence(s)"
+    <StepShell step={2} total={11} title="SIA Licence(s)"
       why="Verifying your SIA licence is the first thing employers check. Once verified here, they can see you are licensed and legal — so they call you first."
       onBack={onBack} onNext={save}>
       {licences.map((lic, i) => (
@@ -228,7 +228,7 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
   const u = (f,v) => setForm({...form,[f]:v});
   const save = () => { onChange({ personal: form }); onNext(); };
   return (
-    <StepShell step={3} total={10} title="Personal Details"
+    <StepShell step={3} total={11} title="Personal Details"
       why="Employers need to be able to contact you quickly. A complete personal profile also means vetting can start without any back-and-forth."
       onBack={onBack} onNext={save}>
       <div className="field-row">
@@ -267,7 +267,7 @@ function StepDriving({ data, onChange, onBack, onNext }) {
   const save = () => { onChange({ driving: form }); onNext(); };
 
   return (
-    <StepShell step={4} total={10} title="Driving Licence & Transport"
+    <StepShell step={4} total={11} title="Driving Licence & Transport"
       why="Having your own transport and a clean licence opens up significantly more roles — including higher-paying mobile patrol and response positions that candidates without transport cannot access."
       onBack={onBack} onNext={save}>
       <Field label="Do you hold a driving licence?">
@@ -359,7 +359,7 @@ function StepDriving({ data, onChange, onBack, onNext }) {
 // ── STEP 5: PREFERRED SECTORS & AVAILABILITY ──
 function StepSectors({ data, onChange, onBack, onNext }) {
   const [form, setForm] = useState(data.sectors || { sectors:[], availability:'', shiftType:[], employmentType:'' });
-  const allSectors = ['Shopping Centres / Retail','Distribution / Logistics / Warehousing','Construction Sites','Corporate / Commercial','Nightlife / Licensed Premises','Events / Festivals','Close Protection / Private','Transport Hubs (airports, stations)','Healthcare / Hospital','Education','Government / MOD','Residential / Concierge','Cash & Valuables in Transit','Control Room / CCTV'];
+  const allSectors = ['Shopping Centres / Retail','Distribution / Logistics / Warehousing','Construction Sites','Corporate / Commercial','Nightlife / Licensed Premises','Events / Festivals','Close Protection / Private','Transport Hubs (airports, stations)','Healthcare / Hospital','Education','Government / MOD','Residential / Concierge','Cash & Valuables in Transit','Control Room / CCTV','BID / Town Centre Rangers'];
   const toggleSector = (s) => {
     const list = form.sectors.includes(s) ? form.sectors.filter(x=>x!==s) : [...form.sectors,s];
     setForm({...form,sectors:list});
@@ -371,7 +371,7 @@ function StepSectors({ data, onChange, onBack, onNext }) {
   const save = () => { onChange({ sectors: form }); onNext(); };
 
   return (
-    <StepShell step={5} total={10} title="Preferred Sectors & Availability"
+    <StepShell step={5} total={11} title="Preferred Sectors & Availability"
       why="The more specific you are, the better the roles we match you with — and the less time you waste on applications that are not right for you."
       onBack={onBack} onNext={save}>
       <Field label="Preferred Sectors" hint="Select all that apply. More sectors = more opportunities.">
@@ -416,7 +416,7 @@ function StepQualifications({ data, onChange, onBack, onNext }) {
   const save = () => { onChange({ qualifications: form }); onNext(); };
 
   return (
-    <StepShell step={6} total={10} title="Qualifications & Capabilities"
+    <StepShell step={6} total={11} title="Qualifications & Capabilities"
       why="Additional qualifications like First Aid can make you the standout candidate — especially for roles where a medical response capability is valued."
       onBack={onBack} onNext={save}>
       <Field label="Do you hold a First Aid certificate?">
@@ -489,7 +489,7 @@ function StepBackground({ data, onChange, onBack, onNext }) {
   const save = () => { onChange({ background: form }); onNext(); };
 
   return (
-    <StepShell step={7} total={10} title="Professional Background"
+    <StepShell step={7} total={11} title="Professional Background"
       why="Armed forces and police backgrounds are highly valued by security employers. BID accreditation opens doors to town centre and retail roles. Be proud of your background — it sets you apart."
       onBack={onBack} onNext={save}>
       <Field label="Do you have an armed forces or police background?">
@@ -534,7 +534,7 @@ function StepEmployment({ data, onChange, onBack, onNext }) {
   const save = () => { onChange({ employment: jobs }); onNext(); };
 
   return (
-    <StepShell step={8} total={10} title="Employment History"
+    <StepShell step={8} total={11} title="Employment History"
       why="We know this is the tedious one. But a complete 5-year employment history is what makes you BS7858 ready — and that is what gets you hired faster than anyone else on any platform. No gaps. Every month accounted for."
       onBack={onBack} onNext={save}>
       <div className="history-note">Cover the last <strong>5 years</strong> in full. No gaps allowed — if you were unemployed or self-employed, include that too.</div>
@@ -572,7 +572,7 @@ function StepAddress({ data, onChange, onBack, onNext }) {
   const save = () => { onChange({ addresses }); onNext(); };
 
   return (
-    <StepShell step={9} total={10} title="Address History"
+    <StepShell step={9} total={11} title="Address History"
       why="A complete 5-year address history with no gaps is a core BS7858 requirement. Getting this right now means employers can start vetting immediately when you apply."
       onBack={onBack} onNext={save}>
       <div className="history-note">Cover the last <strong>5 years</strong> in full. Every address, exact dates. No gaps.</div>
@@ -598,6 +598,50 @@ function StepAddress({ data, onChange, onBack, onNext }) {
         </div>
       ))}
       <button className="btn-add" onClick={add}>+ Add Another Address</button>
+    </StepShell>
+  );
+}
+
+
+// ── STEP PHOTO ──
+function StepPhoto({ data, onChange, onBack, onNext }) {
+  const [preview, setPreview] = React.useState(data.photo?.preview || null);
+  const [uploaded, setUploaded] = React.useState(data.photo?.uploaded || false);
+
+  const handleFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setPreview(ev.target.result);
+      setUploaded(true);
+      onChange({ photo: { uploaded: true, preview: ev.target.result } });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <StepShell step={8} total={11} title="Profile Photo"
+      why="A clear photo helps our team verify your identity. This is the only reason we ask for it."
+      onBack={onBack} onNext={onNext} nextLabel={uploaded ? 'Save & Continue' : 'Skip for now'}>
+      <div className="photo-upload-wrap">
+        <div className="photo-preview">
+          {preview
+            ? <img src={preview} alt="Profile" className="photo-img"/>
+            : <div className="photo-placeholder"><svg viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" fill="none" strokeWidth="1.2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          }
+        </div>
+        <label className="photo-btn">
+          {uploaded ? 'Change Photo' : 'Upload Photo'}
+          <input type="file" accept="image/*" onChange={handleFile} style={{display:'none'}}/>
+        </label>
+        <div className="photo-policy">
+          <div className="photo-policy-title">&#128274; Your photo is never shown to employers</div>
+          <p>We made this decision deliberately. Employers on this platform hire based on your SIA licence, your vettability score, your employment history and your professional record — not how you look.</p>
+          <p>This protects you from unconscious bias and keeps every hiring decision focused on what actually matters: your credentials and your character.</p>
+          <p><strong>This is how professional recruitment should work.</strong></p>
+        </div>
+      </div>
     </StepShell>
   );
 }
@@ -632,6 +676,7 @@ function ProfileBuilder() {
     { name:'Qualifications', short:'Quals', complete: profileData.qualifications?.hasFirstAid !== undefined, started: !!profileData.qualifications },
     { name:'Background', short:'BG', complete: profileData.background?.hasForces !== undefined, started: !!profileData.background },
     { name:'Employment History', short:'Jobs', complete: profileData.employment?.length > 0, started: !!profileData.employment },
+    { name:'Photo', short:'Photo', complete: !!profileData.photo?.uploaded, started: !!profileData.photo },
     { name:'Address History', short:'Addr', complete: profileData.addresses?.length > 0, started: !!profileData.addresses },
   ];
   const update = (d) => setProfileData(prev => ({...prev,...d}));
@@ -645,9 +690,10 @@ function ProfileBuilder() {
   if(step === 4) return <><ProgressRings sections={sections}/><StepSectors data={profileData} onChange={update} onBack={back} onNext={next}/></>;
   if(step === 5) return <><ProgressRings sections={sections}/><StepQualifications data={profileData} onChange={update} onBack={back} onNext={next}/></>;
   if(step === 6) return <><ProgressRings sections={sections}/><StepBackground data={profileData} onChange={update} onBack={back} onNext={next}/></>;
-  if(step === 7) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={next}/></>;
-  if(step === 8) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={next}/></>;
-  if(step === 9) return <StepComplete name={user?.firstName || 'there'}/>;
+  if(step === 7) return <><ProgressRings sections={sections}/><StepPhoto data={profileData} onChange={update} onBack={back} onNext={next}/></>;
+  if(step === 8) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={next}/></>;
+  if(step === 9) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={next}/></>;
+  if(step === 10) return <StepComplete name={user?.firstName || 'there'}/>;
   return <StepComplete name={user?.firstName || 'there'}/>;
 }
 
