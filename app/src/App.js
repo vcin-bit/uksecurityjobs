@@ -754,7 +754,8 @@ function StepSectors({ data, onChange, onBack, onNext }) {
   const raw = data.sectors;
   const [form, setForm] = useState({
     sectors: Array.isArray(raw?.sectors) ? raw.sectors : [],
-    availability: raw?.availability || raw?.preferred_shift || '',
+    availability: Array.isArray(raw?.availability) ? raw.availability : [],
+    availabilityAll: false,
     shiftType: Array.isArray(raw?.shiftType) ? raw.shiftType : [],
     employmentType: raw?.employmentType || ''
   });
@@ -785,9 +786,28 @@ function StepSectors({ data, onChange, onBack, onNext }) {
           {['Full Time','Part Time','Either'].map(t=><Radio key={t} name="employmentType" value={t} label={t} checked={form.employmentType===t} onChange={v=>setForm({...form,employmentType:v})}/>)}
         </div>
       </Field>
-      <Field label="Availability">
-        <div className="radio-row">
-          {['Days','Nights','Weekends','Flexible / Any'].map(t=><Radio key={t} name="availability" value={t} label={t} checked={form.availability===t} onChange={v=>setForm({...form,availability:v})}/>)}
+      <Field label="Prepared to work" hint="Select all that apply">
+        <div className="check-grid">
+          {['Days','Nights','Weekends','Bank Holidays'].map(t=>(
+            <Checkbox key={t} label={t}
+              checked={(form.availability||[]).includes(t)}
+              onChange={()=>{
+                const list = (form.availability||[]).includes(t)
+                  ? (form.availability||[]).filter(x=>x!==t)
+                  : [...(form.availability||[]),t];
+                const isAll = ['Days','Nights','Weekends','Bank Holidays'].every(x=>list.includes(x));
+                setForm({...form, availability: list, availabilityAll: isAll});
+              }}
+            />
+          ))}
+          <Checkbox label="All of the above"
+            checked={form.availabilityAll||false}
+            onChange={()=>{
+              const all = ['Days','Nights','Weekends','Bank Holidays'];
+              const willCheck = !form.availabilityAll;
+              setForm({...form, availability: willCheck ? all : [], availabilityAll: willCheck});
+            }}
+          />
         </div>
       </Field>
       <Field label="Preferred Shift Length" hint="Select all that apply">
