@@ -758,7 +758,24 @@ function StepComplete({ name }) {
 function ProfileBuilder() {
   const { user } = useUser();
   const [step, setStep] = useState(0);
-  const [profileData, setProfileData] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  // Load from Clerk metadata on mount
+  const [profileData, setProfileData] = useState(() => {
+    const meta = user?.unsafeMetadata || {};
+    return {
+      licences: meta.licences,
+      personal: meta.personal,
+      driving: meta.driving,
+      sectors: meta.sectors,
+      qualifications: meta.qualifications,
+      background: meta.background,
+      employment: meta.employment,
+      photo: meta.photo,
+      addresses: meta.addresses,
+    };
+  });
+
   const sections = [
     { name:'SIA Licence', short:'SIA', complete: profileData.licences?.[0]?.verified === true, started: !!profileData.licences?.[0]?.number },
     { name:'Personal Details', short:'Info', complete: !!profileData.personal?.phone, started: !!profileData.personal },
@@ -770,7 +787,23 @@ function ProfileBuilder() {
     { name:'Photo', short:'Photo', complete: !!profileData.photo?.uploaded, started: !!profileData.photo },
     { name:'Address History', short:'Addr', complete: profileData.addresses?.length > 0, started: !!profileData.addresses },
   ];
-  const update = (d) => setProfileData(prev => ({...prev,...d}));
+
+  // Save to Clerk metadata immediately on each step
+  const update = async (d) => {
+    const merged = { ...profileData, ...d };
+    setProfileData(merged);
+    setSaving(true);
+    try {
+      // Strip photo preview from metadata (too large for Clerk)
+      const toSave = { ...merged };
+      if (toSave.photo) toSave.photo = { uploaded: toSave.photo.uploaded };
+      await user.update({ unsafeMetadata: { ...(user.unsafeMetadata || {}), ...toSave } });
+    } catch(err) {
+      console.error('Save error:', err);
+    }
+    setSaving(false);
+  };
+
   const next = () => setStep(s=>s+1);
   const back = () => setStep(s=>s-1);
 
