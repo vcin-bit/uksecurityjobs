@@ -128,8 +128,8 @@ function Field({ label, hint, children }) {
     </div>
   );
 }
-function Input(props) { return <input className="f-input" {...props}/>; }
-function Select({ children, ...props }) { return <select className="f-select" {...props}>{children}</select>; }
+function Input({ onChange, ...props }) { return <input className="f-input" onChange={e => onChange && onChange(e.target.value)} {...props}/>; }
+function Select({ children, onChange, ...props }) { return <select className="f-select" onChange={e => onChange && onChange(e.target.value)} {...props}>{children}</select>; }
 function Radio({ name, value, label, checked, onChange }) {
   return (
     <label className="f-radio">
