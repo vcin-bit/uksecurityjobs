@@ -661,6 +661,14 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
           )}
         </div>
       )}
+
+      <div className="divider"></div>
+      <div className="prepare-notice">
+        <div className="prepare-notice-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+          Now is a good time to prepare your proof of address
+        </div>
+        <p>Later in your profile you will need to upload proof that you live at this address. Start gathering these now so they are ready when you need them — and make sure you have them with you at any interview.</p>
         <div className="prepare-docs">
           <div className="prepare-doc"><span className="pd-check">✓</span> Bank statement — no older than 3 months</div>
           <div className="prepare-doc"><span className="pd-check">✓</span> Utility bill (gas, electric, water) — no older than 3 months</div>
