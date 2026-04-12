@@ -944,11 +944,6 @@ function StepBackground({ data, onChange, onBack, onNext }) {
         </Select>
       </Field>}
       <div className="divider"></div>
-      <Field label="Are you registered with any BID (Business Improvement District) scheme?" hint="BID accreditation is required for many town centre and retail security roles">
-        <div className="radio-row"><Radio name="hasBID" value="yes" label="Yes" checked={form.hasBID==='yes'} onChange={v=>u('hasBID',v)}/><Radio name="hasBID" value="no" label="No" checked={form.hasBID==='no'} onChange={v=>u('hasBID',v)}/></div>
-      </Field>
-      {form.hasBID==='yes' && <Field label="BID scheme(s), town/city and accreditation number"><Input type="text" placeholder="e.g. Manchester BID — MAN-DS-001234" value={form.bidSchemes} onChange={v=>u('bidSchemes',v)}/></Field>}
-      <div className="divider"></div>
       <Field label="Do you have any unspent criminal convictions?" hint="This does not automatically disqualify you — we assess each case individually">
         <div className="radio-row"><Radio name="hasCriminal" value="yes" label="Yes" checked={form.hasCriminal==='yes'} onChange={v=>u('hasCriminal',v)}/><Radio name="hasCriminal" value="no" label="No" checked={form.hasCriminal==='no'} onChange={v=>u('hasCriminal',v)}/></div>
       </Field>
