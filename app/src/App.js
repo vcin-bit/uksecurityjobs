@@ -746,51 +746,25 @@ function Dashboard() {
           <div className="dash-sub">Complete your profile to unlock security vacancies and exclusive member benefits.</div>
         </div>
 
-        <div className="dash-main">
-          {/* PROGRESS RINGS */}
-          <div className="dash-progress-card">
-            <div className="dash-progress-top">
-              <div>
-                <div className="dash-progress-label">Your Vettability Score</div>
-                <div className="dash-progress-status" style={{color:scoreColor}}>{scoreLabel}</div>
-              </div>
-              <button className="btn-next" style={{whiteSpace:'nowrap'}} onClick={()=>navigate('/profile')}>
-                Continue Profile ›
-              </button>
+        {/* PROGRESS + CTA */}
+        <div className="dash-card" style={{marginBottom:'1.5rem'}}>
+          <div className="dash-card-top">
+            <div>
+              <div className="dash-progress-label">Your Vettability Score</div>
+              <div className="dash-progress-status" style={{color:scoreColor}}>{scoreLabel}</div>
             </div>
-            <ProgressRings sections={sections}/>
+            <button className="btn-next" style={{whiteSpace:'nowrap'}} onClick={()=>navigate('/profile')}>
+              Continue Profile ›
+            </button>
           </div>
-
-          {/* DID YOU KNOW */}
-          <div className="dash-fact-card">
-            <div className="dash-fact-label">Did you know?</div>
-            <div className="dash-fact-stat">{fact.stat}</div>
-            <div className="dash-fact-text">{fact.fact}</div>
-          </div>
+          <ProgressRings sections={sections}/>
         </div>
 
-        {/* SECTION STATUS */}
-        <div className="dash-sections">
-          {sections.map((s, i) => (
-            <div key={i} className={'dash-section-item' + (s.complete ? ' done' : s.started ? ' started' : '')}
-              onClick={()=>navigate('/profile')}>
-              <div className="dsi-indicator" style={{background: s.complete ? '#10b981' : s.started ? '#f59e0b' : '#e2e8f0'}}></div>
-              <div className="dsi-name">{s.name}</div>
-              <div className="dsi-status">{s.complete ? 'Complete' : s.started ? 'In progress' : 'To do'}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* INFO CARDS */}
-        <div className="dash-info">
-          <div className="info-card">
-            <div className="info-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
-            <div><strong>SIA Verification</strong><p>Your SIA licence will be verified within 24 hours of submission.</p></div>
-          </div>
-          <div className="info-card">
-            <div className="info-card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-            <div><strong>Profile Security</strong><p>Your data is encrypted and only shared with employers you apply to.</p></div>
-          </div>
+        {/* SUBTLE FACT */}
+        <div className="dash-fact-subtle">
+          <span className="dash-fact-num">{fact.stat}</span>
+          <span className="dash-fact-sep">—</span>
+          <span className="dash-fact-txt">{fact.fact}</span>
         </div>
       </div>
     </div>

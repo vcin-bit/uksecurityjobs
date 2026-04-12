@@ -191,3 +191,15 @@ input,select,textarea{-webkit-appearance:none;appearance:none;font-family:inheri
   .dash-main{grid-template-columns:1fr;}
   .dash-fact-card{min-height:160px;}
 }
+
+/* DASHBOARD CLEAN */
+.dash-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:1.5rem;}
+.dash-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;gap:1rem;}
+.dash-progress-label{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.16em;color:var(--mid);margin-bottom:0.2rem;}
+.dash-progress-status{font-size:0.88rem;font-weight:600;}
+
+/* SUBTLE FACT STRIP */
+.dash-fact-subtle{display:flex;align-items:center;gap:0.75rem;padding:0.9rem 1.2rem;background:#fff;border:1px solid var(--border);border-radius:8px;margin-bottom:1.5rem;}
+.dash-fact-num{font-size:1.1rem;font-weight:800;color:var(--navy);letter-spacing:-0.02em;white-space:nowrap;}
+.dash-fact-sep{color:var(--border);font-weight:300;}
+.dash-fact-txt{font-size:0.82rem;color:var(--body);line-height:1.5;}
