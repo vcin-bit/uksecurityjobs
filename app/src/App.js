@@ -70,7 +70,9 @@ function ProgressRings({ sections }) {
           const r2=14, c2=2*Math.PI*r2;
           const pct=s.complete?100:s.started?50:0;
           const off2=c2-(pct/100)*c2;
-          const col=s.complete?'#10b981':s.started?'#f59e0b':'#e2e8f0';
+          const sectionColors = ['#1a52a8','#0891b2','#7c3aed','#db2777','#dc2626','#d97706','#059669','#0284c7','#6d28d9'];
+          const baseColor = sectionColors[i % sectionColors.length];
+          const col = s.complete ? baseColor : s.started ? baseColor + 'aa' : '#e2e8f0';
           return (
             <div key={i} className="ring-mini" title={s.name}>
               <svg width="36" height="36" viewBox="0 0 36 36">
