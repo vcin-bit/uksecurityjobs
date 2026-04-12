@@ -1233,6 +1233,31 @@ function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
           </Field>
           <Field label="Outline of duties *" hint="Be specific — this builds your CV. Include responsibilities, equipment used, team size, site type.">
             <textarea className="f-textarea" rows={3} placeholder="e.g. Manned guarding of 3 distribution warehouses across shift patterns. Responsibilities included access control, CCTV monitoring (16 camera system), lone working protocols, daily incident logging and emergency response. Worked within a 4-person team." value={job.duties||''} onChange={e=>update(i,'duties',e.target.value)}/>
+            {job.duties?.trim().length > 20 && (
+              <button type="button"
+                onClick={async () => {
+                  update(i,'dutiesLoading',true);
+                  try {
+                    const res = await fetch('https://api.anthropic.com/v1/messages', {
+                      method:'POST',
+                      headers:{'Content-Type':'application/json'},
+                      body: JSON.stringify({
+                        model:'claude-sonnet-4-20250514',
+                        max_tokens:500,
+                        messages:[{role:'user',content:`You are helping a UK security officer write their CV. Fix any spelling and grammar errors in the following job duties text and make it professional, clear and concise. Keep it in first or third person consistently, use active voice, and make it suitable for a security industry CV. Return only the improved text with no preamble or explanation:\n\n${job.duties}`}]
+                      })
+                    });
+                    const d = await res.json();
+                    const improved = d.content?.[0]?.text;
+                    if (improved) update(i,'duties',improved.trim());
+                  } catch(e) { console.error(e); }
+                  update(i,'dutiesLoading',false);
+                }}
+                style={{marginTop:'0.5rem',background:'#f0f4ff',color:'#1a52a8',border:'1px solid #bfdbfe',borderRadius:'6px',padding:'0.4rem 0.875rem',fontSize:'0.78rem',fontWeight:600,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:'0.4rem'}}
+              >
+                {job.dutiesLoading ? 'Improving...' : '✦ Fix spelling & grammar'}
+              </button>
+            )}
           </Field>
 
           <div className="divider" style={{margin:'1rem 0 0.75rem'}}></div>
@@ -1455,6 +1480,7 @@ function ProfileBuilder() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [completedSteps, setCompletedSteps] = useState(new Set());
+  const [cvMobileOpen, setCvMobileOpen] = React.useState(false);
 
   const [profileData, setProfileData] = useState({
     licences: null, personal: null, driving: null, sectors: null,
@@ -1565,7 +1591,6 @@ function ProfileBuilder() {
 
   if (loading) return <div style={{textAlign:'center',padding:'4rem',color:'#64748b'}}>Loading your profile...</div>;
 
-  const [cvMobileOpen, setCvMobileOpen] = React.useState(false);
   const next = () => setStep(s=>s+1);
   const back = () => setStep(s=>s-1);
 
