@@ -1,18 +1,21 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// Supabase admin client — bypasses RLS for server-side operations
-// RLS is enforced manually by setting app.current_user_id
+// Supabase admin client — uses service key
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
 
-// Set the current user context for RLS policies
-async function setUserContext(userId) {
-  await supabase.rpc('set_config', {
-    setting: 'app.current_user_id',
-    value: userId
-  });
+// Create a per-request Supabase client with the user context set
+// This ensures RLS policies fire correctly for every query
+async function getClientForUser(userId) {
+  const client = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+  );
+  // Set the user ID in the session context so RLS policies can read it
+  await client.rpc('set_current_user_id', { user_id: userId });
+  return client;
 }
 
 // Encrypt a sensitive value using pgcrypto
@@ -39,14 +42,19 @@ async function decrypt(encrypted) {
 
 // Write to audit log
 async function auditLog({ tableName, recordId, action, performedBy, ipAddress, changes }) {
-  await supabase.from('audit_log').insert({
-    table_name: tableName,
-    record_id: recordId,
-    action,
-    performed_by: performedBy,
-    ip_address: ipAddress,
-    changes
-  });
+  try {
+    await supabase.from('audit_log').insert({
+      table_name: tableName,
+      record_id: recordId,
+      action,
+      performed_by: performedBy,
+      ip_address: ipAddress,
+      changes: changes || null
+    });
+  } catch(err) {
+    // Never let audit log failures break the main request
+    console.error('Audit log error:', err.message);
+  }
 }
 
-module.exports = { supabase, setUserContext, encrypt, decrypt, auditLog };
+module.exports = { supabase, getClientForUser, encrypt, decrypt, auditLog };
