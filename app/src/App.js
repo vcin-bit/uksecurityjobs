@@ -226,7 +226,7 @@ function StepSIA({ data, onChange, onBack, onNext }) {
 
 // ── STEP 3: PERSONAL DETAILS ──
 function StepPersonal({ data, onChange, onBack, onNext }) {
-  const [form, setForm] = useState(data.personal || { phone:'', dob:'', gender:'', ni:'', address1:'', address2:'', town:'', county:'', postcode:'' });
+  const [form, setForm] = useState(data.personal || { phone:'', dob:'', gender:'', ni:'', address1:'', address2:'', town:'', county:'', postcode:'', movedIn:'', movedOut:'', currentAddr:'' });
   const u = (f,v) => setForm({...form,[f]:v});
   const save = () => { onChange({ personal: form }); onNext(); };
   return (
@@ -254,6 +254,39 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
         <Field label="County"><Input type="text" placeholder="Greater London" value={form.county} onChange={e=>u('county',e.target.value)}/></Field>
         <Field label="Postcode"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={e=>u('postcode',e.target.value)}/></Field>
       </div>
+      <div className="field-row">
+        <Field label="Move-in Date" hint="The date you moved to this address">
+          <Input type="month" value={form.movedIn} onChange={e=>u('movedIn',e.target.value)}/>
+        </Field>
+        <Field label="Currently living here?">
+          <div className="radio-row">
+            <Radio name="currentAddr" value="yes" label="Yes" checked={form.currentAddr==='yes'} onChange={e=>u('currentAddr',e.target.value)}/>
+            <Radio name="currentAddr" value="no" label="No" checked={form.currentAddr==='no'} onChange={e=>u('currentAddr',e.target.value)}/>
+          </div>
+        </Field>
+      </div>
+      {form.currentAddr === 'no' && (
+        <Field label="Move-out Date">
+          <Input type="month" value={form.movedOut} onChange={e=>u('movedOut',e.target.value)}/>
+        </Field>
+      )}
+      {form.movedIn && form.currentAddr === 'yes' && (() => {
+        const months = Math.floor((new Date() - new Date(form.movedIn + '-01')) / (1000 * 60 * 60 * 24 * 30.5));
+        const years = Math.floor(months / 12);
+        const rem = months % 12;
+        const label = years > 0 ? (years + ' year' + (years>1?'s':'') + (rem > 0 ? ' ' + rem + ' month' + (rem>1?'s':'') : '')) : (months + ' month' + (months!==1?'s':''));
+        return months < 60 ? (
+          <div className="address-warning">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+            You have lived here for <strong>{label}</strong>. BS7858 requires a full 5-year address history — you will need to add your previous address(es) in the Address History step later.
+          </div>
+        ) : (
+          <div className="address-ok">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+            You have lived here for <strong>{label}</strong> — your current address covers your full 5-year BS7858 requirement.
+          </div>
+        );
+      })()}
       <div className="prepare-notice">
         <div className="prepare-notice-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
