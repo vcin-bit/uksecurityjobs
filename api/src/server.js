@@ -40,15 +40,15 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// All routes below require a valid Clerk token
+// Admin routes — require admin secret key only, no Clerk token needed
+app.use('/admin/api', requireAdmin);
+app.use('/admin/api', adminRoutes);
+
+// All candidate routes require a valid Clerk token
 app.use('/api', requireAuth);
 app.use('/api/candidates', candidateRoutes);
 app.use('/api/sia', siaRoutes);
 app.use('/api/profile', profileRoutes);
-
-// Admin routes — require admin secret key, not Clerk token
-app.use('/admin/api', requireAdmin);
-app.use('/admin/api', adminRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
