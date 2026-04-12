@@ -755,7 +755,7 @@ function SignUpPage() {
     try {
       const result = await clerk.client.signUp.attemptEmailAddressVerification({ code });
       await clerk.setActive({ session: result.createdSessionId });
-      window.location.href = '/profile';
+      setTimeout(() => { window.location.href = '/profile'; }, 500);
     } catch(err) { setError(err.errors?.[0]?.message || 'Invalid code. Please try again.'); }
     setLoading(false);
   };
@@ -814,7 +814,7 @@ function SignInPage() {
     try {
       const result = await clerk.client.signIn.create({ identifier: form.email, password: form.password });
       await clerk.setActive({ session: result.createdSessionId });
-      window.location.href = '/dashboard';
+      setTimeout(() => { window.location.href = '/dashboard'; }, 500);
     } catch(err) { setError(err.errors?.[0]?.message || 'Invalid email or password.'); }
     setLoading(false);
   };
