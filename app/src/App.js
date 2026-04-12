@@ -102,7 +102,7 @@ function StepShell({ step, total, title, why, children, onBack, onNext, nextLabe
       <div className="step-header">
         <div className="step-count">Step {step} of {total}</div>
         <h2 className="step-title">{title}</h2>
-        {why && <div className="step-why"><span className="why-icon">&#9432;</span>{why}</div>}
+        {why && <div className="step-why"><span className="why-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg></span>{why}</div>}
       </div>
       <div className="step-body">{children}</div>
       <div className="step-footer">
@@ -148,22 +148,22 @@ function Checkbox({ label, checked, onChange }) {
 function StepWelcome({ onNext, name }) {
   return (
     <div className="welcome-screen">
-      <div className="welcome-icon">&#128075;</div>
+      <div className="welcome-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg></div>
       <h1>Welcome, {name}.</h1>
       <p className="welcome-lead">You are about to build the most powerful security profile in the UK.</p>
       <div className="welcome-cards">
         <div className="wcard">
-          <div className="wcard-icon">&#9200;</div>
+          <div className="wcard-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
           <div className="wcard-title">Takes about 15 minutes</div>
           <div className="wcard-desc">You only ever do this once. Every future application takes seconds.</div>
         </div>
         <div className="wcard">
-          <div className="wcard-icon">&#128274;</div>
+          <div className="wcard-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
           <div className="wcard-title">Your data is secure</div>
           <div className="wcard-desc">Employers only see your profile when you apply. Nothing is shared without your consent.</div>
         </div>
         <div className="wcard">
-          <div className="wcard-icon">&#9889;</div>
+          <div className="wcard-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
           <div className="wcard-title">Faster vetting</div>
           <div className="wcard-desc">A complete profile means employers can start BS7858 vetting immediately — no delays, no chasing.</div>
         </div>
@@ -212,7 +212,7 @@ function StepSIA({ data, onChange, onBack, onNext }) {
               <Input type="date" value={lic.expiry} onChange={e=>updateLicence(i,'expiry',e.target.value)}/>
             </Field>
           </div>
-          {lic.number && <div className="pending-badge">&#9200; Pending verification — our team will check this against the SIA register within 24 hours</div>}
+          {lic.number && <div className="pending-badge">Pending verification — our team will check this against the SIA register within 24 hours</div>}
         </div>
       ))}
       {licences.length < 3 && (
@@ -636,7 +636,7 @@ function StepPhoto({ data, onChange, onBack, onNext }) {
           <input type="file" accept="image/*" onChange={handleFile} style={{display:'none'}}/>
         </label>
         <div className="photo-policy">
-          <div className="photo-policy-title">&#128274; Your photo is never shown to employers</div>
+          <div className="photo-policy-title">Your photo is never shown to employers</div>
           <p>We made this decision deliberately. Employers on this platform hire based on your SIA licence, your vettability score, your employment history and your professional record — not how you look.</p>
           <p>This protects you from unconscious bias and keeps every hiring decision focused on what actually matters: your credentials and your character.</p>
           <p><strong>This is how professional recruitment should work.</strong></p>
@@ -650,7 +650,7 @@ function StepPhoto({ data, onChange, onBack, onNext }) {
 function StepComplete({ name }) {
   return (
     <div className="complete-screen">
-      <div className="complete-icon">&#127881;</div>
+      <div className="complete-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg></div>
       <h2>Profile Submitted</h2>
       <p>Well done, {name}. Your profile is now being reviewed by our team.</p>
       <div className="complete-next">
@@ -742,7 +742,7 @@ function Dashboard() {
       <Nav/>
       <div className="dashboard">
         <div className="dash-header">
-          <div className="dash-greeting">Welcome back, {user?.firstName || 'Officer'} &#128075;</div>
+          <div className="dash-greeting">Welcome back, {user?.firstName || 'Officer'}</div>
           <div className="dash-sub">Complete your profile to unlock security vacancies and exclusive member benefits.</div>
         </div>
 
@@ -784,11 +784,11 @@ function Dashboard() {
         {/* INFO CARDS */}
         <div className="dash-info">
           <div className="info-card">
-            <div className="info-card-icon">&#9200;</div>
+            <div className="info-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
             <div><strong>SIA Verification</strong><p>Your SIA licence will be verified within 24 hours of submission.</p></div>
           </div>
           <div className="info-card">
-            <div className="info-card-icon">&#128274;</div>
+            <div className="info-card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
             <div><strong>Profile Security</strong><p>Your data is encrypted and only shared with employers you apply to.</p></div>
           </div>
         </div>
