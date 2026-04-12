@@ -1312,6 +1312,21 @@ function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
             <Input type="text" placeholder="e.g. Contract ended, career progression, redundancy" value={job.reason||''} onChange={v=>update(i,'reason',v)}/>
           </Field>}
 
+          {/* Per-entry coverage */}
+          {job.fromMonth && job.fromYear && (() => {
+            const from = new Date(job.fromYear+'-'+job.fromMonth+'-01');
+            const to = job.current ? new Date() : (job.toMonth && job.toYear ? new Date(job.toYear+'-'+job.toMonth+'-01') : null);
+            if (!to || to <= from) return null;
+            const totalMonths = Math.round((to - from) / (1000*60*60*24*30.5));
+            const y = Math.floor(totalMonths/12), m = totalMonths%12;
+            const label = y > 0 ? y+' year'+(y>1?'s':'')+(m>0?' '+m+' month'+(m>1?'s':''):'') : totalMonths+' month'+(totalMonths!==1?'s':'');
+            return (
+              <div style={{marginTop:'0.75rem',background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:'8px',padding:'0.6rem 0.875rem',fontSize:'0.78rem',color:'#15803d',fontWeight:500}}>
+                This position covers <strong>{label}</strong> of your 5-year requirement
+              </div>
+            );
+          })()}
+
           {/* Save this position button */}
           <div style={{marginTop:'1.25rem',paddingTop:'1rem',borderTop:'1px solid #f1f5f9',display:'flex',alignItems:'center',gap:'1rem'}}>
             {!isIncomplete(job) ? (
@@ -1471,6 +1486,146 @@ function StepComplete({ name }) {
 }
 
 
+
+// ── COVER LETTER BUILDER ──
+function CoverLetterBuilder({ profileData, userName }) {
+  const [form, setForm] = React.useState({ role:'', employer:'', strength:'', extra:'' });
+  const [letter, setLetter] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [generated, setGenerated] = React.useState(false);
+
+  const p = profileData?.personal || {};
+  const licences = profileData?.licences || [];
+  const employment = profileData?.employment || [];
+  const qualifications = profileData?.qualifications || {};
+  const driving = profileData?.driving || {};
+  const background = profileData?.background || {};
+
+  const generate = async () => {
+    setLoading(true);
+    setGenerated(false);
+    try {
+      const profile = {
+        name: userName || [p.first_name, p.last_name].filter(Boolean).join(' ') || 'the candidate',
+        licences: licences.map(l => l.licence_type||l.type).join(', '),
+        employment: employment.slice(0,3).map(j => `${j.role||j.job_title} at ${j.employer||j.employer_name} (${j.sector||'security'})`).join('; '),
+        firstAid: qualifications.has_efaw || qualifications.has_faw ? 'First Aid certified' : '',
+        driving: driving.hasLicence === 'yes' ? 'Full UK driving licence' : '',
+        forces: background.served_in_forces ? `Former ${background.forces_branch}` : '',
+        clearance: qualifications.security_clearance && qualifications.security_clearance !== 'None' ? `${qualifications.security_clearance} security clearance` : '',
+      };
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 800,
+          messages: [{
+            role: 'user',
+            content: `Write a professional cover letter for a UK security officer applying for the following role.
+
+Candidate profile:
+- Name: ${profile.name}
+- SIA Licences: ${profile.licences || 'SIA licensed professional'}
+- Recent experience: ${profile.employment || 'Security industry professional'}
+- Additional: ${[profile.firstAid, profile.driving, profile.forces, profile.clearance].filter(Boolean).join(', ') || 'Experienced security professional'}
+
+Application details:
+- Role applying for: ${form.role || 'Security Officer'}
+- Employer/company: ${form.employer || 'the organisation'}
+- Their strongest quality: ${form.strength || 'reliability and professionalism'}
+- Anything else to highlight: ${form.extra || ''}
+
+Write a concise, professional 3-paragraph cover letter. Paragraph 1: introduce and state the role. Paragraph 2: relevant experience and strengths. Paragraph 3: enthusiasm and call to action. Use professional UK English. No spelling or grammar errors. Do not use generic phrases like "I am writing to apply". Return only the letter text, starting with "Dear Hiring Manager," and ending with "Yours sincerely," followed by the name.`
+          }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text;
+      if (text) { setLetter(text); setGenerated(true); }
+    } catch(e) { console.error(e); }
+    setLoading(false);
+  };
+
+  const polish = async () => {
+    if (!letter) return;
+    setLoading(true);
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 800,
+          messages: [{
+            role: 'user',
+            content: `Fix any spelling and grammar errors in this cover letter and make it more impactful while keeping it professional and authentic. Return only the improved letter:\n\n${letter}`
+          }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text;
+      if (text) setLetter(text);
+    } catch(e) { console.error(e); }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{background:'#fff',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'1.75rem',marginTop:'1.5rem'}}>
+      <div style={{display:'flex',alignItems:'center',gap:'0.75rem',marginBottom:'0.5rem'}}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222'}}>Cover Letter Builder</div>
+        <span style={{background:'#eff6ff',color:'#1a52a8',fontSize:'0.68rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',letterSpacing:'0.05em'}}>AI</span>
+      </div>
+      <div style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1.25rem'}}>Answer 4 quick questions and get a professional cover letter instantly. Your profile data is used automatically.</div>
+
+      <div style={{display:'grid',gap:'0.875rem',marginBottom:'1.25rem'}}>
+        <Field label="Role you are applying for *">
+          <Input type="text" placeholder="e.g. Door Supervisor, CCTV Operator, Security Manager" value={form.role} onChange={v=>setForm({...form,role:v})}/>
+        </Field>
+        <Field label="Company or employer name">
+          <Input type="text" placeholder="e.g. Securitas, G4S, or the venue name" value={form.employer} onChange={v=>setForm({...form,employer:v})}/>
+        </Field>
+        <Field label="Your strongest quality for this role">
+          <Input type="text" placeholder="e.g. 10 years experience in retail security, calm under pressure" value={form.strength} onChange={v=>setForm({...form,strength:v})}/>
+        </Field>
+        <Field label="Anything else you want to highlight?" hint="Optional">
+          <Input type="text" placeholder="e.g. Available immediately, willing to work nights and weekends" value={form.extra} onChange={v=>setForm({...form,extra:v})}/>
+        </Field>
+      </div>
+
+      <button type="button" onClick={generate} disabled={loading || !form.role}
+        style={{background:form.role?'#1a52a8':'#e2e8f0',color:form.role?'#fff':'#94a3b8',border:'none',borderRadius:'8px',padding:'0.75rem 1.5rem',fontSize:'0.9rem',fontWeight:700,cursor:form.role?'pointer':'not-allowed',fontFamily:'inherit',width:'100%',marginBottom:'1rem'}}>
+        {loading ? 'Generating...' : generated ? 'Regenerate Cover Letter' : 'Generate Cover Letter'}
+      </button>
+
+      {letter && (
+        <div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'0.75rem'}}>
+            <div style={{fontWeight:600,fontSize:'0.85rem',color:'#0b1222'}}>Your Cover Letter</div>
+            <div style={{display:'flex',gap:'0.5rem'}}>
+              <button type="button" onClick={polish} disabled={loading} style={{background:'#f0f4ff',color:'#1a52a8',border:'1px solid #bfdbfe',borderRadius:'6px',padding:'0.35rem 0.75rem',fontSize:'0.75rem',fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+                ✦ Polish
+              </button>
+              <button type="button" onClick={()=>navigator.clipboard.writeText(letter)} style={{background:'#f1f5f9',color:'#334155',border:'1px solid #e2e8f0',borderRadius:'6px',padding:'0.35rem 0.75rem',fontSize:'0.75rem',fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+                Copy
+              </button>
+            </div>
+          </div>
+          <textarea
+            className="f-textarea"
+            rows={14}
+            value={letter}
+            onChange={e=>setLetter(e.target.value)}
+            style={{fontFamily:'Georgia,serif',fontSize:'0.82rem',lineHeight:'1.7',color:'#1a1a2e'}}
+          />
+          <div style={{fontSize:'0.72rem',color:'#94a3b8',marginTop:'0.4rem'}}>You can edit this letter directly. Click Polish to fix grammar and improve impact.</div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── PROFILE BUILDER ──
 function ProfileBuilder() {
@@ -1821,11 +1976,14 @@ function CVPanel({ profileData, userName, mobileOpen, onMobileClose }) {
   const panelContent = (
     <>
       <div className="cv-panel-tabs">
-        <button className={'cv-tab'+(activeTab==='cv'?' active':'')} onClick={()=>setActiveTab('cv')}>Candidate CV</button>
-        <button className={'cv-tab'+(activeTab==='vetting'?' active':'')} onClick={()=>setActiveTab('vetting')}>Vetting Profile</button>
+        <button className={'cv-tab'+(activeTab==='cv'?' active':'')} onClick={()=>setActiveTab('cv')}>CV</button>
+        <button className={'cv-tab'+(activeTab==='vetting'?' active':'')} onClick={()=>setActiveTab('vetting')}>Vetting</button>
+        <button className={'cv-tab'+(activeTab==='letter'?' active':'')} onClick={()=>setActiveTab('letter')}>Cover Letter</button>
       </div>
       <div className="cv-panel-body">
-        {activeTab === 'cv' ? <CandidateCV/> : <VettingProfile/>}
+        {activeTab === 'cv' ? <CandidateCV/> : activeTab === 'vetting' ? <VettingProfile/> : (
+          <CoverLetterBuilder profileData={profileData} userName={userName}/>
+        )}
       </div>
       <div className="cv-actions">
         <button className="cv-dl-btn primary" onClick={()=>window.print()}>Download CV</button>
@@ -1907,17 +2065,25 @@ function Dashboard() {
   React.useEffect(() => {
     async function load() {
       try {
-        const [siaRes, personalRes, empRes, addrRes] = await Promise.allSettled([
+        const [siaRes, personalRes, empRes, addrRes, drivingRes, sectorsRes, qualsRes, bgRes] = await Promise.allSettled([
           apiRequest('/api/sia', 'GET', null, getToken),
           apiRequest('/api/candidates/me/personal', 'GET', null, getToken),
           apiRequest('/api/profile/employment', 'GET', null, getToken),
           apiRequest('/api/profile/addresses', 'GET', null, getToken),
+          apiRequest('/api/profile/driving', 'GET', null, getToken),
+          apiRequest('/api/profile/sectors', 'GET', null, getToken),
+          apiRequest('/api/profile/qualifications', 'GET', null, getToken),
+          apiRequest('/api/profile/background', 'GET', null, getToken),
         ]);
         setProfileData({
           licences: siaRes.status === 'fulfilled' ? siaRes.value.licences : [],
           personal: personalRes.status === 'fulfilled' ? personalRes.value.personal : null,
           employment: empRes.status === 'fulfilled' ? empRes.value.employment : [],
           addresses: addrRes.status === 'fulfilled' ? addrRes.value.addresses : [],
+          driving: drivingRes.status === 'fulfilled' ? drivingRes.value.driving : null,
+          sectors: sectorsRes.status === 'fulfilled' ? sectorsRes.value.sectors : null,
+          qualifications: qualsRes.status === 'fulfilled' ? qualsRes.value.qualifications : null,
+          background: bgRes.status === 'fulfilled' ? bgRes.value.background : null,
         });
       } catch(err) { console.error('Dashboard load error:', err); }
     }
@@ -1926,11 +2092,11 @@ function Dashboard() {
 
   const sections = [
     { name:'SIA Licence', short:'SIA', complete: profileData?.licences?.[0]?.verified === true, pending: !!profileData?.licences?.[0] && !profileData?.licences?.[0]?.verified, started: !!profileData?.licences?.[0] },
-    { name:'Personal Details', short:'Info', complete: !!profileData?.personal?.phone, started: !!profileData?.personal },
-    { name:'Driving & Transport', short:'Drive', complete: false, started: false },
-    { name:'Sectors & Availability', short:'Work', complete: false, started: false },
-    { name:'Qualifications', short:'Quals', complete: false, started: false },
-    { name:'Criminal Record', short:'Record', complete: false, started: false },
+    { name:'Personal Details', short:'Info', complete: !!(profileData?.personal?.phone || profileData?.personal?.first_name), started: !!profileData?.personal },
+    { name:'Driving & Transport', short:'Drive', complete: !!profileData?.driving, started: !!profileData?.driving },
+    { name:'Sectors & Availability', short:'Work', complete: !!(profileData?.sectors?.sectors?.length || profileData?.sectors?.preferred_shift), started: !!profileData?.sectors },
+    { name:'Qualifications', short:'Quals', complete: !!profileData?.qualifications, started: !!profileData?.qualifications },
+    { name:'Criminal Record', short:'Record', complete: !!(profileData?.background?.has_criminal_record !== undefined || profileData?.background?.has_criminal_record !== null) && !!profileData?.background, started: !!profileData?.background },
     { name:'Work History', short:'Work H', complete: profileData?.employment?.length > 0, started: !!profileData?.employment?.length },
     { name:'Photo', short:'Photo', complete: false, started: false },
     { name:'Address History', short:'Addr', complete: profileData?.addresses?.length > 0, started: !!profileData?.addresses?.length },
