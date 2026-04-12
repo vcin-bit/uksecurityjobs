@@ -292,26 +292,27 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
 
   // Gap detection — build timeline and find gaps
   const getGaps = () => {
-    if (!form.movedIn) return [];
+    if (!movedInDate) return [];
     const fiveYearsAgo = new Date();
     fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
 
-    // Build list of address periods within 5 year window
     const periods = [];
 
     // Current address
     periods.push({
-      start: new Date(form.movedIn + '-01'),
+      start: new Date(movedInDate + '-01'),
       end: new Date(),
       label: 'Current address'
     });
 
-    // Previous addresses
+    // Previous addresses — use fromYear/fromMonth and toYear/toMonth
     form.prevAddresses.forEach((addr, i) => {
-      if (addr.from && addr.to) {
+      const from = addr.fromYear && addr.fromMonth ? `${addr.fromYear}-${addr.fromMonth}` : addr.from || '';
+      const to = addr.toYear && addr.toMonth ? `${addr.toYear}-${addr.toMonth}` : addr.to || '';
+      if (from && to) {
         periods.push({
-          start: new Date(addr.from + '-01'),
-          end: new Date(addr.to + '-01'),
+          start: new Date(from + '-01'),
+          end: new Date(to + '-01'),
           label: `Previous address ${i + 1} (${addr.line1 || 'no address entered'})`
         });
       }
@@ -377,8 +378,22 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
     return y > 0 ? (y + ' yr' + (y>1?'s':'') + (m>0?' '+m+' mo':'')) : (months + ' month' + (months!==1?'s':''));
   };
 
+  // Mandatory field validation
+  const missingFields = [];
+  if (!form.phone?.trim()) missingFields.push('Phone number');
+  if (!form.dobDay || !form.dobMonth || !form.dobYear) missingFields.push('Date of birth');
+  if (!form.ni?.trim()) missingFields.push('National Insurance number');
+  if (!form.address1?.trim()) missingFields.push('Address line 1');
+  if (!form.town?.trim()) missingFields.push('Town / City');
+  if (!form.postcode?.trim()) missingFields.push('Postcode');
+  if (!movedInDate) missingFields.push('Month moved in');
+  if (!form.siaAddress) missingFields.push('SIA licence address confirmation');
+  if (!form.dvlaAddress) missingFields.push('Driving licence address confirmation');
+
+  const canSave = missingFields.length === 0 && !hasUnexplainedGaps;
+
   const save = () => {
-    if (hasUnexplainedGaps) return;
+    if (!canSave) return;
     onChange({ personal: form });
     onNext();
   };
@@ -386,11 +401,18 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
   return (
     <StepShell step={3} total={11} title="Personal Details"
       why="Employers need to be able to contact you quickly. A complete personal profile also means vetting can start without any back-and-forth."
-      onBack={onBack} onNext={save} nextLabel={hasUnexplainedGaps ? 'Explain all gaps to continue' : 'Save & Continue'}>
+      onBack={onBack} onNext={save} nextLabel={!canSave ? 'Complete all required fields' : 'Save & Continue'}>
+
+      {missingFields.length > 0 && (
+        <div style={{background:'#fef9c3',border:'1px solid #fde047',borderRadius:'8px',padding:'0.875rem 1rem',marginBottom:'1.25rem'}}>
+          <div style={{fontWeight:700,fontSize:'0.82rem',color:'#854d0e',marginBottom:'0.4rem'}}>Required fields missing:</div>
+          <div style={{fontSize:'0.8rem',color:'#854d0e'}}>{missingFields.join(' · ')}</div>
+        </div>
+      )}
 
       <div className="field-row">
-        <Field label="Phone Number"><Input type="tel" placeholder="07700 000000" value={form.phone} onChange={v=>u('phone',v)}/></Field>
-        <Field label="Date of Birth">
+        <Field label="Phone Number *"><Input type="tel" placeholder="07700 000000" value={form.phone} onChange={v=>u('phone',v)}/></Field>
+        <Field label="Date of Birth *">
           <div className="field-row" style={{gap:'0.5rem',marginBottom:0}}>
             <Select value={form.dobDay} onChange={v=>u('dobDay',v)}>
               <option value="">Day</option>
@@ -405,7 +427,7 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
         </Field>
       </div>
       <div className="field-row">
-        <Field label="National Insurance Number"><Input type="text" placeholder="AB 12 34 56 C" value={form.ni} onChange={v=>u('ni',v)}/></Field>
+        <Field label="National Insurance Number *"><Input type="text" placeholder="AB 12 34 56 C" value={form.ni} onChange={v=>u('ni',v)}/></Field>
         <Field label="Gender" hint="Optional — equal opportunities monitoring only">
           <Select value={form.gender} onChange={v=>u('gender',v)}>
             <option value="">Prefer not to say</option>
@@ -417,15 +439,15 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
       <div className="divider"></div>
       <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'1rem'}}>Current Address</div>
 
-      <Field label="Address Line 1"><Input type="text" placeholder="House number and street name" value={form.address1} onChange={v=>u('address1',v)}/></Field>
-      <Field label="Address Line 2" hint="Flat, apartment, building name (if applicable)"><Input type="text" placeholder="Optional" value={form.address2} onChange={v=>u('address2',v)}/></Field>
+      <Field label="Address Line 1 *"><Input type="text" placeholder="House number and street name" value={form.address1} onChange={v=>u('address1',v)}/></Field>
+      <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={form.address2} onChange={v=>u('address2',v)}/></Field>
       <div className="field-row">
-        <Field label="Town / City"><Input type="text" placeholder="London" value={form.town} onChange={v=>u('town',v)}/></Field>
+        <Field label="Town / City *"><Input type="text" placeholder="London" value={form.town} onChange={v=>u('town',v)}/></Field>
         <Field label="County"><Input type="text" placeholder="Greater London" value={form.county} onChange={v=>u('county',v)}/></Field>
-        <Field label="Postcode"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={v=>u('postcode',v)}/></Field>
+        <Field label="Postcode *"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={v=>u('postcode',v)}/></Field>
       </div>
 
-      <Field label="Month moved in">
+      <Field label="Month moved in *">
         <div className="field-row" style={{gap:'0.5rem',marginBottom:0}}>
           <Select value={form.movedInMonth} onChange={v=>{const y=form.movedInYear; setForm(prev=>({...prev,movedInMonth:v,movedIn:y?y+'-'+v:''}));}}>
             <option value="">Month</option>
