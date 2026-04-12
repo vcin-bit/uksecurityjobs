@@ -2,19 +2,33 @@ const express = require('express');
 const router = express.Router();
 const { supabase, encrypt, decrypt, auditLog } = require('../lib/supabase');
 
-// GET /api/candidates/me — get the current candidate's profile
+// GET /api/candidates/me — get the current candidate's profile, create if doesn't exist
 router.get('/me', async (req, res) => {
   try {
-    const { data: candidate, error } = await supabase
+    let { data: candidate, error } = await supabase
       .from('candidates')
       .select('*')
       .eq('clerk_user_id', req.userId)
       .single();
 
+    // Auto-create candidate record on first login if it doesn't exist
     if (error && error.code === 'PGRST116') {
-      return res.status(404).json({ error: 'Profile not found' });
+      const { data: newCandidate, error: createError } = await supabase
+        .from('candidates')
+        .insert({
+          clerk_user_id: req.userId,
+          email: req.userEmail || '',
+          gdpr_consent: false,
+          profile_step: 0
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+      candidate = newCandidate;
+    } else if (error) {
+      throw error;
     }
-    if (error) throw error;
 
     await auditLog({
       tableName: 'candidates',
