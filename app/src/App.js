@@ -227,8 +227,11 @@ function StepSIA({ data, onChange, onBack, onNext }) {
 
 // ── STEP 3: PERSONAL DETAILS ──
 function StepPersonal({ data, onChange, onBack, onNext }) {
-  const [form, setForm] = useState(data.personal || { phone:'', dob:'', gender:'', ni:'', address1:'', address2:'', town:'', county:'', postcode:'', movedIn:'', movedOut:'', currentAddr:'', siaAddress:'', dvlaAddress:'' });
-  const u = (f,v) => setForm({...form,[f]:v});
+  const [form, setForm] = useState(data.personal || { phone:'', dob:'', gender:'', ni:'', address1:'', address2:'', town:'', county:'', postcode:'', movedIn:'', movedOut:'', currentAddr:'', siaAddress:'', dvlaAddress:'', prevAddresses:[] });
+  const u = (f,v) => setForm(prev => ({...prev,[f]:v}));
+  const addPrevAddress = () => setForm(prev => ({...prev, prevAddresses:[...(prev.prevAddresses||[]),{line1:'',line2:'',town:'',county:'',postcode:'',from:'',to:''}]}));
+  const updatePrevAddr = (i,f,v) => setForm(prev => { const arr=[...(prev.prevAddresses||[])]; arr[i]={...arr[i],[f]:v}; return {...prev,prevAddresses:arr}; });
+  const removePrevAddr = (i) => setForm(prev => ({...prev, prevAddresses:(prev.prevAddresses||[]).filter((_,idx)=>idx!==i)}));
   const save = () => { onChange({ personal: form }); onNext(); };
   return (
     <StepShell step={3} total={11} title="Personal Details"
@@ -279,7 +282,7 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
         return months < 60 ? (
           <div className="address-warning">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
-            You have lived here for <strong>{label}</strong>. BS7858 requires a full 5-year address history — you will need to add your previous address(es) in the Address History step later.
+            You have lived here for <strong>{label}</strong>. BS7858 requires a full 5-year address history — add your previous address(es) below.
           </div>
         ) : (
           <div className="address-ok">
@@ -287,6 +290,37 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
             You have lived here for <strong>{label}</strong> — your current address covers your full 5-year BS7858 requirement.
           </div>
         );
+      })()}
+
+      {/* Previous addresses if less than 5 years at current address */}
+      {form.movedIn && form.currentAddr === 'yes' && (() => {
+        const months = Math.floor((new Date() - new Date(form.movedIn + '-01')) / (1000 * 60 * 60 * 24 * 30.5));
+        return months < 60 ? (
+          <div style={{marginTop:'1.5rem'}}>
+            <div style={{fontWeight:700,fontSize:'0.9rem',marginBottom:'0.75rem',color:'#0b1222'}}>Previous Addresses</div>
+            <div style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1rem'}}>Add every address you have lived at for the past 5 years with no gaps.</div>
+            {(form.prevAddresses||[]).map((addr,i) => (
+              <div key={i} className="history-block">
+                <div className="history-block-header">
+                  <span>Previous Address {i+1}</span>
+                  <button className="btn-remove" onClick={()=>removePrevAddr(i)}>Remove</button>
+                </div>
+                <Field label="Address Line 1"><Input type="text" placeholder="House number and street" value={addr.line1} onChange={e=>updatePrevAddr(i,'line1',e.target.value)}/></Field>
+                <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={addr.line2} onChange={e=>updatePrevAddr(i,'line2',e.target.value)}/></Field>
+                <div className="field-row">
+                  <Field label="Town / City"><Input type="text" value={addr.town} onChange={e=>updatePrevAddr(i,'town',e.target.value)}/></Field>
+                  <Field label="County"><Input type="text" value={addr.county} onChange={e=>updatePrevAddr(i,'county',e.target.value)}/></Field>
+                  <Field label="Postcode"><Input type="text" value={addr.postcode} onChange={e=>updatePrevAddr(i,'postcode',e.target.value)}/></Field>
+                </div>
+                <div className="field-row">
+                  <Field label="Move-in Date"><Input type="month" value={addr.from} onChange={e=>updatePrevAddr(i,'from',e.target.value)}/></Field>
+                  <Field label="Move-out Date"><Input type="month" value={addr.to} onChange={e=>updatePrevAddr(i,'to',e.target.value)}/></Field>
+                </div>
+              </div>
+            ))}
+            <button className="btn-add" onClick={addPrevAddress}>+ Add Previous Address</button>
+          </div>
+        ) : null;
       })()}
 
       <div className="divider"></div>
