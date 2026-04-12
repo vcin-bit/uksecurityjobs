@@ -7,7 +7,9 @@ const rateLimit = require('express-rate-limit');
 const candidateRoutes = require('./routes/candidates');
 const siaRoutes = require('./routes/sia');
 const profileRoutes = require('./routes/profile');
+const adminRoutes = require('./routes/admin');
 const { requireAuth } = require('./middleware/auth');
+const { requireAdmin } = require('./middleware/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -43,6 +45,10 @@ app.use('/api', requireAuth);
 app.use('/api/candidates', candidateRoutes);
 app.use('/api/sia', siaRoutes);
 app.use('/api/profile', profileRoutes);
+
+// Admin routes — require admin secret key, not Clerk token
+app.use('/admin/api', requireAdmin);
+app.use('/admin/api', adminRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
