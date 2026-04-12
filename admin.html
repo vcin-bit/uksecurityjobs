@@ -5,337 +5,459 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin — UKSecurityJobs</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; color: #0f172a; min-height: 100vh; }
-  .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0b1222; }
-  .login-card { background: #fff; border-radius: 12px; padding: 2.5rem; width: 100%; max-width: 400px; }
-  .login-logo { font-size: 1.3rem; font-weight: 800; margin-bottom: 1.5rem; }
-  .login-logo .uk { color: #1a52a8; } .login-logo .sec { color: #0b1222; } .login-logo .job { color: #1a52a8; }
-  .login-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }
-  .login-sub { font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem; }
-  .login-input { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; margin-bottom: 1rem; }
-  .login-btn { width: 100%; padding: 0.75rem; background: #1a52a8; color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
-  .login-error { background: #fef2f2; color: #dc2626; padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem; display: none; }
-  .app { display: none; }
-  .app.visible { display: flex; min-height: 100vh; }
-  .sidebar { width: 220px; background: #0b1222; color: #fff; padding: 1.5rem 0; flex-shrink: 0; position: fixed; height: 100vh; overflow-y: auto; }
-  .sidebar-logo { padding: 0 1.5rem 1.5rem; font-size: 1rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.08); }
-  .sidebar-logo .uk { color: #4d8de8; } .sidebar-logo .sec { color: #fff; } .sidebar-logo .job { color: #4d8de8; }
-  .sidebar-section { padding: 1rem 1.5rem 0.5rem; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; color: #64748b; text-transform: uppercase; }
-  .sidebar-link { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1.5rem; font-size: 0.88rem; color: #94a3b8; cursor: pointer; transition: all 0.15s; border-left: 3px solid transparent; }
-  .sidebar-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
-  .sidebar-link.active { color: #fff; background: rgba(26,82,168,0.3); border-left-color: #1a52a8; }
-  .sidebar-badge { margin-left: auto; background: #dc2626; color: #fff; font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 999px; min-width: 18px; text-align: center; }
-  .main { margin-left: 220px; flex: 1; padding: 2rem; }
-  .page-title { font-size: 1.4rem; font-weight: 700; color: #0b1222; margin-bottom: 0.25rem; }
-  .page-sub { font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem; }
-  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
-  .stat-card { background: #fff; border-radius: 10px; padding: 1.25rem; border: 1px solid #e2e8f0; }
-  .stat-label { font-size: 0.78rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
-  .stat-value { font-size: 2rem; font-weight: 800; color: #0b1222; }
-  .stat-value.blue { color: #1a52a8; } .stat-value.green { color: #10b981; } .stat-value.red { color: #dc2626; }
-  .card { background: #fff; border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 1.5rem; }
-  .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
-  .card-title { font-size: 0.95rem; font-weight: 700; }
-  .card-count { font-size: 0.8rem; color: #64748b; }
-  table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; padding: 0.75rem 1.25rem; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
-  td { padding: 0.875rem 1.25rem; font-size: 0.875rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #f8fafc; }
-  .badge { display: inline-flex; align-items: center; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
-  .badge-green { background: #dcfce7; color: #16a34a; } .badge-yellow { background: #fef9c3; color: #a16207; }
-  .badge-red { background: #fef2f2; color: #dc2626; } .badge-blue { background: #dbeafe; color: #1d4ed8; }
-  .btn { padding: 0.4rem 0.9rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; }
-  .btn-verify { background: #10b981; color: #fff; } .btn-reject { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-  .btn-view { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
-  .panel-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; }
-  .panel-overlay.open { display: flex; align-items: flex-start; justify-content: flex-end; }
-  .panel { background: #fff; width: 600px; max-width: 95vw; height: 100vh; overflow-y: auto; padding: 1.5rem; }
-  .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0; }
-  .panel-title { font-size: 1.1rem; font-weight: 700; }
-  .panel-close { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #64748b; }
-  .panel-section { margin-bottom: 1.25rem; }
-  .panel-section-title { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #f1f5f9; }
-  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-  .detail-item label { display: block; font-size: 0.72rem; color: #94a3b8; font-weight: 600; margin-bottom: 0.2rem; text-transform: uppercase; }
-  .detail-item span { font-size: 0.875rem; color: #0f172a; font-weight: 500; }
-  .sensitive { font-family: monospace; background: #f1f5f9; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
-  .section { display: none; } .section.active { display: block; }
-  .empty { text-align: center; padding: 3rem; color: #94a3b8; font-size: 0.9rem; }
-  .loading { text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.85rem; }
-  .btn-row { display: flex; gap: 0.5rem; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;background:#f9fafb;color:#0b1222;min-height:100vh;-webkit-font-smoothing:antialiased}
+:root{--blue:#1a52a8;--navy:#0b1222;--border:#e2e8f0;--bg:#f9fafb;--body:#4a5568;--green:#10b981;--amber:#f59e0b;--red:#dc2626}
+
+/* LOGIN */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+.login-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:2.5rem;width:100%;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,0.06);}
+.login-logo{font-size:1.3rem;font-weight:800;letter-spacing:0.01em;margin-bottom:2rem;}
+.login-logo .uk{color:var(--blue);}.login-logo .sec{color:var(--navy);}.login-logo .job{color:var(--blue);}
+.login-title{font-size:1.25rem;font-weight:700;margin-bottom:0.4rem;}
+.login-sub{font-size:0.875rem;color:var(--body);margin-bottom:1.75rem;}
+.login-label{display:block;font-size:0.8rem;font-weight:600;color:var(--navy);margin-bottom:0.4rem;}
+.login-input{width:100%;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.95rem;font-family:inherit;transition:border-color 0.15s;margin-bottom:1rem;}
+.login-input:focus{outline:none;border-color:var(--blue);}
+.login-btn{width:100%;padding:0.8rem;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background 0.15s;}
+.login-btn:hover{background:#1545a0;}
+.login-error{background:#fef2f2;color:var(--red);border:1px solid #fecaca;padding:0.75rem 1rem;border-radius:8px;font-size:0.85rem;margin-bottom:1rem;display:none;}
+.login-badge{display:inline-flex;align-items:center;gap:0.4rem;background:#f0f4ff;color:var(--blue);font-size:0.75rem;font-weight:600;padding:0.3rem 0.75rem;border-radius:999px;margin-bottom:1.5rem;}
+
+/* APP */
+.app{display:none;}
+.app.visible{display:block;}
+
+/* TOP NAV */
+.topnav{background:#fff;border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;position:sticky;top:0;z-index:100;}
+.topnav-inner{max-width:1200px;margin:0 auto;width:100%;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;}
+.topnav-logo{font-size:1.1rem;font-weight:800;letter-spacing:0.01em;}
+.topnav-logo .uk{color:var(--blue);}.topnav-logo .sec{color:var(--navy);}.topnav-logo .job{color:var(--blue);}
+.topnav-badge{background:#f0f4ff;color:var(--blue);font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:999px;letter-spacing:0.04em;margin-left:0.5rem;}
+.topnav-tabs{display:flex;gap:0.25rem;}
+.topnav-tab{padding:0.45rem 1rem;border-radius:6px;font-size:0.85rem;font-weight:500;color:var(--body);cursor:pointer;border:none;background:none;font-family:inherit;transition:all 0.15s;display:flex;align-items:center;gap:0.4rem;}
+.topnav-tab:hover{background:#f1f5f9;color:var(--navy);}
+.topnav-tab.active{background:#eff6ff;color:var(--blue);font-weight:600;}
+.topnav-right{display:flex;align-items:center;gap:1rem;}
+.queue-pill{background:#fef2f2;color:var(--red);font-size:0.78rem;font-weight:700;padding:0.25rem 0.65rem;border-radius:999px;cursor:pointer;}
+.queue-pill.hidden{display:none;}
+.signout-btn{font-size:0.82rem;color:var(--body);cursor:pointer;border:none;background:none;font-family:inherit;padding:0.4rem 0.75rem;border-radius:6px;}
+.signout-btn:hover{background:#f1f5f9;}
+
+/* MAIN */
+.main{max-width:1200px;margin:0 auto;padding:2rem;}
+
+/* PAGE HEADER */
+.page-hd{margin-bottom:1.75rem;}
+.page-title{font-size:1.4rem;font-weight:800;color:var(--navy);margin-bottom:0.25rem;}
+.page-sub{font-size:0.875rem;color:var(--body);}
+.page-sub a{color:var(--blue);}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.75rem;}
+.stat{background:#fff;border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;}
+.stat-label{font-size:0.75rem;font-weight:600;color:var(--body);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.6rem;}
+.stat-val{font-size:2.2rem;font-weight:900;color:var(--navy);line-height:1;}
+.stat-val.blue{color:var(--blue);}.stat-val.green{color:var(--green);}.stat-val.red{color:var(--red);}
+
+/* CARD */
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.5rem;}
+.card-hd{padding:1.1rem 1.5rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:0.95rem;font-weight:700;color:var(--navy);}
+.card-meta{font-size:0.8rem;color:var(--body);}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;padding:0.75rem 1.5rem;font-size:0.72rem;font-weight:700;color:var(--body);text-transform:uppercase;letter-spacing:0.06em;background:#f8fafc;border-bottom:1px solid var(--border);}
+td{padding:0.9rem 1.5rem;font-size:0.875rem;border-bottom:1px solid #f8fafc;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#fafbfc;}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:0.2rem 0.65rem;border-radius:999px;font-size:0.72rem;font-weight:700;letter-spacing:0.02em;}
+.badge-green{background:#dcfce7;color:#15803d;}
+.badge-amber{background:#fef9c3;color:#a16207;}
+.badge-red{background:#fef2f2;color:var(--red);}
+.badge-blue{background:#eff6ff;color:var(--blue);}
+.badge-grey{background:#f1f5f9;color:#64748b;}
+
+/* BUTTONS */
+.btn{padding:0.4rem 0.9rem;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all 0.15s;}
+.btn-primary{background:var(--blue);color:#fff;}.btn-primary:hover{background:#1545a0;}
+.btn-success{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;}.btn-success:hover{background:#bbf7d0;}
+.btn-danger{background:#fef2f2;color:var(--red);border:1px solid #fecaca;}.btn-danger:hover{background:#fee2e2;}
+.btn-ghost{background:#f8fafc;color:var(--navy);border:1px solid var(--border);}.btn-ghost:hover{background:#f1f5f9;}
+.btn-row{display:flex;gap:0.4rem;align-items:center;}
+
+/* SECTION */
+.section{display:none;}.section.active{display:block;}
+
+/* EMPTY / LOADING */
+.empty{text-align:center;padding:3.5rem;color:#94a3b8;font-size:0.9rem;}
+.loading{text-align:center;padding:2.5rem;color:#94a3b8;font-size:0.875rem;}
+
+/* PANEL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(11,18,34,0.4);z-index:200;backdrop-filter:blur(2px);}
+.overlay.open{display:flex;justify-content:flex-end;}
+.panel{background:#fff;width:580px;max-width:95vw;height:100vh;overflow-y:auto;box-shadow:-4px 0 32px rgba(0,0,0,0.12);}
+.panel-hd{padding:1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:10;}
+.panel-title{font-size:1.1rem;font-weight:700;color:var(--navy);}
+.panel-sub{font-size:0.8rem;color:var(--body);margin-top:0.2rem;}
+.panel-close{background:none;border:none;cursor:pointer;color:#94a3b8;padding:0.25rem;font-size:1.3rem;line-height:1;}
+.panel-close:hover{color:var(--navy);}
+.panel-body{padding:1.5rem;}
+.panel-section{margin-bottom:1.75rem;}
+.panel-section-title{font-size:0.72rem;font-weight:700;color:var(--body);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.875rem;padding-bottom:0.5rem;border-bottom:1px solid #f1f5f9;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.875rem;}
+.detail{background:#f8fafc;border-radius:8px;padding:0.75rem;}
+.detail label{display:block;font-size:0.7rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.3rem;}
+.detail span{font-size:0.875rem;color:var(--navy);font-weight:500;}
+.sensitive{font-family:'SF Mono',Monaco,monospace;background:#f0f4ff;color:var(--blue);padding:0.15rem 0.45rem;border-radius:4px;font-size:0.78rem;}
+.criminal-box{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:1rem 1.25rem;}
+.criminal-box .panel-section-title{color:var(--red);border-color:#fecaca;}
+.job-item,.addr-item{padding:0.75rem 0;border-bottom:1px solid #f8fafc;}
+.job-item:last-child,.addr-item:last-child{border-bottom:none;}
+.job-title-row{font-weight:600;font-size:0.875rem;color:var(--navy);margin-bottom:0.2rem;}
+.job-meta{font-size:0.78rem;color:var(--body);}
+.licence-card{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:0.75rem;}
+.licence-card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;}
+
+@media(max-width:900px){.stats{grid-template-columns:1fr 1fr;}.topnav-tabs{display:none;}}
 </style>
 </head>
 <body>
 
-<div class="login-wrap" id="loginWrap">
+<!-- LOGIN -->
+<div class="login-page" id="loginPage">
   <div class="login-card">
     <div class="login-logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></div>
-    <div class="login-title">Admin Dashboard</div>
-    <div class="login-sub">Restricted access. Authorised personnel only.</div>
-    <div class="login-error" id="loginError">Incorrect password.</div>
-    <input type="password" class="login-input" id="adminPassword" placeholder="Admin password" onkeydown="if(event.key==='Enter')login()"/>
+    <div class="login-badge">Admin Access</div>
+    <div class="login-title">Sign in to Admin</div>
+    <div class="login-sub">Restricted to authorised Digital Software Group personnel only.</div>
+    <div class="login-error" id="loginError">Incorrect password. Please try again.</div>
+    <label class="login-label">Admin Password</label>
+    <input type="password" class="login-input" id="adminPw" placeholder="Enter password" onkeydown="if(event.key==='Enter')login()"/>
     <button class="login-btn" onclick="login()">Sign In</button>
   </div>
 </div>
 
+<!-- APP -->
 <div class="app" id="app">
-  <div class="sidebar">
-    <div class="sidebar-logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></div>
-    <div class="sidebar-section">Main</div>
-    <div class="sidebar-link active" onclick="showSection('dashboard',this)">Overview</div>
-    <div class="sidebar-link" onclick="showSection('verification',this)">SIA Verification <span class="sidebar-badge" id="queueBadge">0</span></div>
-    <div class="sidebar-link" onclick="showSection('candidates',this)">All Candidates</div>
-    <div class="sidebar-section">System</div>
-    <div class="sidebar-link" onclick="logout()">Sign Out</div>
+
+  <!-- NAV -->
+  <div class="topnav">
+    <div class="topnav-inner">
+      <div style="display:flex;align-items:center;gap:0.5rem">
+        <div class="topnav-logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></div>
+        <span class="topnav-badge">ADMIN</span>
+      </div>
+      <div class="topnav-tabs">
+        <button class="topnav-tab active" onclick="showSection('overview',this)">Overview</button>
+        <button class="topnav-tab" onclick="showSection('verification',this)">SIA Verification</button>
+        <button class="topnav-tab" onclick="showSection('candidates',this)">Candidates</button>
+      </div>
+      <div class="topnav-right">
+        <div class="queue-pill hidden" id="queuePill" onclick="showSection('verification',document.querySelectorAll('.topnav-tab')[1])">
+          <span id="queuePillCount">0</span> pending verification
+        </div>
+        <button class="signout-btn" onclick="logout()">Sign out</button>
+      </div>
+    </div>
   </div>
 
   <div class="main">
-    <div class="section active" id="section-dashboard">
-      <div class="page-title">Overview</div>
-      <div class="page-sub" id="dashDate"></div>
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-label">Total Candidates</div><div class="stat-value blue" id="statTotal">—</div></div>
-        <div class="stat-card"><div class="stat-label">Verified Licences</div><div class="stat-value green" id="statVerified">—</div></div>
-        <div class="stat-card"><div class="stat-label">Pending Verification</div><div class="stat-value red" id="statPending">—</div></div>
-        <div class="stat-card"><div class="stat-label">Complete Profiles</div><div class="stat-value" id="statComplete">—</div></div>
+
+    <!-- OVERVIEW -->
+    <div class="section active" id="section-overview">
+      <div class="page-hd">
+        <div class="page-title">Overview</div>
+        <div class="page-sub" id="todayDate"></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="stat-label">Total Candidates</div><div class="stat-val blue" id="sTotal">—</div></div>
+        <div class="stat"><div class="stat-label">Verified Licences</div><div class="stat-val green" id="sVerified">—</div></div>
+        <div class="stat"><div class="stat-label">Pending Verification</div><div class="stat-val red" id="sPending">—</div></div>
+        <div class="stat"><div class="stat-label">Complete Profiles</div><div class="stat-val" id="sComplete">—</div></div>
       </div>
       <div class="card">
-        <div class="card-header"><div class="card-title">SIA Verification Queue</div><div class="card-count" id="queueCount"></div></div>
-        <div id="queueTableWrap"><div class="loading">Loading...</div></div>
+        <div class="card-hd">
+          <div class="card-title">SIA Verification Queue</div>
+          <div class="card-meta" id="overviewQueueMeta"></div>
+        </div>
+        <div id="overviewQueue"><div class="loading">Loading...</div></div>
       </div>
     </div>
 
+    <!-- VERIFICATION -->
     <div class="section" id="section-verification">
-      <div class="page-title">SIA Verification Queue</div>
-      <div class="page-sub">Verify each licence against the <a href="https://www.sia.homeoffice.gov.uk/Pages/licensing-check-licence.aspx" target="_blank" style="color:#1a52a8">SIA public register</a></div>
-      <div class="card"><div id="verificationTableWrap"><div class="loading">Loading...</div></div></div>
+      <div class="page-hd">
+        <div class="page-title">SIA Verification Queue</div>
+        <div class="page-sub">Check each licence at the <a href="https://www.sia.homeoffice.gov.uk/Pages/licensing-check-licence.aspx" target="_blank">SIA public register</a> before verifying.</div>
+      </div>
+      <div class="card">
+        <div id="verificationQueue"><div class="loading">Loading...</div></div>
+      </div>
     </div>
 
+    <!-- CANDIDATES -->
     <div class="section" id="section-candidates">
-      <div class="page-title">All Candidates</div>
-      <div class="page-sub">Every registered candidate on the platform</div>
-      <div class="card"><div id="candidatesTableWrap"><div class="loading">Loading...</div></div></div>
+      <div class="page-hd">
+        <div class="page-title">All Candidates</div>
+        <div class="page-sub">Every registered candidate on the platform.</div>
+      </div>
+      <div class="card">
+        <div id="candidatesList"><div class="loading">Loading...</div></div>
+      </div>
     </div>
+
   </div>
 </div>
 
-<div class="panel-overlay" id="panelOverlay" onclick="if(event.target===this)closePanel()">
+<!-- PANEL -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closePanel()">
   <div class="panel">
-    <div class="panel-header">
-      <div class="panel-title" id="panelTitle">Candidate Detail</div>
+    <div class="panel-hd">
+      <div>
+        <div class="panel-title" id="panelTitle">Candidate</div>
+        <div class="panel-sub" id="panelSub"></div>
+      </div>
       <button class="panel-close" onclick="closePanel()">&#x2715;</button>
     </div>
-    <div id="panelContent"><div class="loading">Loading...</div></div>
+    <div class="panel-body" id="panelBody"><div class="loading">Loading...</div></div>
   </div>
 </div>
 
 <script>
 const API = 'https://uksecurityjobs-api.onrender.com';
-let ADMIN_KEY = '';
-let queueData = [];
+let KEY = '';
+let queue = [];
 
-async function api(path, method='GET', body=null) {
-  const opts = { method, headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY } };
+async function req(path, method='GET', body=null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json', 'x-admin-key': KEY } };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(API + path, opts);
-  if (!res.ok) throw new Error(res.status);
-  return res.json();
+  const r = await fetch(API + path, opts);
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
 }
 
 function login() {
-  ADMIN_KEY = document.getElementById('adminPassword').value.trim();
-  fetch(API + '/debug/admin', {
-    headers: { 'x-admin-key': ADMIN_KEY }
-  }).then(r => r.json()).then(d => {
-    if (d.match) {
-      sessionStorage.setItem('adminKey', ADMIN_KEY);
-      document.getElementById('loginWrap').style.display = 'none';
-      document.getElementById('app').classList.add('visible');
-      document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-      loadStats(); loadQueue();
-    } else {
-      document.getElementById('loginError').style.display = 'block';
-    }
-  }).catch(() => {
-    document.getElementById('loginError').style.display = 'block';
-  });
+  KEY = document.getElementById('adminPw').value.trim();
+  fetch(API + '/debug/admin', { headers: { 'x-admin-key': KEY } })
+    .then(r => r.json()).then(d => {
+      if (d.match) {
+        sessionStorage.setItem('ak', KEY);
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('app').classList.add('visible');
+        document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+        init();
+      } else {
+        document.getElementById('loginError').style.display = 'block';
+      }
+    }).catch(() => { document.getElementById('loginError').style.display = 'block'; });
 }
 
-function logout() { sessionStorage.removeItem('adminKey'); location.reload(); }
+function logout() { sessionStorage.removeItem('ak'); location.reload(); }
 
 window.addEventListener('load', () => {
-  const saved = sessionStorage.getItem('adminKey');
-  if (saved) { ADMIN_KEY = saved; login(); }
+  const k = sessionStorage.getItem('ak');
+  if (k) { KEY = k; login(); }
 });
+
+async function init() { loadStats(); loadQueue(); }
 
 async function loadStats() {
   try {
-    const d = await api('/admin/api/stats');
-    document.getElementById('statTotal').textContent = d.total_candidates || 0;
-    document.getElementById('statVerified').textContent = d.verified_licences || 0;
-    document.getElementById('statPending').textContent = d.pending_verification || 0;
-    document.getElementById('statComplete').textContent = d.complete_profiles || 0;
-    document.getElementById('queueBadge').textContent = d.pending_verification || 0;
+    const d = await req('/admin/api/stats');
+    document.getElementById('sTotal').textContent = d.total_candidates ?? 0;
+    document.getElementById('sVerified').textContent = d.verified_licences ?? 0;
+    document.getElementById('sPending').textContent = d.pending_verification ?? 0;
+    document.getElementById('sComplete').textContent = d.complete_profiles ?? 0;
+    const pill = document.getElementById('queuePill');
+    const pending = d.pending_verification ?? 0;
+    document.getElementById('queuePillCount').textContent = pending;
+    pill.classList.toggle('hidden', pending === 0);
   } catch(e) {}
 }
 
 async function loadQueue() {
   try {
-    const d = await api('/admin/api/sia/queue');
-    queueData = d.queue || [];
-    document.getElementById('queueCount').textContent = queueData.length + ' pending';
-    document.getElementById('queueBadge').textContent = queueData.length;
-    const html = renderQueueTable(queueData);
-    document.getElementById('queueTableWrap').innerHTML = html;
-    document.getElementById('verificationTableWrap').innerHTML = html;
+    const d = await req('/admin/api/sia/queue');
+    queue = d.queue || [];
+    document.getElementById('overviewQueueMeta').textContent = queue.length + ' pending';
+    const html = buildQueueTable(queue);
+    document.getElementById('overviewQueue').innerHTML = html;
+    document.getElementById('verificationQueue').innerHTML = html;
   } catch(e) {
-    const err = '<div class="empty">Failed to load queue</div>';
-    document.getElementById('queueTableWrap').innerHTML = err;
-    document.getElementById('verificationTableWrap').innerHTML = err;
+    const err = '<div class="empty">Could not load queue</div>';
+    document.getElementById('overviewQueue').innerHTML = err;
+    document.getElementById('verificationQueue').innerHTML = err;
   }
 }
 
-function renderQueueTable(data) {
+function buildQueueTable(data) {
   if (!data.length) return '<div class="empty">No licences pending verification</div>';
-  return `<table><thead><tr><th>Name</th><th>Email</th><th>Licence Type</th><th>Licence Number</th><th>Expiry</th><th>Actions</th></tr></thead><tbody>
-    ${data.map(q => `<tr>
-      <td><strong>${getName(q)}</strong></td>
-      <td>${q.candidates?.email || '—'}</td>
+  return `<table>
+    <thead><tr><th>Candidate</th><th>Licence Type</th><th>Licence Number</th><th>Expiry</th><th>Actions</th></tr></thead>
+    <tbody>${data.map(q => `<tr>
+      <td>
+        <div style="font-weight:600">${getName(q)}</div>
+        <div style="font-size:0.78rem;color:var(--body)">${q.candidates?.email||''}</div>
+      </td>
       <td>${q.licence_type}</td>
       <td><span class="sensitive">${q.licence_number}</span></td>
-      <td>${fmt(q.expiry_date)}</td>
+      <td>${fd(q.expiry_date)}</td>
       <td><div class="btn-row">
-        <button class="btn btn-verify" onclick="verifyLicence('${q.id}')">Verify</button>
-        <button class="btn btn-reject" onclick="rejectLicence('${q.id}')">Reject</button>
-        <button class="btn btn-view" onclick="viewCandidate('${q.candidate_id}')">View</button>
+        <button class="btn btn-success" onclick="verify('${q.id}')">Verify</button>
+        <button class="btn btn-danger" onclick="reject('${q.id}')">Reject</button>
+        <button class="btn btn-ghost" onclick="viewCandidate('${q.candidate_id}')">View profile</button>
       </div></td>
-    </tr>`).join('')}
-  </tbody></table>`;
+    </tr>`).join('')}</tbody>
+  </table>`;
 }
 
 async function loadCandidates() {
-  const wrap = document.getElementById('candidatesTableWrap');
-  wrap.innerHTML = '<div class="loading">Loading...</div>';
+  const el = document.getElementById('candidatesList');
+  el.innerHTML = '<div class="loading">Loading...</div>';
   try {
-    const d = await api('/admin/api/candidates');
-    const candidates = d.candidates || [];
-    if (!candidates.length) { wrap.innerHTML = '<div class="empty">No candidates yet</div>'; return; }
-    wrap.innerHTML = `<table><thead><tr><th>Name</th><th>Email</th><th>Step</th><th>SIA Licences</th><th>Registered</th><th></th></tr></thead><tbody>
-      ${candidates.map(c => {
+    const d = await req('/admin/api/candidates');
+    const list = d.candidates || [];
+    if (!list.length) { el.innerHTML = '<div class="empty">No candidates registered yet</div>'; return; }
+    el.innerHTML = `<table>
+      <thead><tr><th>Candidate</th><th>Profile Progress</th><th>SIA Licences</th><th>GDPR</th><th>Registered</th><th></th></tr></thead>
+      <tbody>${list.map(c => {
         const pd = c.personal_details;
-        const name = pd ? `${pd.first_name||''} ${pd.last_name||''}`.trim() : '—';
+        const name = pd ? `${pd.first_name||''} ${pd.last_name||''}`.trim() : '';
         const sia = c.sia_licences || [];
-        const verified = sia.filter(l => l.verified).length;
+        const ver = sia.filter(l => l.verified).length;
         return `<tr>
-          <td><strong>${name||'—'}</strong></td>
-          <td>${c.email}</td>
-          <td><span class="badge badge-blue">Step ${c.profile_step||0}/10</span></td>
-          <td>${sia.length ? `<span class="badge ${verified?'badge-green':'badge-yellow'}">${verified}/${sia.length} verified</span>` : '<span class="badge badge-red">None</span>'}</td>
-          <td>${fmt(c.created_at)}</td>
-          <td><button class="btn btn-view" onclick="viewCandidate('${c.id}')">View</button></td>
+          <td>
+            <div style="font-weight:600">${name||'—'}</div>
+            <div style="font-size:0.78rem;color:var(--body)">${c.email}</div>
+          </td>
+          <td><span class="badge badge-blue">Step ${c.profile_step||0} / 10</span></td>
+          <td>${sia.length ? `<span class="badge ${ver===sia.length?'badge-green':ver>0?'badge-amber':'badge-red'}">${ver}/${sia.length} verified</span>` : '<span class="badge badge-grey">None added</span>'}</td>
+          <td>${c.gdpr_consent ? `<span class="badge badge-green">Consented</span>` : '<span class="badge badge-red">No</span>'}</td>
+          <td style="color:var(--body);font-size:0.8rem">${fd(c.created_at)}</td>
+          <td><button class="btn btn-ghost" onclick="viewCandidate('${c.id}')">View profile</button></td>
         </tr>`;
-      }).join('')}
-    </tbody></table>`;
-  } catch(e) { wrap.innerHTML = '<div class="empty">Failed to load candidates</div>'; }
+      }).join('')}</tbody>
+    </table>`;
+  } catch(e) { el.innerHTML = '<div class="empty">Failed to load candidates</div>'; }
 }
 
-async function verifyLicence(id) {
-  const notes = prompt('Verification notes (optional):') || 'Verified against SIA register';
-  try { await api(`/admin/api/sia/${id}/verify`, 'POST', { notes }); loadQueue(); loadStats(); }
+async function verify(id) {
+  const notes = prompt('Verification notes (optional — press OK to use default):') ?? 'Verified against SIA register';
+  try { await req(`/admin/api/sia/${id}/verify`, 'POST', { notes }); loadQueue(); loadStats(); }
   catch(e) { alert('Failed to verify licence'); }
 }
 
-async function rejectLicence(id) {
-  const notes = prompt('Reason for rejection:') || 'Could not verify against SIA register';
-  try { await api(`/admin/api/sia/${id}/reject`, 'POST', { notes }); loadQueue(); loadStats(); }
+async function reject(id) {
+  const notes = prompt('Reason for rejection:');
+  if (!notes) return;
+  try { await req(`/admin/api/sia/${id}/reject`, 'POST', { notes }); loadQueue(); loadStats(); }
   catch(e) { alert('Failed to reject licence'); }
 }
 
 async function viewCandidate(id) {
-  document.getElementById('panelOverlay').classList.add('open');
-  document.getElementById('panelContent').innerHTML = '<div class="loading">Loading...</div>';
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panelTitle').textContent = 'Loading...';
+  document.getElementById('panelSub').textContent = '';
+  document.getElementById('panelBody').innerHTML = '<div class="loading">Loading candidate profile...</div>';
   try {
-    const d = await api(`/admin/api/candidate/${id}`);
+    const d = await req(`/admin/api/candidate/${id}`);
     const c = d.candidate, p = d.personal;
-    document.getElementById('panelTitle').textContent = p ? `${p.first_name} ${p.last_name}` : c?.email || 'Candidate';
-    document.getElementById('panelContent').innerHTML = `
+    const name = p ? `${p.first_name||''} ${p.last_name||''}`.trim() : c?.email || 'Candidate';
+    document.getElementById('panelTitle').textContent = name;
+    document.getElementById('panelSub').textContent = c?.email || '';
+
+    document.getElementById('panelBody').innerHTML = `
       <div class="panel-section">
         <div class="panel-section-title">Account</div>
         <div class="detail-grid">
-          <div class="detail-item"><label>Email</label><span>${c?.email||'—'}</span></div>
-          <div class="detail-item"><label>Profile Step</label><span>${c?.profile_step||0} / 10</span></div>
-          <div class="detail-item"><label>GDPR Consent</label><span>${c?.gdpr_consent ? 'Yes — '+fmt(c.gdpr_consent_at) : 'No'}</span></div>
-          <div class="detail-item"><label>Registered</label><span>${fmt(c?.created_at)}</span></div>
+          <div class="detail"><label>Email</label><span>${c?.email||'—'}</span></div>
+          <div class="detail"><label>Profile Step</label><span>${c?.profile_step||0} of 10</span></div>
+          <div class="detail"><label>GDPR Consent</label><span>${c?.gdpr_consent?'Yes — '+fd(c.gdpr_consent_at):'Not recorded'}</span></div>
+          <div class="detail"><label>Registered</label><span>${fd(c?.created_at)}</span></div>
         </div>
       </div>
+
       ${p ? `<div class="panel-section">
         <div class="panel-section-title">Personal Details</div>
         <div class="detail-grid">
-          <div class="detail-item"><label>Full Name</label><span>${p.first_name} ${p.last_name}</span></div>
-          <div class="detail-item"><label>Date of Birth</label><span>${fmt(p.date_of_birth)}</span></div>
-          <div class="detail-item"><label>Phone</label><span>${p.phone||'—'}</span></div>
-          <div class="detail-item"><label>NI Number</label><span class="sensitive">${p.ni_number||'—'}</span></div>
-          <div class="detail-item"><label>Address</label><span>${[p.address_line1,p.city,p.postcode].filter(Boolean).join(', ')||'—'}</span></div>
-          <div class="detail-item"><label>SIA Address Match</label><span>${p.sia_address_match?'Yes':'No'}</span></div>
+          <div class="detail"><label>Full Name</label><span>${p.first_name||''} ${p.last_name||''}</span></div>
+          <div class="detail"><label>Date of Birth</label><span>${fd(p.date_of_birth)}</span></div>
+          <div class="detail"><label>Phone</label><span>${p.phone||'—'}</span></div>
+          <div class="detail"><label>NI Number</label><span class="sensitive">${p.ni_number||'—'}</span></div>
+          <div class="detail" style="grid-column:1/-1"><label>Current Address</label><span>${[p.address_line1,p.address_line2,p.city,p.county,p.postcode].filter(Boolean).join(', ')||'—'}</span></div>
+          <div class="detail"><label>SIA Address Match</label><span>${p.sia_address_match?'Yes':'No'}</span></div>
+          <div class="detail"><label>DVLA Address Match</label><span>${p.dvla_address_match?'Yes':'No'}</span></div>
         </div>
       </div>` : ''}
+
       ${d.licences?.length ? `<div class="panel-section">
         <div class="panel-section-title">SIA Licences</div>
-        ${d.licences.map(l => `<div style="background:#f8fafc;border-radius:8px;padding:0.875rem;margin-bottom:0.75rem">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
+        ${d.licences.map(l => `<div class="licence-card">
+          <div class="licence-card-hd">
             <strong>${l.licence_type}</strong>
-            <span class="badge ${l.verified?'badge-green':'badge-yellow'}">${l.verified?'Verified':'Pending'}</span>
+            <span class="badge ${l.verified?'badge-green':'badge-amber'}">${l.verified?'Verified':'Pending verification'}</span>
           </div>
-          <div class="detail-grid">
-            <div class="detail-item"><label>Licence Number</label><span class="sensitive">${l.licence_number}</span></div>
-            <div class="detail-item"><label>Expiry</label><span>${fmt(l.expiry_date)}</span></div>
+          <div class="detail-grid" style="margin-bottom:${!l.verified?'0.75rem':'0'}">
+            <div class="detail"><label>Licence Number</label><span class="sensitive">${l.licence_number}</span></div>
+            <div class="detail"><label>Expiry Date</label><span>${fd(l.expiry_date)}</span></div>
           </div>
-          ${!l.verified ? `<div style="margin-top:0.75rem" class="btn-row">
-            <button class="btn btn-verify" onclick="verifyLicence('${l.id}');closePanel()">Verify</button>
-            <button class="btn btn-reject" onclick="rejectLicence('${l.id}');closePanel()">Reject</button>
-          </div>` : `<div style="margin-top:0.5rem;font-size:0.78rem;color:#16a34a">Verified ${fmt(l.verified_at)}</div>`}
+          ${!l.verified ? `<div class="btn-row">
+            <button class="btn btn-success" onclick="verify('${l.id}');closePanel()">Verify this licence</button>
+            <button class="btn btn-danger" onclick="reject('${l.id}');closePanel()">Reject</button>
+          </div>` : `<div style="font-size:0.78rem;color:var(--body)">Verified on ${fd(l.verified_at)}${l.verification_notes?' — '+l.verification_notes:''}</div>`}
         </div>`).join('')}
       </div>` : ''}
+
       ${d.employment?.length ? `<div class="panel-section">
-        <div class="panel-section-title">Employment History (${d.employment.length} entries)</div>
-        ${d.employment.map(e => `<div style="padding:0.5rem 0;border-bottom:1px solid #f1f5f9">
-          <div style="font-weight:600;font-size:0.875rem">${e.job_title} — ${e.employer_name}</div>
-          <div style="font-size:0.78rem;color:#64748b">${fmt(e.start_date)} — ${e.is_current?'Present':fmt(e.end_date)}</div>
+        <div class="panel-section-title">Employment History — ${d.employment.length} entries</div>
+        ${d.employment.map(e => `<div class="job-item">
+          <div class="job-title-row">${e.job_title} <span style="color:var(--body);font-weight:400">at</span> ${e.employer_name}</div>
+          <div class="job-meta">${fd(e.start_date)} — ${e.is_current?'Present':fd(e.end_date)}${e.reason_for_leaving?' · '+e.reason_for_leaving:''}</div>
         </div>`).join('')}
       </div>` : ''}
+
       ${d.addresses?.length ? `<div class="panel-section">
-        <div class="panel-section-title">Address History (${d.addresses.length} entries)</div>
-        ${d.addresses.map(a => `<div style="padding:0.5rem 0;border-bottom:1px solid #f1f5f9">
-          <div style="font-weight:600;font-size:0.875rem">${a.address_line1}, ${a.city}, ${a.postcode}</div>
-          <div style="font-size:0.78rem;color:#64748b">${fmt(a.moved_in_date)} — ${a.is_current?'Present':fmt(a.moved_out_date)}</div>
+        <div class="panel-section-title">Address History — ${d.addresses.length} entries</div>
+        ${d.addresses.map(a => `<div class="addr-item">
+          <div class="job-title-row">${[a.address_line1,a.city,a.postcode].filter(Boolean).join(', ')}</div>
+          <div class="job-meta">${fd(a.moved_in_date)} — ${a.is_current?'Present':fd(a.moved_out_date)}</div>
         </div>`).join('')}
       </div>` : ''}
-      ${d.background?.has_criminal_record ? `<div class="panel-section" style="background:#fef2f2;border-radius:8px;padding:1rem">
-        <div class="panel-section-title" style="color:#dc2626">Criminal Disclosure</div>
-        <p style="font-size:0.875rem">${d.background.criminal_record||'—'}</p>
+
+      ${d.background?.has_criminal_record ? `<div class="panel-section">
+        <div class="criminal-box">
+          <div class="panel-section-title">Criminal Disclosure</div>
+          <p style="font-size:0.875rem;color:var(--navy);line-height:1.6">${d.background.criminal_record||'—'}</p>
+        </div>
       </div>` : ''}
     `;
-  } catch(e) { document.getElementById('panelContent').innerHTML = '<div class="empty">Failed to load candidate</div>'; }
+  } catch(e) {
+    document.getElementById('panelBody').innerHTML = '<div class="empty">Failed to load profile</div>';
+  }
 }
 
-function closePanel() { document.getElementById('panelOverlay').classList.remove('open'); }
+function closePanel() { document.getElementById('overlay').classList.remove('open'); }
 
 function showSection(name, el) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  document.querySelectorAll('.topnav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('section-' + name).classList.add('active');
   el.classList.add('active');
   if (name === 'candidates') loadCandidates();
+  if (name === 'verification') loadQueue();
 }
 
 function getName(q) {
   const pd = q.candidates?.personal_details;
-  return pd ? `${pd.first_name||''} ${pd.last_name||''}`.trim() || q.candidates?.email : q.candidates?.email || '—';
+  if (pd) return `${pd.first_name||''} ${pd.last_name||''}`.trim() || q.candidates?.email || '—';
+  return q.candidates?.email || '—';
 }
 
-function fmt(d) {
+function fd(d) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
 }
