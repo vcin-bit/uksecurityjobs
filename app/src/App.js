@@ -700,44 +700,44 @@ function ProfileBuilder() {
 // ── INDUSTRY FACTS ──
 const industryFacts = [
   {
-    title: 'BS7858',
+    title: 'BS7858 Vetting',
     fact: 'The BS7858 vetting standard was first introduced in 1996. Today it is a contractual requirement on most UK security contracts.',
-    why: 'Having an accurate, vettable work history is a critical part of your application. Employers cannot start vetting without it.'
+    why: 'Your employment and address history needs to be accurate, complete and verifiable. A single unexplained gap can fail a vetting check before it even starts.'
   },
   {
     title: '350,000+ SIA Licence Holders',
     fact: 'There are over 350,000 active SIA licensed security professionals in the UK — one of the largest regulated workforces in the country.',
-    why: 'Standing out means having a complete, verified profile. A strong vettability score puts you ahead of the competition.'
+    why: 'In a crowded market, a complete verified profile is what separates you. Employers on this platform see your vettability score before they see anyone else\'s CV.'
   },
   {
-    title: 'SIA Licence Validity',
-    fact: 'Every SIA licence is valid for 3 years. Many professionals let theirs lapse — losing access to work immediately.',
-    why: 'Keep your licence and expiry date up to date on your profile. We will remind you before it expires.'
+    title: 'SIA Licence Expiry',
+    fact: 'Every SIA licence is valid for 3 years. Thousands of professionals lose work every year simply because they let their licence lapse.',
+    why: 'Add your licence expiry date to your profile and we will alert you before it expires — so you never lose a day\'s work to an avoidable admin issue.'
   },
   {
     title: '£4.3 Billion Industry',
-    fact: 'The UK private security industry generates over £4.3 billion annually, with demand growing every year across every sector.',
-    why: 'The opportunities are there. A complete, verified profile means you are ready to move when the right role appears.'
+    fact: 'The UK private security industry generates over £4.3 billion annually, with demand growing every year across retail, events, corporate and public sector.',
+    why: 'The roles are there. A complete profile with your preferred sectors selected means you get matched to the right opportunities — not just any opportunity.'
   },
   {
-    title: 'Dual Licences',
-    fact: 'Around 60% of UK security professionals hold more than one SIA licence type — significantly increasing their employment options.',
-    why: 'Adding a second licence to your profile opens up more roles and makes you a more attractive candidate to employers.'
+    title: 'Dual SIA Licences',
+    fact: 'Around 60% of UK security professionals hold more than one SIA licence type — door supervisor plus CCTV, or close protection plus security guard.',
+    why: 'Every additional licence you hold is another door that opens. Add all your licences to your profile — each one increases the roles you can be matched to.'
+  },
+  {
+    title: 'Right to Work Checks',
+    fact: 'Employers face unlimited fines for employing someone without the legal right to work in the UK — and the check must be done before day one.',
+    why: 'Upload your right to work documents now and employers can confirm compliance before they even interview you. It removes a barrier and speeds up your start date.'
+  },
+  {
+    title: '5-Year History Required',
+    fact: 'BS7858 requires a fully verified 5-year employment and address history with no unexplained gaps — not 2 years, not 3 years. Five.',
+    why: 'Most candidates underestimate how far back this goes. Start building your history now — the further back you go, the more complete and credible your profile becomes.'
   },
   {
     title: 'The Private Security Industry Act 2001',
-    fact: 'Passed in 2001, this Act established mandatory SIA licensing — making UK security one of the most regulated industries in Europe.',
-    why: 'Your licence is your professional credential. Keeping it verified on your profile proves your compliance to every employer.'
-  },
-  {
-    title: 'Right to Work',
-    fact: 'Employers are legally required to check right to work documents before employment. Failure to do so carries unlimited fines.',
-    why: 'Uploading your right to work documents to your profile means employers can confirm compliance instantly — speeding up your start date.'
-  },
-  {
-    title: '5-Year History',
-    fact: 'BS7858 requires a verified 5-year employment and address history with no unexplained gaps — not a 2-year or 3-year history.',
-    why: 'A single unexplained gap can stall or fail a vetting check. Complete your full 5-year history now so it never holds you back.'
+    fact: 'The 2001 Act made SIA licensing mandatory, establishing UK security as one of the most professionally regulated industries in Europe.',
+    why: 'Your licence is your legal right to work. Keeping it verified and current on your profile is the single most important thing you can do for your career.'
   },
 ];
 
