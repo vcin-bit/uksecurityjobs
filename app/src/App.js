@@ -762,9 +762,12 @@ function Dashboard() {
 
         {/* SUBTLE FACT */}
         <div className="dash-fact-subtle">
-          <span className="dash-fact-num">{fact.stat}</span>
-          <span className="dash-fact-sep">—</span>
-          <span className="dash-fact-txt">{fact.fact}</span>
+          <div className="dash-fact-inner">
+            <span className="dash-fact-label">Did you know?</span>
+            <span className="dash-fact-num">{fact.stat}</span>
+            <span className="dash-fact-txt">{fact.fact}</span>
+            <span className="dash-fact-cta">This is why having an accurate work history matters.</span>
+          </div>
         </div>
       </div>
     </div>
