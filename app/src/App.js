@@ -154,10 +154,35 @@ function Radio({ name, value, label, checked, onChange }) {
 }
 function Checkbox({ label, checked, onChange }) {
   return (
-    <label className="f-check">
-      <input type="checkbox" checked={checked} onChange={onChange}/>
-      <span>{label}</span>
-    </label>
+    <button
+      type="button"
+      onClick={onChange}
+      style={{
+        display:'flex',alignItems:'center',gap:'0.5rem',
+        padding:'0.4rem 0.75rem',
+        borderRadius:'6px',
+        border: checked ? '2px solid #1a52a8' : '1.5px solid #e2e8f0',
+        background: checked ? '#eff6ff' : '#fff',
+        color: checked ? '#1a52a8' : '#4a5568',
+        fontWeight: checked ? 600 : 400,
+        cursor:'pointer',
+        fontSize:'0.85rem',
+        fontFamily:'inherit',
+        textAlign:'left',
+        transition:'all 0.15s',
+        width:'100%'
+      }}
+    >
+      <span style={{
+        width:'15px',height:'15px',borderRadius:'3px',flexShrink:0,
+        border: checked ? '2px solid #1a52a8' : '1.5px solid #cbd5e1',
+        background: checked ? '#1a52a8' : '#fff',
+        display:'flex',alignItems:'center',justifyContent:'center'
+      }}>
+        {checked && <svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+      </span>
+      {label}
+    </button>
   );
 }
 
