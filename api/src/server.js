@@ -45,17 +45,6 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Temporary debug route — remove after fixing
-app.get('/debug/admin', (req, res) => {
-  const incoming = req.headers['x-admin-key'];
-  const stored = process.env.ADMIN_SECRET;
-  res.json({
-    incoming_key: incoming || 'NOT SENT',
-    stored_key: stored,
-    match: incoming === stored
-  });
-});
-
 // Admin routes — require admin secret key only, no Clerk token needed
 app.use('/admin/api', requireAdmin);
 app.use('/admin/api', adminRoutes);
