@@ -1321,11 +1321,11 @@ function SignUpPage() {
             <form className="auth-form" onSubmit={handleRegister}>
               {error && <div className="auth-error">{error}</div>}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
-                <div className="field"><label className="field-label">First Name</label><input className="f-input" type="text" required value={form.firstName} onChange={v=>setForm({...form,firstName:v})} placeholder="John"/></div>
-                <div className="field"><label className="field-label">Last Name</label><input className="f-input" type="text" required value={form.lastName} onChange={v=>setForm({...form,lastName:v})} placeholder="Smith"/></div>
+                <div className="field"><label className="field-label">First Name</label><input className="f-input" type="text" required value={form.firstName} onChange={e=>setForm({...form,firstName:e.target.value})} placeholder="John"/></div>
+                <div className="field"><label className="field-label">Last Name</label><input className="f-input" type="text" required value={form.lastName} onChange={e=>setForm({...form,lastName:e.target.value})} placeholder="Smith"/></div>
               </div>
-              <div className="field"><label className="field-label">Email Address</label><input className="f-input" type="email" required value={form.email} onChange={v=>setForm({...form,email:v})} placeholder="your@email.com"/></div>
-              <div className="field"><label className="field-label">Password</label><input className="f-input" type="password" required value={form.password} onChange={v=>setForm({...form,password:v})} placeholder="Min. 8 characters"/></div>
+              <div className="field"><label className="field-label">Email Address</label><input className="f-input" type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="your@email.com"/></div>
+              <div className="field"><label className="field-label">Password</label><input className="f-input" type="password" required value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Min. 8 characters"/></div>
               <div className="field" style={{marginTop:'0.5rem'}}>
                 <label style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',cursor:'pointer',fontSize:'0.85rem',color:'#374151',lineHeight:'1.5'}}>
                   <input type="checkbox" required checked={form.gdprConsent} onChange={e=>setForm({...form,gdprConsent:e.target.checked})} style={{marginTop:'3px',flexShrink:0}}/>
@@ -1374,8 +1374,8 @@ function SignInPage() {
           <div className="auth-sub">Sign in to your UK Security Jobs account</div>
           <form className="auth-form" onSubmit={handleSignIn}>
             {error && <div className="auth-error">{error}</div>}
-            <div className="field"><label className="field-label">Email Address</label><input className="f-input" type="email" required value={form.email} onChange={v=>setForm({...form,email:v})} placeholder="your@email.com"/></div>
-            <div className="field"><label className="field-label">Password</label><input className="f-input" type="password" required value={form.password} onChange={v=>setForm({...form,password:v})} placeholder="Your password"/></div>
+            <div className="field"><label className="field-label">Email Address</label><input className="f-input" type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="your@email.com"/></div>
+            <div className="field"><label className="field-label">Password</label><input className="f-input" type="password" required value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Your password"/></div>
             <div style={{textAlign:'right',marginBottom:'0.5rem'}}><a href="/forgot-password" style={{fontSize:'0.82rem',color:'var(--blue)'}}>Forgot password?</a></div>
             <button className="btn-full" type="submit" disabled={loading}>{loading?'Signing in...':'Sign In →'}</button>
           </form>
