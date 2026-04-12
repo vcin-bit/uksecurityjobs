@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { ClerkProvider, SignedIn, SignedOut, useUser, useClerk } from '@clerk/clerk-react';
+import { ClerkProvider, SignedIn, SignedOut, useUser, useClerk, useAuth } from '@clerk/clerk-react';
+import { apiRequest } from './api';
 import './styles.css';
 
 const CLERK_KEY = 'pk_test_ZXhjaXRpbmctdXJjaGluLTQxLmNsZXJrLmFjY291bnRzLmRldiQ';
@@ -754,55 +755,106 @@ function StepComplete({ name }) {
   );
 }
 
+
+
 // ── PROFILE BUILDER ──
 function ProfileBuilder() {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Load from Clerk metadata on mount
-  const [profileData, setProfileData] = useState(() => {
-    const meta = user?.unsafeMetadata || {};
-    return {
-      licences: meta.licences,
-      personal: meta.personal,
-      driving: meta.driving,
-      sectors: meta.sectors,
-      qualifications: meta.qualifications,
-      background: meta.background,
-      employment: meta.employment,
-      photo: meta.photo,
-      addresses: meta.addresses,
-    };
+  const [profileData, setProfileData] = useState({
+    licences: null, personal: null, driving: null, sectors: null,
+    qualifications: null, background: null, employment: null,
+    photo: null, addresses: null,
   });
 
+  // Load profile from API on mount
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const [candidateRes, personalRes, siaRes, drivingRes, sectorsRes, qualsRes, bgRes, empRes, addrRes] = await Promise.allSettled([
+          apiRequest('/api/candidates/me', 'GET', null, getToken),
+          apiRequest('/api/candidates/me/personal', 'GET', null, getToken),
+          apiRequest('/api/sia', 'GET', null, getToken),
+          apiRequest('/api/profile/driving', 'GET', null, getToken),
+          apiRequest('/api/profile/sectors', 'GET', null, getToken),
+          apiRequest('/api/profile/qualifications', 'GET', null, getToken),
+          apiRequest('/api/profile/background', 'GET', null, getToken),
+          apiRequest('/api/profile/employment', 'GET', null, getToken),
+          apiRequest('/api/profile/addresses', 'GET', null, getToken),
+        ]);
+        setProfileData({
+          licences: siaRes.status === 'fulfilled' ? siaRes.value.licences : null,
+          personal: personalRes.status === 'fulfilled' ? personalRes.value.personal : null,
+          driving: drivingRes.status === 'fulfilled' ? drivingRes.value.driving : null,
+          sectors: sectorsRes.status === 'fulfilled' ? sectorsRes.value.sectors : null,
+          qualifications: qualsRes.status === 'fulfilled' ? qualsRes.value.qualifications : null,
+          background: bgRes.status === 'fulfilled' ? bgRes.value.background : null,
+          employment: empRes.status === 'fulfilled' ? empRes.value.employment : null,
+          photo: null,
+          addresses: addrRes.status === 'fulfilled' ? addrRes.value.addresses : null,
+        });
+        if (candidateRes.status === 'fulfilled') {
+          setStep(candidateRes.value.candidate?.profile_step || 0);
+        }
+      } catch(err) {
+        console.error('Failed to load profile:', err);
+      }
+      setLoading(false);
+    }
+    loadProfile();
+  }, []);
+
   const sections = [
-    { name:'SIA Licence', short:'SIA', complete: profileData.licences?.[0]?.verified === true, started: !!profileData.licences?.[0]?.number },
+    { name:'SIA Licence', short:'SIA', complete: profileData.licences?.[0]?.verified === true, started: !!profileData.licences?.[0] },
     { name:'Personal Details', short:'Info', complete: !!profileData.personal?.phone, started: !!profileData.personal },
-    { name:'Driving & Transport', short:'Drive', complete: profileData.driving?.hasLicence !== undefined, started: !!profileData.driving },
+    { name:'Driving & Transport', short:'Drive', complete: !!profileData.driving, started: !!profileData.driving },
     { name:'Sectors & Availability', short:'Work', complete: profileData.sectors?.sectors?.length > 0, started: !!profileData.sectors },
-    { name:'Qualifications', short:'Quals', complete: profileData.qualifications?.hasFirstAid !== undefined, started: !!profileData.qualifications },
-    { name:'Background', short:'BG', complete: profileData.background?.hasForces !== undefined, started: !!profileData.background },
+    { name:'Qualifications', short:'Quals', complete: !!profileData.qualifications, started: !!profileData.qualifications },
+    { name:'Background', short:'BG', complete: !!profileData.background, started: !!profileData.background },
     { name:'Employment History', short:'Jobs', complete: profileData.employment?.length > 0, started: !!profileData.employment },
     { name:'Photo', short:'Photo', complete: !!profileData.photo?.uploaded, started: !!profileData.photo },
     { name:'Address History', short:'Addr', complete: profileData.addresses?.length > 0, started: !!profileData.addresses },
   ];
 
-  // Save to Clerk metadata immediately on each step
   const update = async (d) => {
     const merged = { ...profileData, ...d };
     setProfileData(merged);
     setSaving(true);
     try {
-      // Strip photo preview from metadata (too large for Clerk)
-      const toSave = { ...merged };
-      if (toSave.photo) toSave.photo = { uploaded: toSave.photo.uploaded };
-      await user.update({ unsafeMetadata: { ...(user.unsafeMetadata || {}), ...toSave } });
+      // Save to the correct API endpoint based on what changed
+      if (d.personal) await apiRequest('/api/candidates/me/personal', 'PUT', d.personal, getToken);
+      if (d.licences) {
+        for (const lic of d.licences) {
+          if (lic.number) await apiRequest('/api/sia', 'POST', { licence_number: lic.number, licence_type: lic.type, expiry_date: lic.expiry }, getToken);
+        }
+      }
+      if (d.driving) await apiRequest('/api/profile/driving', 'PUT', d.driving, getToken);
+      if (d.sectors) await apiRequest('/api/profile/sectors', 'PUT', d.sectors, getToken);
+      if (d.qualifications) await apiRequest('/api/profile/qualifications', 'PUT', d.qualifications, getToken);
+      if (d.background) await apiRequest('/api/profile/background', 'PUT', d.background, getToken);
+      if (d.employment) {
+        for (const job of d.employment) {
+          await apiRequest('/api/profile/employment', 'POST', { employer_name: job.employer, job_title: job.role, start_date: job.from, end_date: job.to || null, is_current: job.current, reason_for_leaving: job.reason }, getToken);
+        }
+      }
+      if (d.addresses) {
+        for (const addr of d.addresses) {
+          await apiRequest('/api/profile/addresses', 'POST', { address_line1: addr.line1, address_line2: addr.line2, city: addr.town, postcode: addr.postcode, moved_in_date: addr.from, moved_out_date: addr.to || null, is_current: addr.current }, getToken);
+        }
+      }
+      // Update step progress
+      await apiRequest('/api/candidates/me/step', 'PATCH', { profile_step: step + 1 }, getToken);
     } catch(err) {
       console.error('Save error:', err);
     }
     setSaving(false);
   };
+
+  if (loading) return <div style={{textAlign:'center',padding:'4rem',color:'#64748b'}}>Loading your profile...</div>;
 
   const next = () => setStep(s=>s+1);
   const back = () => setStep(s=>s-1);
@@ -868,23 +920,41 @@ const industryFacts = [
 // ── DASHBOARD ──
 function Dashboard() {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const navigate = useNavigate();
-
-  // Pick a random fact on load
   const [fact] = React.useState(() => industryFacts[Math.floor(Math.random() * industryFacts.length)]);
+  const [profileData, setProfileData] = React.useState(null);
 
-  // Build sections based on user metadata
-  const meta = user?.unsafeMetadata || {};
+  React.useEffect(() => {
+    async function load() {
+      try {
+        const [siaRes, personalRes, empRes, addrRes] = await Promise.allSettled([
+          apiRequest('/api/sia', 'GET', null, getToken),
+          apiRequest('/api/candidates/me/personal', 'GET', null, getToken),
+          apiRequest('/api/profile/employment', 'GET', null, getToken),
+          apiRequest('/api/profile/addresses', 'GET', null, getToken),
+        ]);
+        setProfileData({
+          licences: siaRes.status === 'fulfilled' ? siaRes.value.licences : [],
+          personal: personalRes.status === 'fulfilled' ? personalRes.value.personal : null,
+          employment: empRes.status === 'fulfilled' ? empRes.value.employment : [],
+          addresses: addrRes.status === 'fulfilled' ? addrRes.value.addresses : [],
+        });
+      } catch(err) { console.error('Dashboard load error:', err); }
+    }
+    load();
+  }, []);
+
   const sections = [
-    { name:'SIA Licence', short:'SIA', complete: meta.licences?.[0]?.verified === true, started: !!meta.licences?.[0]?.number },
-    { name:'Personal Details', short:'Info', complete: !!meta.personal?.phone, started: !!meta.personal },
-    { name:'Driving & Transport', short:'Drive', complete: meta.driving?.hasLicence !== undefined, started: !!meta.driving },
-    { name:'Sectors & Availability', short:'Work', complete: meta.sectors?.sectors?.length > 0, started: !!meta.sectors },
-    { name:'Qualifications', short:'Quals', complete: meta.qualifications?.hasFirstAid !== undefined, started: !!meta.qualifications },
-    { name:'Background', short:'BG', complete: meta.background?.hasForces !== undefined, started: !!meta.background },
-    { name:'Photo', short:'Photo', complete: !!meta.photo?.uploaded, started: !!meta.photo },
-    { name:'Employment', short:'Jobs', complete: meta.employment?.length > 0, started: !!meta.employment },
-    { name:'Address', short:'Addr', complete: meta.addresses?.length > 0, started: !!meta.addresses },
+    { name:'SIA Licence', short:'SIA', complete: profileData?.licences?.[0]?.verified === true, started: !!profileData?.licences?.[0] },
+    { name:'Personal Details', short:'Info', complete: !!profileData?.personal?.phone, started: !!profileData?.personal },
+    { name:'Driving & Transport', short:'Drive', complete: false, started: false },
+    { name:'Sectors & Availability', short:'Work', complete: false, started: false },
+    { name:'Qualifications', short:'Quals', complete: false, started: false },
+    { name:'Background', short:'BG', complete: false, started: false },
+    { name:'Employment History', short:'Jobs', complete: profileData?.employment?.length > 0, started: !!profileData?.employment?.length },
+    { name:'Photo', short:'Photo', complete: false, started: false },
+    { name:'Address History', short:'Addr', complete: profileData?.addresses?.length > 0, started: !!profileData?.addresses?.length },
   ];
 
   const completed = sections.filter(s => s.complete).length;
@@ -933,7 +1003,7 @@ function Dashboard() {
 // ── AUTH PAGES ──
 function SignUpPage() {
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ firstName:'', lastName:'', email:'', password:'', licenceType:'' });
+  const [form, setForm] = useState({ firstName:'', lastName:'', email:'', password:'', gdprConsent: false });
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -941,11 +1011,11 @@ function SignUpPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
+    if (!form.gdprConsent) { setError('You must agree to the privacy policy to continue.'); setLoading(false); return; }
     try {
       const result = await clerk.client.signUp.create({
         firstName: form.firstName, lastName: form.lastName,
         emailAddress: form.email, password: form.password,
-        unsafeMetadata: { licenceType: form.licenceType, status: 'pending', score: 5 }
       });
       await result.prepareEmailAddressVerification({ strategy: 'email_code' });
       setStep(2);
@@ -953,15 +1023,26 @@ function SignUpPage() {
     setLoading(false);
   };
 
-  const handleVerify = async (e) => {
+  const handleVerifyAndCreate = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
       const result = await clerk.client.signUp.attemptEmailAddressVerification({ code });
       await clerk.setActive({ session: result.createdSessionId });
+      // Create candidate record in secure API
+      const token = await result.createdSessionId;
+      try {
+        await fetch('https://uksecurityjobs-api.onrender.com/api/candidates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ email: form.email, gdpr_consent: true })
+        });
+      } catch(apiErr) { console.error('API create failed:', apiErr); }
       setTimeout(() => { window.location.href = '/profile'; }, 500);
     } catch(err) { setError(err.errors?.[0]?.message || 'Invalid code. Please try again.'); }
     setLoading(false);
   };
+
+  const handleVerify = handleVerifyAndCreate;
 
   return (
     <div className="page">
@@ -980,14 +1061,11 @@ function SignUpPage() {
               </div>
               <div className="field"><label className="field-label">Email Address</label><input className="f-input" type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="your@email.com"/></div>
               <div className="field"><label className="field-label">Password</label><input className="f-input" type="password" required value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Min. 8 characters"/></div>
-              <div className="field">
-                <label className="field-label">Primary SIA Licence Type</label>
-                <select className="f-select" required value={form.licenceType} onChange={e=>setForm({...form,licenceType:e.target.value})}>
-                  <option value="">Select your licence type</option>
-                  <option>Door Supervisor</option><option>Security Guard</option><option>CCTV Operator</option>
-                  <option>Close Protection</option><option>Cash & Valuables in Transit</option>
-                  <option>Key Holding</option><option>Not yet licensed</option>
-                </select>
+              <div className="field" style={{marginTop:'0.5rem'}}>
+                <label style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',cursor:'pointer',fontSize:'0.85rem',color:'#374151',lineHeight:'1.5'}}>
+                  <input type="checkbox" required checked={form.gdprConsent} onChange={e=>setForm({...form,gdprConsent:e.target.checked})} style={{marginTop:'3px',flexShrink:0}}/>
+                  <span>I agree to the <a href="https://www.uksecurityjobs.co.uk/privacy.html" target="_blank" rel="noopener noreferrer" style={{color:'#1a52a8'}}>Privacy Policy</a> and consent to UKSecurityJobs storing my personal data securely for the purpose of matching me with security employment opportunities. I understand I can withdraw consent at any time.</span>
+                </label>
               </div>
               <button className="btn-full" type="submit" disabled={loading}>{loading?'Creating account...':'Create My Profile →'}</button>
             </form>
