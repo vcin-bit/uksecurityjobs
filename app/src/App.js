@@ -133,7 +133,7 @@ function Select({ children, ...props }) { return <select className="f-select" {.
 function Radio({ name, value, label, checked, onChange }) {
   return (
     <label className="f-radio">
-      <input type="radio" name={name} value={value} checked={checked} onChange={onChange}/>
+      <input type="radio" name={name} value={value} checked={checked} onChange={() => onChange(value)}/>
       <span>{label}</span>
     </label>
   );
@@ -238,40 +238,40 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
       why="Employers need to be able to contact you quickly. A complete personal profile also means vetting can start without any back-and-forth."
       onBack={onBack} onNext={save}>
       <div className="field-row">
-        <Field label="Phone Number"><Input type="tel" placeholder="07700 000000" value={form.phone} onChange={e=>u('phone',e.target.value)}/></Field>
-        <Field label="Date of Birth"><Input type="date" value={form.dob} onChange={e=>u('dob',e.target.value)}/></Field>
+        <Field label="Phone Number"><Input type="tel" placeholder="07700 000000" value={form.phone} onChange={v=>u('phone',v)}/></Field>
+        <Field label="Date of Birth"><Input type="date" value={form.dob} onChange={v=>u('dob',v)}/></Field>
       </div>
       <div className="field-row">
-        <Field label="National Insurance Number"><Input type="text" placeholder="AB 12 34 56 C" value={form.ni} onChange={e=>u('ni',e.target.value)}/></Field>
+        <Field label="National Insurance Number"><Input type="text" placeholder="AB 12 34 56 C" value={form.ni} onChange={v=>u('ni',v)}/></Field>
         <Field label="Gender" hint="Optional — used for equal opportunities monitoring only">
-          <Select value={form.gender} onChange={e=>u('gender',e.target.value)}>
+          <Select value={form.gender} onChange={v=>u('gender',v)}>
             <option value="">Prefer not to say</option>
             <option>Male</option><option>Female</option><option>Non-binary</option><option>Other</option>
           </Select>
         </Field>
       </div>
       <div className="divider"></div>
-      <Field label="Current Address Line 1"><Input type="text" placeholder="House number and street name" value={form.address1} onChange={e=>u('address1',e.target.value)}/></Field>
-      <Field label="Address Line 2" hint="Flat, apartment, building name (if applicable)"><Input type="text" placeholder="Optional" value={form.address2} onChange={e=>u('address2',e.target.value)}/></Field>
+      <Field label="Current Address Line 1"><Input type="text" placeholder="House number and street name" value={form.address1} onChange={v=>u('address1',v)}/></Field>
+      <Field label="Address Line 2" hint="Flat, apartment, building name (if applicable)"><Input type="text" placeholder="Optional" value={form.address2} onChange={v=>u('address2',v)}/></Field>
       <div className="field-row">
-        <Field label="Town / City"><Input type="text" placeholder="London" value={form.town} onChange={e=>u('town',e.target.value)}/></Field>
-        <Field label="County"><Input type="text" placeholder="Greater London" value={form.county} onChange={e=>u('county',e.target.value)}/></Field>
-        <Field label="Postcode"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={e=>u('postcode',e.target.value)}/></Field>
+        <Field label="Town / City"><Input type="text" placeholder="London" value={form.town} onChange={v=>u('town',v)}/></Field>
+        <Field label="County"><Input type="text" placeholder="Greater London" value={form.county} onChange={v=>u('county',v)}/></Field>
+        <Field label="Postcode"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={v=>u('postcode',v)}/></Field>
       </div>
       <div className="field-row">
         <Field label="Move-in Date" hint="The date you moved to this address">
-          <Input type="month" value={form.movedIn} onChange={e=>u('movedIn',e.target.value)}/>
+          <Input type="month" value={form.movedIn} onChange={v=>u('movedIn',v)}/>
         </Field>
         <Field label="Currently living here?">
           <div className="radio-row">
-            <Radio name="currentAddr" value="yes" label="Yes" checked={form.currentAddr==='yes'} onChange={e=>u('currentAddr',e.target.value)}/>
-            <Radio name="currentAddr" value="no" label="No" checked={form.currentAddr==='no'} onChange={e=>u('currentAddr',e.target.value)}/>
+            <Radio name="currentAddr" value="yes" label="Yes" checked={form.currentAddr==='yes'} onChange={v=>u('currentAddr',v)}/>
+            <Radio name="currentAddr" value="no" label="No" checked={form.currentAddr==='no'} onChange={v=>u('currentAddr',v)}/>
           </div>
         </Field>
       </div>
       {form.currentAddr === 'no' && (
         <Field label="Move-out Date">
-          <Input type="month" value={form.movedOut} onChange={e=>u('movedOut',e.target.value)}/>
+          <Input type="month" value={form.movedOut} onChange={v=>u('movedOut',v)}/>
         </Field>
       )}
       {form.movedIn && form.currentAddr === 'yes' && (() => {
@@ -396,20 +396,20 @@ function StepDriving({ data, onChange, onBack, onNext }) {
       onBack={onBack} onNext={save}>
       <Field label="Do you hold a driving licence?">
         <div className="radio-row">
-          <Radio name="hasLicence" value="yes" label="Yes" checked={form.hasLicence==='yes'} onChange={e=>u('hasLicence',e.target.value)}/>
-          <Radio name="hasLicence" value="no" label="No" checked={form.hasLicence==='no'} onChange={e=>u('hasLicence',e.target.value)}/>
+          <Radio name="hasLicence" value="yes" label="Yes" checked={form.hasLicence==='yes'} onChange={v=>u('hasLicence',v)}/>
+          <Radio name="hasLicence" value="no" label="No" checked={form.hasLicence==='no'} onChange={v=>u('hasLicence',v)}/>
         </div>
       </Field>
       {form.hasLicence === 'yes' && <>
         <div className="field-row">
           <Field label="Licence Type">
-            <Select value={form.licenceType} onChange={e=>u('licenceType',e.target.value)}>
+            <Select value={form.licenceType} onChange={v=>u('licenceType',v)}>
               <option value="">Select</option><option>Full</option><option>Provisional</option>
             </Select>
           </Field>
-          <Field label="Licence Number"><Input type="text" placeholder="SMITH701234AB9CD" value={form.licenceNumber} onChange={e=>u('licenceNumber',e.target.value)}/></Field>
+          <Field label="Licence Number"><Input type="text" placeholder="SMITH701234AB9CD" value={form.licenceNumber} onChange={v=>u('licenceNumber',v)}/></Field>
           <Field label="Years Held">
-            <Select value={form.yearsHeld} onChange={e=>u('yearsHeld',e.target.value)}>
+            <Select value={form.yearsHeld} onChange={v=>u('yearsHeld',v)}>
               <option value="">Select</option>
               {['Less than 1','1–2','3–5','6–10','10+'].map(y=><option key={y}>{y}</option>)}
             </Select>
@@ -417,7 +417,7 @@ function StepDriving({ data, onChange, onBack, onNext }) {
         </div>
         <div className="field-row">
           <Field label="Penalty Points">
-            <Select value={form.points} onChange={e=>u('points',e.target.value)}>
+            <Select value={form.points} onChange={v=>u('points',v)}>
               <option value="">Select</option>
               {['0','1–3','4–6','7–9','9+'].map(p=><option key={p}>{p}</option>)}
             </Select>
@@ -432,44 +432,44 @@ function StepDriving({ data, onChange, onBack, onNext }) {
         </>}
         <Field label="Previous driving bans?">
           <div className="radio-row">
-            <Radio name="hasBan" value="yes" label="Yes" checked={form.hasBan==='yes'} onChange={e=>u('hasBan',e.target.value)}/>
-            <Radio name="hasBan" value="no" label="No" checked={form.hasBan==='no'} onChange={e=>u('hasBan',e.target.value)}/>
+            <Radio name="hasBan" value="yes" label="Yes" checked={form.hasBan==='yes'} onChange={v=>u('hasBan',v)}/>
+            <Radio name="hasBan" value="no" label="No" checked={form.hasBan==='no'} onChange={v=>u('hasBan',v)}/>
           </div>
         </Field>
         {form.hasBan === 'yes' && <div className="field-row">
-          <Field label="Date of ban"><Input type="date" value={form.banDate} onChange={e=>u('banDate',e.target.value)}/></Field>
-          <Field label="Duration"><Input type="text" placeholder="e.g. 12 months" value={form.banDuration} onChange={e=>u('banDuration',e.target.value)}/></Field>
-          <Field label="Reason"><Input type="text" placeholder="e.g. SP30" value={form.banReason} onChange={e=>u('banReason',e.target.value)}/></Field>
+          <Field label="Date of ban"><Input type="date" value={form.banDate} onChange={v=>u('banDate',v)}/></Field>
+          <Field label="Duration"><Input type="text" placeholder="e.g. 12 months" value={form.banDuration} onChange={v=>u('banDuration',v)}/></Field>
+          <Field label="Reason"><Input type="text" placeholder="e.g. SP30" value={form.banReason} onChange={v=>u('banReason',v)}/></Field>
         </div>}
       </>}
       <div className="divider"></div>
       <Field label="Do you have your own transport?">
         <div className="radio-row">
-          <Radio name="hasTransport" value="yes" label="Yes" checked={form.hasTransport==='yes'} onChange={e=>u('hasTransport',e.target.value)}/>
-          <Radio name="hasTransport" value="no" label="No" checked={form.hasTransport==='no'} onChange={e=>u('hasTransport',e.target.value)}/>
+          <Radio name="hasTransport" value="yes" label="Yes" checked={form.hasTransport==='yes'} onChange={v=>u('hasTransport',v)}/>
+          <Radio name="hasTransport" value="no" label="No" checked={form.hasTransport==='no'} onChange={v=>u('hasTransport',v)}/>
         </div>
       </Field>
       {form.hasTransport === 'yes' && <>
         <div className="field-row">
           <Field label="Vehicle Type">
-            <Select value={form.vehicleType} onChange={e=>u('vehicleType',e.target.value)}>
+            <Select value={form.vehicleType} onChange={v=>u('vehicleType',v)}>
               <option value="">Select</option>
               {['Car','Motorcycle','Van','Other'].map(v=><option key={v}>{v}</option>)}
             </Select>
           </Field>
           <Field label="Currently Taxed?">
-            <div className="radio-row"><Radio name="taxed" value="yes" label="Yes" checked={form.taxed==='yes'} onChange={e=>u('taxed',e.target.value)}/><Radio name="taxed" value="no" label="No" checked={form.taxed==='no'} onChange={e=>u('taxed',e.target.value)}/></div>
+            <div className="radio-row"><Radio name="taxed" value="yes" label="Yes" checked={form.taxed==='yes'} onChange={v=>u('taxed',v)}/><Radio name="taxed" value="no" label="No" checked={form.taxed==='no'} onChange={v=>u('taxed',v)}/></div>
           </Field>
           <Field label="Current MOT?">
-            <div className="radio-row"><Radio name="moted" value="yes" label="Yes" checked={form.moted==='yes'} onChange={e=>u('moted',e.target.value)}/><Radio name="moted" value="no" label="No" checked={form.moted==='no'} onChange={e=>u('moted',e.target.value)}/></div>
+            <div className="radio-row"><Radio name="moted" value="yes" label="Yes" checked={form.moted==='yes'} onChange={v=>u('moted',v)}/><Radio name="moted" value="no" label="No" checked={form.moted==='no'} onChange={v=>u('moted',v)}/></div>
           </Field>
         </div>
         <div className="field-row">
           <Field label="Insured for business use?">
-            <div className="radio-row"><Radio name="insured" value="yes" label="Yes" checked={form.insured==='yes'} onChange={e=>u('insured',e.target.value)}/><Radio name="insured" value="no" label="No" checked={form.insured==='no'} onChange={e=>u('insured',e.target.value)}/></div>
+            <div className="radio-row"><Radio name="insured" value="yes" label="Yes" checked={form.insured==='yes'} onChange={v=>u('insured',v)}/><Radio name="insured" value="no" label="No" checked={form.insured==='no'} onChange={v=>u('insured',v)}/></div>
           </Field>
           <Field label="Willing to travel">
-            <Select value={form.travelRadius} onChange={e=>u('travelRadius',e.target.value)}>
+            <Select value={form.travelRadius} onChange={v=>u('travelRadius',v)}>
               <option value="">Select radius</option>
               {['Up to 10 miles','Up to 25 miles','Up to 50 miles','Up to 100 miles','Nationwide'].map(r=><option key={r}>{r}</option>)}
             </Select>
@@ -482,7 +482,13 @@ function StepDriving({ data, onChange, onBack, onNext }) {
 
 // ── STEP 5: PREFERRED SECTORS & AVAILABILITY ──
 function StepSectors({ data, onChange, onBack, onNext }) {
-  const [form, setForm] = useState(data.sectors || { sectors:[], availability:'', shiftType:[], employmentType:'' });
+  const raw = data.sectors;
+  const [form, setForm] = useState({
+    sectors: Array.isArray(raw?.sectors) ? raw.sectors : [],
+    availability: raw?.availability || raw?.preferred_shift || '',
+    shiftType: Array.isArray(raw?.shiftType) ? raw.shiftType : [],
+    employmentType: raw?.employmentType || ''
+  });
   const allSectors = ['Shopping Centres / Retail','Distribution / Logistics / Warehousing','Construction Sites','Corporate / Commercial','Nightlife / Licensed Premises','Events / Festivals','Close Protection / Private','Transport Hubs (airports, stations)','Healthcare / Hospital','Education','Government / MOD','Residential / Concierge','Cash & Valuables in Transit','Control Room / CCTV','BID / Town Centre Rangers'];
   const toggleSector = (s) => {
     const list = form.sectors.includes(s) ? form.sectors.filter(x=>x!==s) : [...form.sectors,s];
@@ -507,12 +513,12 @@ function StepSectors({ data, onChange, onBack, onNext }) {
       <div className="divider"></div>
       <Field label="Employment Type">
         <div className="radio-row">
-          {['Full Time','Part Time','Either'].map(t=><Radio key={t} name="employmentType" value={t} label={t} checked={form.employmentType===t} onChange={e=>setForm({...form,employmentType:e.target.value})}/>)}
+          {['Full Time','Part Time','Either'].map(t=><Radio key={t} name="employmentType" value={t} label={t} checked={form.employmentType===t} onChange={v=>setForm({...form,employmentType:v})}/>)}
         </div>
       </Field>
       <Field label="Availability">
         <div className="radio-row">
-          {['Days','Nights','Weekends','Flexible / Any'].map(t=><Radio key={t} name="availability" value={t} label={t} checked={form.availability===t} onChange={e=>setForm({...form,availability:e.target.value})}/>)}
+          {['Days','Nights','Weekends','Flexible / Any'].map(t=><Radio key={t} name="availability" value={t} label={t} checked={form.availability===t} onChange={v=>setForm({...form,availability:v})}/>)}
         </div>
       </Field>
       <Field label="Preferred Shift Length" hint="Select all that apply">
@@ -545,33 +551,33 @@ function StepQualifications({ data, onChange, onBack, onNext }) {
       onBack={onBack} onNext={save}>
       <Field label="Do you hold a First Aid certificate?">
         <div className="radio-row">
-          <Radio name="hasFirstAid" value="yes" label="Yes" checked={form.hasFirstAid==='yes'} onChange={e=>u('hasFirstAid',e.target.value)}/>
-          <Radio name="hasFirstAid" value="no" label="No" checked={form.hasFirstAid==='no'} onChange={e=>u('hasFirstAid',e.target.value)}/>
+          <Radio name="hasFirstAid" value="yes" label="Yes" checked={form.hasFirstAid==='yes'} onChange={v=>u('hasFirstAid',v)}/>
+          <Radio name="hasFirstAid" value="no" label="No" checked={form.hasFirstAid==='no'} onChange={v=>u('hasFirstAid',v)}/>
         </div>
       </Field>
       {form.hasFirstAid === 'yes' && <>
         <div className="field-row">
           <Field label="Certificate Type">
-            <Select value={form.certType} onChange={e=>u('certType',e.target.value)}>
+            <Select value={form.certType} onChange={v=>u('certType',v)}>
               <option value="">Select</option>
               {['FREC Level 3','FREC Level 4','Emergency First Aid at Work (EFAW)','First Aid at Work (FAW)','BTEC First Aid','Other'].map(t=><option key={t}>{t}</option>)}
             </Select>
           </Field>
-          <Field label="Issuing Body"><Input type="text" placeholder="e.g. Qualsafe, Highfield" value={form.issuingBody} onChange={e=>u('issuingBody',e.target.value)}/></Field>
+          <Field label="Issuing Body"><Input type="text" placeholder="e.g. Qualsafe, Highfield" value={form.issuingBody} onChange={v=>u('issuingBody',v)}/></Field>
         </div>
         <div className="field-row">
-          <Field label="Certificate Number"><Input type="text" value={form.certNumber} onChange={e=>u('certNumber',e.target.value)}/></Field>
-          <Field label="Date Achieved"><Input type="date" value={form.dateAchieved} onChange={e=>u('dateAchieved',e.target.value)}/></Field>
-          <Field label="Expiry Date"><Input type="date" value={form.expiry} onChange={e=>u('expiry',e.target.value)}/></Field>
+          <Field label="Certificate Number"><Input type="text" value={form.certNumber} onChange={v=>u('certNumber',v)}/></Field>
+          <Field label="Date Achieved"><Input type="date" value={form.dateAchieved} onChange={v=>u('dateAchieved',v)}/></Field>
+          <Field label="Expiry Date"><Input type="date" value={form.expiry} onChange={v=>u('expiry',v)}/></Field>
         </div>
       </>}
       <div className="divider"></div>
       <div className="field-row">
         <Field label="Own uniform?">
-          <div className="radio-row"><Radio name="hasUniform" value="yes" label="Yes" checked={form.hasUniform==='yes'} onChange={e=>u('hasUniform',e.target.value)}/><Radio name="hasUniform" value="no" label="No" checked={form.hasUniform==='no'} onChange={e=>u('hasUniform',e.target.value)}/></div>
+          <div className="radio-row"><Radio name="hasUniform" value="yes" label="Yes" checked={form.hasUniform==='yes'} onChange={v=>u('hasUniform',v)}/><Radio name="hasUniform" value="no" label="No" checked={form.hasUniform==='no'} onChange={v=>u('hasUniform',v)}/></div>
         </Field>
         <Field label="Own PPE? (boots, torch, gloves)">
-          <div className="radio-row"><Radio name="hasPPE" value="yes" label="Yes" checked={form.hasPPE==='yes'} onChange={e=>u('hasPPE',e.target.value)}/><Radio name="hasPPE" value="no" label="No" checked={form.hasPPE==='no'} onChange={e=>u('hasPPE',e.target.value)}/></div>
+          <div className="radio-row"><Radio name="hasPPE" value="yes" label="Yes" checked={form.hasPPE==='yes'} onChange={v=>u('hasPPE',v)}/><Radio name="hasPPE" value="no" label="No" checked={form.hasPPE==='no'} onChange={v=>u('hasPPE',v)}/></div>
         </Field>
       </div>
       <div className="divider"></div>
@@ -582,21 +588,21 @@ function StepQualifications({ data, onChange, onBack, onNext }) {
       </Field>
       <div className="divider"></div>
       <Field label="Are you a qualified SIA trainer or assessor?">
-        <div className="radio-row"><Radio name="isSIATrainer" value="yes" label="Yes" checked={form.isSIATrainer==='yes'} onChange={e=>u('isSIATrainer',e.target.value)}/><Radio name="isSIATrainer" value="no" label="No" checked={form.isSIATrainer==='no'} onChange={e=>u('isSIATrainer',e.target.value)}/></div>
+        <div className="radio-row"><Radio name="isSIATrainer" value="yes" label="Yes" checked={form.isSIATrainer==='yes'} onChange={v=>u('isSIATrainer',v)}/><Radio name="isSIATrainer" value="no" label="No" checked={form.isSIATrainer==='no'} onChange={v=>u('isSIATrainer',v)}/></div>
       </Field>
-      {form.isSIATrainer==='yes' && <Field label="Trainer qualification details"><Input type="text" placeholder="Qualification, awarding body and year" value={form.trainerDetails} onChange={e=>u('trainerDetails',e.target.value)}/></Field>}
+      {form.isSIATrainer==='yes' && <Field label="Trainer qualification details"><Input type="text" placeholder="Qualification, awarding body and year" value={form.trainerDetails} onChange={v=>u('trainerDetails',v)}/></Field>}
       <div className="divider"></div>
       <Field label="Do you hold or have you previously held SC or DV security clearance?">
-        <div className="radio-row"><Radio name="hasClearance" value="yes" label="Yes" checked={form.hasClearance==='yes'} onChange={e=>u('hasClearance',e.target.value)}/><Radio name="hasClearance" value="no" label="No" checked={form.hasClearance==='no'} onChange={e=>u('hasClearance',e.target.value)}/></div>
+        <div className="radio-row"><Radio name="hasClearance" value="yes" label="Yes" checked={form.hasClearance==='yes'} onChange={v=>u('hasClearance',v)}/><Radio name="hasClearance" value="no" label="No" checked={form.hasClearance==='no'} onChange={v=>u('hasClearance',v)}/></div>
       </Field>
       {form.hasClearance==='yes' && <div className="field-row">
         <Field label="Clearance Level">
-          <Select value={form.clearanceLevel} onChange={e=>u('clearanceLevel',e.target.value)}>
+          <Select value={form.clearanceLevel} onChange={v=>u('clearanceLevel',v)}>
             <option value="">Select</option><option>SC</option><option>DV</option><option>CTC</option><option>BPSS</option>
           </Select>
         </Field>
         <Field label="Still Active?">
-          <div className="radio-row"><Radio name="clearanceActive" value="yes" label="Yes" checked={form.clearanceActive==='yes'} onChange={e=>u('clearanceActive',e.target.value)}/><Radio name="clearanceActive" value="no" label="No — lapsed" checked={form.clearanceActive==='no'} onChange={e=>u('clearanceActive',e.target.value)}/></div>
+          <div className="radio-row"><Radio name="clearanceActive" value="yes" label="Yes" checked={form.clearanceActive==='yes'} onChange={v=>u('clearanceActive',v)}/><Radio name="clearanceActive" value="no" label="No — lapsed" checked={form.clearanceActive==='no'} onChange={v=>u('clearanceActive',v)}/></div>
         </Field>
       </div>}
     </StepShell>
@@ -617,34 +623,34 @@ function StepBackground({ data, onChange, onBack, onNext }) {
       why="Armed forces and police backgrounds are highly valued by security employers. BID accreditation opens doors to town centre and retail roles. Be proud of your background — it sets you apart."
       onBack={onBack} onNext={save}>
       <Field label="Do you have an armed forces or police background?">
-        <div className="radio-row"><Radio name="hasForces" value="yes" label="Yes" checked={form.hasForces==='yes'} onChange={e=>u('hasForces',e.target.value)}/><Radio name="hasForces" value="no" label="No" checked={form.hasForces==='no'} onChange={e=>u('hasForces',e.target.value)}/></div>
+        <div className="radio-row"><Radio name="hasForces" value="yes" label="Yes" checked={form.hasForces==='yes'} onChange={v=>u('hasForces',v)}/><Radio name="hasForces" value="no" label="No" checked={form.hasForces==='no'} onChange={v=>u('hasForces',v)}/></div>
       </Field>
       {form.hasForces==='yes' && <div className="field-row">
         <Field label="Branch / Force">
-          <Select value={form.forcesBranch} onChange={e=>u('forcesBranch',e.target.value)}>
+          <Select value={form.forcesBranch} onChange={v=>u('forcesBranch',v)}>
             <option value="">Select</option>
             {['British Army','Royal Navy','Royal Air Force','Royal Marines','Police Service','Other'].map(b=><option key={b}>{b}</option>)}
           </Select>
         </Field>
-        <Field label="Rank / Grade"><Input type="text" placeholder="e.g. Sergeant, PC" value={form.forcesRank} onChange={e=>u('forcesRank',e.target.value)}/></Field>
-        <Field label="Years Served"><Input type="text" placeholder="e.g. 8" value={form.forcesYears} onChange={e=>u('forcesYears',e.target.value)}/></Field>
+        <Field label="Rank / Grade"><Input type="text" placeholder="e.g. Sergeant, PC" value={form.forcesRank} onChange={v=>u('forcesRank',v)}/></Field>
+        <Field label="Years Served"><Input type="text" placeholder="e.g. 8" value={form.forcesYears} onChange={v=>u('forcesYears',v)}/></Field>
       </div>}
       {form.hasForces==='yes' && <Field label="Type of discharge / departure">
-        <Select value={form.forcesDischarge} onChange={e=>u('forcesDischarge',e.target.value)}>
+        <Select value={form.forcesDischarge} onChange={v=>u('forcesDischarge',v)}>
           <option value="">Select</option>
           {['Honourable discharge','Medical discharge','Voluntary exit','Retirement','Other'].map(d=><option key={d}>{d}</option>)}
         </Select>
       </Field>}
       <div className="divider"></div>
       <Field label="Are you registered with any BID (Business Improvement District) scheme?" hint="BID accreditation is required for many town centre and retail security roles">
-        <div className="radio-row"><Radio name="hasBID" value="yes" label="Yes" checked={form.hasBID==='yes'} onChange={e=>u('hasBID',e.target.value)}/><Radio name="hasBID" value="no" label="No" checked={form.hasBID==='no'} onChange={e=>u('hasBID',e.target.value)}/></div>
+        <div className="radio-row"><Radio name="hasBID" value="yes" label="Yes" checked={form.hasBID==='yes'} onChange={v=>u('hasBID',v)}/><Radio name="hasBID" value="no" label="No" checked={form.hasBID==='no'} onChange={v=>u('hasBID',v)}/></div>
       </Field>
-      {form.hasBID==='yes' && <Field label="BID scheme(s), town/city and accreditation number"><Input type="text" placeholder="e.g. Manchester BID — MAN-DS-001234" value={form.bidSchemes} onChange={e=>u('bidSchemes',e.target.value)}/></Field>}
+      {form.hasBID==='yes' && <Field label="BID scheme(s), town/city and accreditation number"><Input type="text" placeholder="e.g. Manchester BID — MAN-DS-001234" value={form.bidSchemes} onChange={v=>u('bidSchemes',v)}/></Field>}
       <div className="divider"></div>
       <Field label="Do you have any unspent criminal convictions?" hint="This does not automatically disqualify you — we assess each case individually">
-        <div className="radio-row"><Radio name="hasCriminal" value="yes" label="Yes" checked={form.hasCriminal==='yes'} onChange={e=>u('hasCriminal',e.target.value)}/><Radio name="hasCriminal" value="no" label="No" checked={form.hasCriminal==='no'} onChange={e=>u('hasCriminal',e.target.value)}/></div>
+        <div className="radio-row"><Radio name="hasCriminal" value="yes" label="Yes" checked={form.hasCriminal==='yes'} onChange={v=>u('hasCriminal',v)}/><Radio name="hasCriminal" value="no" label="No" checked={form.hasCriminal==='no'} onChange={v=>u('hasCriminal',v)}/></div>
       </Field>
-      {form.hasCriminal==='yes' && <Field label="Please provide brief details" hint="Date, offence, sentence. This is confidential and only visible to you and our admin team."><textarea className="f-textarea" rows={3} value={form.criminalDetails} onChange={e=>u('criminalDetails',e.target.value)} placeholder="e.g. 2019 — SP30 — 3 points and £100 fine"/></Field>}
+      {form.hasCriminal==='yes' && <Field label="Please provide brief details" hint="Date, offence, sentence. This is confidential and only visible to you and our admin team."><textarea className="f-textarea" rows={3} value={form.criminalDetails} onChange={v=>u('criminalDetails',v)} placeholder="e.g. 2019 — SP30 — 3 points and £100 fine"/></Field>}
     </StepShell>
   );
 }
@@ -1088,11 +1094,11 @@ function SignUpPage() {
             <form className="auth-form" onSubmit={handleRegister}>
               {error && <div className="auth-error">{error}</div>}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
-                <div className="field"><label className="field-label">First Name</label><input className="f-input" type="text" required value={form.firstName} onChange={e=>setForm({...form,firstName:e.target.value})} placeholder="John"/></div>
-                <div className="field"><label className="field-label">Last Name</label><input className="f-input" type="text" required value={form.lastName} onChange={e=>setForm({...form,lastName:e.target.value})} placeholder="Smith"/></div>
+                <div className="field"><label className="field-label">First Name</label><input className="f-input" type="text" required value={form.firstName} onChange={v=>setForm({...form,firstName:v})} placeholder="John"/></div>
+                <div className="field"><label className="field-label">Last Name</label><input className="f-input" type="text" required value={form.lastName} onChange={v=>setForm({...form,lastName:v})} placeholder="Smith"/></div>
               </div>
-              <div className="field"><label className="field-label">Email Address</label><input className="f-input" type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="your@email.com"/></div>
-              <div className="field"><label className="field-label">Password</label><input className="f-input" type="password" required value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Min. 8 characters"/></div>
+              <div className="field"><label className="field-label">Email Address</label><input className="f-input" type="email" required value={form.email} onChange={v=>setForm({...form,email:v})} placeholder="your@email.com"/></div>
+              <div className="field"><label className="field-label">Password</label><input className="f-input" type="password" required value={form.password} onChange={v=>setForm({...form,password:v})} placeholder="Min. 8 characters"/></div>
               <div className="field" style={{marginTop:'0.5rem'}}>
                 <label style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',cursor:'pointer',fontSize:'0.85rem',color:'#374151',lineHeight:'1.5'}}>
                   <input type="checkbox" required checked={form.gdprConsent} onChange={e=>setForm({...form,gdprConsent:e.target.checked})} style={{marginTop:'3px',flexShrink:0}}/>
@@ -1141,8 +1147,8 @@ function SignInPage() {
           <div className="auth-sub">Sign in to your UK Security Jobs account</div>
           <form className="auth-form" onSubmit={handleSignIn}>
             {error && <div className="auth-error">{error}</div>}
-            <div className="field"><label className="field-label">Email Address</label><input className="f-input" type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="your@email.com"/></div>
-            <div className="field"><label className="field-label">Password</label><input className="f-input" type="password" required value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Your password"/></div>
+            <div className="field"><label className="field-label">Email Address</label><input className="f-input" type="email" required value={form.email} onChange={v=>setForm({...form,email:v})} placeholder="your@email.com"/></div>
+            <div className="field"><label className="field-label">Password</label><input className="f-input" type="password" required value={form.password} onChange={v=>setForm({...form,password:v})} placeholder="Your password"/></div>
             <div style={{textAlign:'right',marginBottom:'0.5rem'}}><a href="/forgot-password" style={{fontSize:'0.82rem',color:'var(--blue)'}}>Forgot password?</a></div>
             <button className="btn-full" type="submit" disabled={loading}>{loading?'Signing in...':'Sign In →'}</button>
           </form>
