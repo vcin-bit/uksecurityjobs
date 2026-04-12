@@ -226,7 +226,7 @@ function StepSIA({ data, onChange, onBack, onNext }) {
 
 // ── STEP 3: PERSONAL DETAILS ──
 function StepPersonal({ data, onChange, onBack, onNext }) {
-  const [form, setForm] = useState(data.personal || { phone:'', dob:'', gender:'', ni:'', address1:'', address2:'', town:'', county:'', postcode:'', movedIn:'', movedOut:'', currentAddr:'' });
+  const [form, setForm] = useState(data.personal || { phone:'', dob:'', gender:'', ni:'', address1:'', address2:'', town:'', county:'', postcode:'', movedIn:'', movedOut:'', currentAddr:'', siaAddress:'', dvlaAddress:'' });
   const u = (f,v) => setForm({...form,[f]:v});
   const save = () => { onChange({ personal: form }); onNext(); };
   return (
@@ -287,6 +287,44 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
           </div>
         );
       })()}
+
+      <div className="divider"></div>
+
+      <Field label="Is your SIA licence registered to this address?">
+        <div className="radio-row">
+          <Radio name="siaAddress" value="yes" label="Yes" checked={form.siaAddress==='yes'} onChange={e=>u('siaAddress',e.target.value)}/>
+          <Radio name="siaAddress" value="no" label="No" checked={form.siaAddress==='no'} onChange={e=>u('siaAddress',e.target.value)}/>
+          <Radio name="siaAddress" value="na" label="Not applicable" checked={form.siaAddress==='na'} onChange={e=>u('siaAddress',e.target.value)}/>
+        </div>
+      </Field>
+      {form.siaAddress === 'no' && (
+        <div className="address-warning" style={{marginTop:'0.5rem'}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+          <span>Your SIA licence address should match your current address. A mismatch can raise a flag during identity verification. You can update your registered address quickly through your <a href="https://services.sia.homeoffice.gov.uk/" target="_blank" rel="noopener noreferrer" className="inline-link">SIA online account</a>. We recommend doing this before applying for roles.</span>
+        </div>
+      )}
+
+      <Field label="Is your driving licence registered to this address?" hint="If you hold a driving licence">
+        <div className="radio-row">
+          <Radio name="dvlaAddress" value="yes" label="Yes" checked={form.dvlaAddress==='yes'} onChange={e=>u('dvlaAddress',e.target.value)}/>
+          <Radio name="dvlaAddress" value="no" label="No" checked={form.dvlaAddress==='no'} onChange={e=>u('dvlaAddress',e.target.value)}/>
+          <Radio name="dvlaAddress" value="na" label="No driving licence" checked={form.dvlaAddress==='na'} onChange={e=>u('dvlaAddress',e.target.value)}/>
+        </div>
+      </Field>
+      {form.dvlaAddress === 'no' && (
+        <div className="address-warning" style={{marginTop:'0.5rem'}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+          <span>
+            Your driving licence must show your current address by law. An out-of-date address can cause issues during identity and address verification checks — and carries a £1,000 DVLA fine if not updated within 3 months of moving.
+            <br/><br/>
+            You can update your driving licence address online in minutes — it is free and takes about 5 minutes:
+            <br/>
+            <a href="https://www.gov.uk/change-address-driving-licence" target="_blank" rel="noopener noreferrer" className="inline-link">&#8250; Update your driving licence address on GOV.UK</a>
+            <br/>
+            <a href="https://www.gov.uk/change-address-driving-licence" target="_blank" rel="noopener noreferrer" className="inline-link">&#8250; You will need your National Insurance number and a valid UK passport or biometric residence permit</a>
+          </span>
+        </div>
+      )}
       <div className="prepare-notice">
         <div className="prepare-notice-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
