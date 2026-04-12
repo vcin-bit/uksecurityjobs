@@ -699,14 +699,46 @@ function ProfileBuilder() {
 
 // ── INDUSTRY FACTS ──
 const industryFacts = [
-  { stat: '350,000+', fact: 'Active SIA licensed security professionals work in the UK — making it one of the largest regulated workforces in the country.' },
-  { stat: '£4.3bn', fact: 'The UK private security industry generates over £4.3 billion annually, with demand growing year on year.' },
-  { stat: '3 years', fact: 'Every SIA licence is valid for 3 years. Renewing early keeps you continuously employable with no gaps.' },
-  { stat: 'BS7858', fact: 'The BS7858 vetting standard was first introduced in 1996. Today it is a contractual requirement on most UK security contracts.' },
-  { stat: '£184', fact: 'The cost of an SIA licence application. One of the most cost-effective professional licences in any regulated UK industry.' },
-  { stat: '60%', fact: 'Of security professionals in the UK hold more than one SIA licence type — increasing their employment options significantly.' },
-  { stat: '1 in 12', fact: 'Every 1 in 12 people employed in the UK works in a role that involves an element of security or loss prevention.' },
-  { stat: '2001', fact: 'The Private Security Industry Act 2001 established mandatory SIA licensing — making UK security one of the most regulated industries in Europe.' },
+  {
+    title: 'BS7858',
+    fact: 'The BS7858 vetting standard was first introduced in 1996. Today it is a contractual requirement on most UK security contracts.',
+    why: 'Having an accurate, vettable work history is a critical part of your application. Employers cannot start vetting without it.'
+  },
+  {
+    title: '350,000+ SIA Licence Holders',
+    fact: 'There are over 350,000 active SIA licensed security professionals in the UK — one of the largest regulated workforces in the country.',
+    why: 'Standing out means having a complete, verified profile. A strong vettability score puts you ahead of the competition.'
+  },
+  {
+    title: 'SIA Licence Validity',
+    fact: 'Every SIA licence is valid for 3 years. Many professionals let theirs lapse — losing access to work immediately.',
+    why: 'Keep your licence and expiry date up to date on your profile. We will remind you before it expires.'
+  },
+  {
+    title: '£4.3 Billion Industry',
+    fact: 'The UK private security industry generates over £4.3 billion annually, with demand growing every year across every sector.',
+    why: 'The opportunities are there. A complete, verified profile means you are ready to move when the right role appears.'
+  },
+  {
+    title: 'Dual Licences',
+    fact: 'Around 60% of UK security professionals hold more than one SIA licence type — significantly increasing their employment options.',
+    why: 'Adding a second licence to your profile opens up more roles and makes you a more attractive candidate to employers.'
+  },
+  {
+    title: 'The Private Security Industry Act 2001',
+    fact: 'Passed in 2001, this Act established mandatory SIA licensing — making UK security one of the most regulated industries in Europe.',
+    why: 'Your licence is your professional credential. Keeping it verified on your profile proves your compliance to every employer.'
+  },
+  {
+    title: 'Right to Work',
+    fact: 'Employers are legally required to check right to work documents before employment. Failure to do so carries unlimited fines.',
+    why: 'Uploading your right to work documents to your profile means employers can confirm compliance instantly — speeding up your start date.'
+  },
+  {
+    title: '5-Year History',
+    fact: 'BS7858 requires a verified 5-year employment and address history with no unexplained gaps — not a 2-year or 3-year history.',
+    why: 'A single unexplained gap can stall or fail a vetting check. Complete your full 5-year history now so it never holds you back.'
+  },
 ];
 
 // ── DASHBOARD ──
@@ -764,9 +796,9 @@ function Dashboard() {
         <div className="dash-fact-subtle">
           <div className="dash-fact-inner">
             <span className="dash-fact-label">Did you know?</span>
-            <span className="dash-fact-num">{fact.stat}</span>
+            <span className="dash-fact-title">{fact.title}</span>
             <span className="dash-fact-txt">{fact.fact}</span>
-            <span className="dash-fact-cta">This is why having an accurate work history matters.</span>
+            <span className="dash-fact-why"><strong>Why this matters to you —</strong> {fact.why}</span>
           </div>
         </div>
       </div>
