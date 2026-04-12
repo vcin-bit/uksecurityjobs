@@ -1709,14 +1709,9 @@ function ProfileBuilder() {
   const update = async (d) => {
     const merged = { ...profileData, ...d };
     setProfileData(merged);
-
-    // Mark the step as complete immediately when saved
     const stepKey = Object.keys(d)[0];
-    if (stepKey) {
-      setCompletedSteps(prev => new Set([...prev, stepKey]));
-    }
-
     setSaving(true);
+    let saveOk = false;
     try {
       if (d.personal) await apiRequest('/api/candidates/me/personal', 'PUT', d.personal, getToken);
       if (d.licences) {
@@ -1730,19 +1725,36 @@ function ProfileBuilder() {
       if (d.background) await apiRequest('/api/profile/background', 'PUT', d.background, getToken);
       if (d.employment) {
         for (const job of d.employment) {
-          await apiRequest('/api/profile/employment', 'POST', { employer_name: job.employer, job_title: job.role, start_date: job.from, end_date: job.to || null, is_current: job.current, reason_for_leaving: job.reason }, getToken);
+          await apiRequest('/api/profile/employment', 'POST', {
+            employer_name: job.employer, job_title: job.role,
+            employer_address: [job.address1, job.address2, job.town, job.county, job.postcode].filter(Boolean).join(', '),
+            employer_postcode: job.postcode,
+            reference_name: job.contactName, reference_job_title: job.contactTitle,
+            reference_email: job.contactEmail, reference_phone: job.contactPhone,
+            start_date: job.from, end_date: job.to || null,
+            is_current: job.current, reason_for_leaving: job.reason
+          }, getToken);
         }
       }
       if (d.addresses) {
         for (const addr of d.addresses) {
-          await apiRequest('/api/profile/addresses', 'POST', { address_line1: addr.line1, address_line2: addr.line2, city: addr.town, postcode: addr.postcode, moved_in_date: addr.from, moved_out_date: addr.to || null, is_current: addr.current }, getToken);
+          await apiRequest('/api/profile/addresses', 'POST', {
+            address_line1: addr.line1, address_line2: addr.line2,
+            city: addr.town, postcode: addr.postcode,
+            moved_in_date: addr.from, moved_out_date: addr.to || null,
+            is_current: addr.current
+          }, getToken);
         }
       }
       await apiRequest('/api/candidates/me/step', 'PATCH', { profile_step: step + 1 }, getToken);
+      saveOk = true;
+      if (stepKey) setCompletedSteps(prev => new Set([...prev, stepKey]));
     } catch(err) {
       console.error('Save error:', err);
+      alert('Save failed: ' + err.message + '\n\nPlease try again. If this keeps happening, contact support.');
     }
     setSaving(false);
+    return saveOk;
   };
 
   if (loading) return <div style={{textAlign:'center',padding:'4rem',color:'#64748b'}}>Loading your profile...</div>;

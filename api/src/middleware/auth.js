@@ -1,4 +1,8 @@
-const Clerk = require('@clerk/backend');
+const { createClerkClient } = require('@clerk/backend');
+
+const clerkClient = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY
+});
 
 async function requireAuth(req, res, next) {
   try {
@@ -9,12 +13,23 @@ async function requireAuth(req, res, next) {
 
     const token = authHeader.split(' ')[1];
 
-    const payload = await Clerk.verifyToken(token, {
-      secretKey: process.env.CLERK_SECRET_KEY
-    });
+    let payload;
+    try {
+      // Clerk Backend SDK v1+ - verifyToken is on the client
+      payload = await clerkClient.verifyToken(token);
+    } catch (e) {
+      // Fallback for different SDK versions
+      try {
+        const { verifyToken } = require('@clerk/backend');
+        payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY });
+      } catch (e2) {
+        console.error('Token verification failed:', e.message);
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+    }
 
     if (!payload || !payload.sub) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid token payload' });
     }
 
     req.userId = payload.sub;
