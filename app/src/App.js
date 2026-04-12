@@ -239,66 +239,169 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
     county: raw?.county || '',
     postcode: raw?.postcode || '',
     movedIn: raw?.move_in_date || raw?.movedIn || '',
-    movedOut: raw?.movedOut || '',
-    currentAddr: raw?.currentAddr || '',
+    currentAddr: 'yes',
     siaAddress: raw?.siaAddress || (raw?.sia_address_match === true ? 'yes' : raw?.sia_address_match === false ? 'no' : ''),
     dvlaAddress: raw?.dvlaAddress || (raw?.dvla_address_match === true ? 'yes' : raw?.dvla_address_match === false ? 'no' : ''),
+    prevAddresses: raw?.prevAddresses || [],
   });
+
   const u = (f,v) => setForm(prev => ({...prev,[f]:v}));
-  const addPrevAddress = () => setForm(prev => ({...prev, prevAddresses:[...(prev.prevAddresses||[]),{line1:'',line2:'',town:'',county:'',postcode:'',from:'',to:''}]}));
-  const updatePrevAddr = (i,f,v) => setForm(prev => { const arr=[...(prev.prevAddresses||[])]; arr[i]={...arr[i],[f]:v}; return {...prev,prevAddresses:arr}; });
-  const removePrevAddr = (i) => setForm(prev => ({...prev, prevAddresses:(prev.prevAddresses||[]).filter((_,idx)=>idx!==i)}));
-  const save = () => { onChange({ personal: form }); onNext(); };
+
+  const addPrevAddress = () => setForm(prev => ({
+    ...prev,
+    prevAddresses: [...prev.prevAddresses, { line1:'', line2:'', town:'', county:'', postcode:'', from:'', to:'', gapExplanation:'' }]
+  }));
+
+  const updatePrevAddr = (i, f, v) => setForm(prev => {
+    const arr = [...prev.prevAddresses];
+    arr[i] = { ...arr[i], [f]: v };
+    return { ...prev, prevAddresses: arr };
+  });
+
+  const removePrevAddr = (i) => setForm(prev => ({
+    ...prev,
+    prevAddresses: prev.prevAddresses.filter((_,idx) => idx !== i)
+  }));
+
+  // Calculate months at current address
+  const monthsAtCurrent = form.movedIn
+    ? Math.floor((new Date() - new Date(form.movedIn + '-01')) / (1000 * 60 * 60 * 24 * 30.5))
+    : 0;
+
+  const needs5Year = monthsAtCurrent < 60 && form.movedIn;
+
+  // Gap detection — build timeline and find gaps
+  const getGaps = () => {
+    if (!form.movedIn) return [];
+    const fiveYearsAgo = new Date();
+    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+
+    // Build list of address periods within 5 year window
+    const periods = [];
+
+    // Current address
+    periods.push({
+      start: new Date(form.movedIn + '-01'),
+      end: new Date(),
+      label: 'Current address'
+    });
+
+    // Previous addresses
+    form.prevAddresses.forEach((addr, i) => {
+      if (addr.from && addr.to) {
+        periods.push({
+          start: new Date(addr.from + '-01'),
+          end: new Date(addr.to + '-01'),
+          label: `Previous address ${i + 1} (${addr.line1 || 'no address entered'})`
+        });
+      }
+    });
+
+    // Sort by start date descending (most recent first)
+    periods.sort((a, b) => b.start - a.start);
+
+    const gaps = [];
+    for (let i = 0; i < periods.length - 1; i++) {
+      const current = periods[i];
+      const next = periods[i + 1];
+      // Gap exists if current period starts after next period ends (more than 35 days)
+      const gapDays = Math.floor((current.start - next.end) / (1000 * 60 * 60 * 24));
+      if (gapDays > 35) {
+        const gapMonths = Math.round(gapDays / 30.5);
+        gaps.push({
+          from: next.end,
+          to: current.start,
+          days: gapDays,
+          months: gapMonths,
+          afterLabel: next.label,
+          beforeLabel: current.label,
+          index: i
+        });
+      }
+    }
+
+    // Check if history goes back 5 years
+    if (periods.length > 0) {
+      const earliest = periods[periods.length - 1];
+      if (earliest.start > fiveYearsAgo) {
+        const shortfallMonths = Math.round((earliest.start - fiveYearsAgo) / (1000 * 60 * 60 * 24 * 30.5));
+        if (shortfallMonths > 1) {
+          gaps.push({
+            from: fiveYearsAgo,
+            to: earliest.start,
+            days: Math.floor((earliest.start - fiveYearsAgo) / (1000 * 60 * 60 * 24)),
+            months: shortfallMonths,
+            afterLabel: '5 years ago',
+            beforeLabel: earliest.label,
+            index: 99,
+            shortfall: true
+          });
+        }
+      }
+    }
+
+    return gaps;
+  };
+
+  const gaps = needs5Year ? getGaps() : [];
+  const hasUnexplainedGaps = gaps.some(g => {
+    if (g.shortfall) return true;
+    const addr = form.prevAddresses[g.index];
+    return !addr?.gapExplanation?.trim();
+  });
+
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { month:'short', year:'numeric' }) : '—';
+
+  const yearLabel = (months) => {
+    const y = Math.floor(months/12), m = months%12;
+    return y > 0 ? (y + ' yr' + (y>1?'s':'') + (m>0?' '+m+' mo':'')) : (months + ' month' + (months!==1?'s':''));
+  };
+
+  const save = () => {
+    if (hasUnexplainedGaps) return;
+    onChange({ personal: form });
+    onNext();
+  };
+
   return (
     <StepShell step={3} total={11} title="Personal Details"
       why="Employers need to be able to contact you quickly. A complete personal profile also means vetting can start without any back-and-forth."
-      onBack={onBack} onNext={save}>
+      onBack={onBack} onNext={save} nextLabel={hasUnexplainedGaps ? 'Explain all gaps to continue' : 'Save & Continue'}>
       <div className="field-row">
         <Field label="Phone Number"><Input type="tel" placeholder="07700 000000" value={form.phone} onChange={v=>u('phone',v)}/></Field>
         <Field label="Date of Birth"><Input type="date" value={form.dob} onChange={v=>u('dob',v)}/></Field>
       </div>
       <div className="field-row">
         <Field label="National Insurance Number"><Input type="text" placeholder="AB 12 34 56 C" value={form.ni} onChange={v=>u('ni',v)}/></Field>
-        <Field label="Gender" hint="Optional — used for equal opportunities monitoring only">
+        <Field label="Gender" hint="Optional — equal opportunities monitoring only">
           <Select value={form.gender} onChange={v=>u('gender',v)}>
             <option value="">Prefer not to say</option>
             <option>Male</option><option>Female</option><option>Non-binary</option><option>Other</option>
           </Select>
         </Field>
       </div>
+
       <div className="divider"></div>
-      <Field label="Current Address Line 1"><Input type="text" placeholder="House number and street name" value={form.address1} onChange={v=>u('address1',v)}/></Field>
+      <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'1rem'}}>Current Address</div>
+
+      <Field label="Address Line 1"><Input type="text" placeholder="House number and street name" value={form.address1} onChange={v=>u('address1',v)}/></Field>
       <Field label="Address Line 2" hint="Flat, apartment, building name (if applicable)"><Input type="text" placeholder="Optional" value={form.address2} onChange={v=>u('address2',v)}/></Field>
       <div className="field-row">
         <Field label="Town / City"><Input type="text" placeholder="London" value={form.town} onChange={v=>u('town',v)}/></Field>
         <Field label="County"><Input type="text" placeholder="Greater London" value={form.county} onChange={v=>u('county',v)}/></Field>
         <Field label="Postcode"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={v=>u('postcode',v)}/></Field>
       </div>
-      <div className="field-row">
-        <Field label="Move-in Date" hint="The date you moved to this address">
-          <Input type="month" value={form.movedIn} onChange={v=>u('movedIn',v)}/>
-        </Field>
-        <Field label="Currently living here?">
-          <div className="radio-row">
-            <Radio name="currentAddr" value="yes" label="Yes" checked={form.currentAddr==='yes'} onChange={v=>u('currentAddr',v)}/>
-            <Radio name="currentAddr" value="no" label="No" checked={form.currentAddr==='no'} onChange={v=>u('currentAddr',v)}/>
-          </div>
-        </Field>
-      </div>
-      {form.currentAddr === 'no' && (
-        <Field label="Move-out Date">
-          <Input type="month" value={form.movedOut} onChange={v=>u('movedOut',v)}/>
-        </Field>
-      )}
-      {form.movedIn && form.currentAddr === 'yes' && (() => {
-        const months = Math.floor((new Date() - new Date(form.movedIn + '-01')) / (1000 * 60 * 60 * 24 * 30.5));
-        const years = Math.floor(months / 12);
-        const rem = months % 12;
-        const label = years > 0 ? (years + ' year' + (years>1?'s':'') + (rem > 0 ? ' ' + rem + ' month' + (rem>1?'s':'') : '')) : (months + ' month' + (months!==1?'s':''));
-        return months < 60 ? (
+      <Field label="Move-in Date" hint="The month and year you moved to this address">
+        <Input type="month" value={form.movedIn} onChange={v=>u('movedIn',v)}/>
+      </Field>
+
+      {form.movedIn && (() => {
+        const y = Math.floor(monthsAtCurrent/12), m = monthsAtCurrent%12;
+        const label = y > 0 ? (y+' year'+(y>1?'s':'')+(m>0?' '+m+' month'+(m>1?'s':''):'')) : (monthsAtCurrent+' month'+(monthsAtCurrent!==1?'s':''));
+        return monthsAtCurrent < 60 ? (
           <div className="address-warning">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
-            You have lived here for <strong>{label}</strong>. BS7858 requires a full 5-year address history — add your previous address(es) below.
+            You have lived here for <strong>{label}</strong>. BS7858 requires a full 5-year address history with no gaps. Add every previous address below — exact dates, no gaps.
           </div>
         ) : (
           <div className="address-ok">
@@ -308,72 +411,125 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
         );
       })()}
 
-      {/* Previous addresses if less than 5 years at current address */}
-      {form.movedIn && form.currentAddr === 'yes' && (() => {
-        const months = Math.floor((new Date() - new Date(form.movedIn + '-01')) / (1000 * 60 * 60 * 24 * 30.5));
-        return months < 60 ? (
-          <div style={{marginTop:'1.5rem'}}>
-            <div style={{fontWeight:700,fontSize:'0.9rem',marginBottom:'0.75rem',color:'#0b1222'}}>Previous Addresses</div>
-            <div style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1rem'}}>Add every address you have lived at for the past 5 years with no gaps.</div>
-            {(form.prevAddresses||[]).map((addr,i) => (
-              <div key={i} className="history-block">
-                <div className="history-block-header">
-                  <span>Previous Address {i+1}</span>
-                  <button className="btn-remove" onClick={()=>removePrevAddr(i)}>Remove</button>
-                </div>
-                <Field label="Address Line 1"><Input type="text" placeholder="House number and street" value={addr.line1} onChange={e=>updatePrevAddr(i,'line1',e.target.value)}/></Field>
-                <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={addr.line2} onChange={e=>updatePrevAddr(i,'line2',e.target.value)}/></Field>
-                <div className="field-row">
-                  <Field label="Town / City"><Input type="text" value={addr.town} onChange={e=>updatePrevAddr(i,'town',e.target.value)}/></Field>
-                  <Field label="County"><Input type="text" value={addr.county} onChange={e=>updatePrevAddr(i,'county',e.target.value)}/></Field>
-                  <Field label="Postcode"><Input type="text" value={addr.postcode} onChange={e=>updatePrevAddr(i,'postcode',e.target.value)}/></Field>
-                </div>
-                <div className="field-row">
-                  <Field label="Move-in Date"><Input type="month" value={addr.from} onChange={e=>updatePrevAddr(i,'from',e.target.value)}/></Field>
-                  <Field label="Move-out Date"><Input type="month" value={addr.to} onChange={e=>updatePrevAddr(i,'to',e.target.value)}/></Field>
-                </div>
-              </div>
-            ))}
-            <button className="btn-add" onClick={addPrevAddress}>+ Add Previous Address</button>
+      {/* PREVIOUS ADDRESSES */}
+      {needs5Year && (
+        <div style={{marginTop:'1.5rem'}}>
+          <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.25rem'}}>Previous Addresses</div>
+          <div style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1.25rem'}}>
+            Add every address going back 5 years. Dates must be exact — from the month you moved in to the month you moved out. Every month must be accounted for.
           </div>
-        ) : null;
-      })()}
+
+          {form.prevAddresses.map((addr, i) => (
+            <div key={i} className="history-block">
+              <div className="history-block-header">
+                <span>Previous Address {i+1}</span>
+                <button className="btn-remove" onClick={()=>removePrevAddr(i)}>Remove</button>
+              </div>
+              <Field label="Address Line 1"><Input type="text" placeholder="House number and street" value={addr.line1} onChange={v=>updatePrevAddr(i,'line1',v)}/></Field>
+              <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={addr.line2} onChange={v=>updatePrevAddr(i,'line2',v)}/></Field>
+              <div className="field-row">
+                <Field label="Town / City"><Input type="text" value={addr.town} onChange={v=>updatePrevAddr(i,'town',v)}/></Field>
+                <Field label="County"><Input type="text" value={addr.county} onChange={v=>updatePrevAddr(i,'county',v)}/></Field>
+                <Field label="Postcode"><Input type="text" value={addr.postcode} onChange={v=>updatePrevAddr(i,'postcode',v)}/></Field>
+              </div>
+              <div className="field-row">
+                <Field label="Moved In (month & year)"><Input type="month" value={addr.from} onChange={v=>updatePrevAddr(i,'from',v)}/></Field>
+                <Field label="Moved Out (month & year)"><Input type="month" value={addr.to} onChange={v=>updatePrevAddr(i,'to',v)}/></Field>
+              </div>
+              {addr.gapExplanation && (
+                <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.25rem'}}>Gap explanation recorded.</div>
+              )}
+            </div>
+          ))}
+
+          <button className="btn-add" onClick={addPrevAddress}>+ Add Previous Address</button>
+
+          {/* GAP DETECTION */}
+          {gaps.length > 0 && (
+            <div style={{marginTop:'1.5rem'}}>
+              {gaps.map((gap, gi) => (
+                <div key={gi} style={{background:'#fef2f2',border:'2px solid #dc2626',borderRadius:'10px',padding:'1.1rem 1.25rem',marginBottom:'1rem'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.5rem'}}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+                    <strong style={{color:'#dc2626',fontSize:'0.9rem'}}>
+                      {gap.shortfall ? `Address history does not go back far enough — ${gap.months} month${gap.months!==1?'s':''} missing` : `Gap detected — ${gap.months} month${gap.months!==1?'s':''} unaccounted for`}
+                    </strong>
+                  </div>
+                  <div style={{fontSize:'0.82rem',color:'#7f1d1d',marginBottom:'0.75rem'}}>
+                    {gap.shortfall
+                      ? `Your address history needs to go back to ${fmtDate(gap.from)}. Add more previous addresses below.`
+                      : `There is a ${gap.months}-month gap between ${fmtDate(gap.from)} and ${fmtDate(gap.to)}. This is a red flag in BS7858 vetting — it must be explained.`
+                    }
+                  </div>
+                  {!gap.shortfall && (
+                    <>
+                      <div style={{fontSize:'0.8rem',fontWeight:600,color:'#7f1d1d',marginBottom:'0.4rem'}}>
+                        Explain this gap — where were you? Supporting evidence may be required.
+                      </div>
+                      <textarea
+                        className="f-textarea"
+                        rows={3}
+                        placeholder="e.g. I was living abroad in Nigeria from Jan 2022 to Jun 2022 — I can provide passport stamps / flight records as evidence."
+                        value={form.prevAddresses[gap.index]?.gapExplanation || ''}
+                        onChange={e => updatePrevAddr(gap.index, 'gapExplanation', e.target.value)}
+                        style={{borderColor:'#dc2626'}}
+                      />
+                      {!form.prevAddresses[gap.index]?.gapExplanation?.trim() && (
+                        <div style={{fontSize:'0.75rem',color:'#dc2626',marginTop:'0.3rem',fontWeight:600}}>
+                          This explanation is required before you can continue.
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* All clear */}
+          {form.prevAddresses.length > 0 && gaps.length === 0 && monthsAtCurrent > 0 && (
+            <div className="address-ok" style={{marginTop:'1rem'}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+              No gaps detected — your address history is complete.
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="divider"></div>
 
       <Field label="Is your SIA licence registered to this address?">
         <div className="radio-row">
-          <Radio name="siaAddress" value="yes" label="Yes" checked={form.siaAddress==='yes'} onChange={()=>u('siaAddress','yes')}/>
-          <Radio name="siaAddress" value="no" label="No" checked={form.siaAddress==='no'} onChange={()=>u('siaAddress','no')}/>
-          <Radio name="siaAddress" value="na" label="Not applicable" checked={form.siaAddress==='na'} onChange={()=>u('siaAddress','na')}/>
+          <Radio name="siaAddress" value="yes" label="Yes" checked={form.siaAddress==='yes'} onChange={v=>u('siaAddress',v)}/>
+          <Radio name="siaAddress" value="no" label="No" checked={form.siaAddress==='no'} onChange={v=>u('siaAddress',v)}/>
+          <Radio name="siaAddress" value="na" label="Not applicable" checked={form.siaAddress==='na'} onChange={v=>u('siaAddress',v)}/>
         </div>
       </Field>
       {form.siaAddress === 'no' && (
         <div className="address-warning" style={{marginTop:'0.5rem'}}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
-          <span>Your SIA licence address should match your current address. A mismatch can raise a flag during identity verification. You can update your registered address quickly through your <a href="https://services.sia.homeoffice.gov.uk/" target="_blank" rel="noopener noreferrer" className="inline-link">SIA online account</a>. We recommend doing this before applying for roles.</span>
+          <span>Your SIA licence address should match your current address. A mismatch can raise a flag during identity verification. Update it through your <a href="https://services.sia.homeoffice.gov.uk/" target="_blank" rel="noopener noreferrer" className="inline-link">SIA online account</a>.</span>
         </div>
       )}
 
       <Field label="Is your driving licence registered to this address?" hint="If you hold a driving licence">
         <div className="radio-row">
-          <Radio name="dvlaAddress" value="yes" label="Yes" checked={form.dvlaAddress==='yes'} onChange={()=>u('dvlaAddress','yes')}/>
-          <Radio name="dvlaAddress" value="no" label="No" checked={form.dvlaAddress==='no'} onChange={()=>u('dvlaAddress','no')}/>
-          <Radio name="dvlaAddress" value="na" label="No driving licence" checked={form.dvlaAddress==='na'} onChange={()=>u('dvlaAddress','na')}/>
+          <Radio name="dvlaAddress" value="yes" label="Yes" checked={form.dvlaAddress==='yes'} onChange={v=>u('dvlaAddress',v)}/>
+          <Radio name="dvlaAddress" value="no" label="No" checked={form.dvlaAddress==='no'} onChange={v=>u('dvlaAddress',v)}/>
+          <Radio name="dvlaAddress" value="na" label="No driving licence" checked={form.dvlaAddress==='na'} onChange={v=>u('dvlaAddress',v)}/>
         </div>
       </Field>
       {form.dvlaAddress === 'no' && (
         <div className="address-warning" style={{marginTop:'0.5rem'}}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
           <span>
-            Your driving licence must show your current address by law. An out-of-date address can cause issues during identity and address verification checks — and carries a £1,000 DVLA fine if not updated within 3 months of moving.
-            <br/><br/>
-            You can update your driving licence address online in minutes — it is free and takes about 5 minutes:
+            Your driving licence must show your current address by law — carries a £1,000 DVLA fine if not updated within 3 months of moving.
             <br/>
             <a href="https://www.gov.uk/change-address-driving-licence" target="_blank" rel="noopener noreferrer" className="inline-link">&#8250; Update your driving licence address on GOV.UK</a>
           </span>
         </div>
       )}
+
       <div className="prepare-notice">
         <div className="prepare-notice-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
@@ -391,7 +547,6 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
     </StepShell>
   );
 }
-
 // ── STEP 4: DRIVING LICENCE & TRANSPORT ──
 function StepDriving({ data, onChange, onBack, onNext }) {
   const [form, setForm] = useState(data.driving || {
