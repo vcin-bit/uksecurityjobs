@@ -293,9 +293,9 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
 
       <Field label="Is your SIA licence registered to this address?">
         <div className="radio-row">
-          <Radio name="siaAddress" value="yes" label="Yes" checked={form.siaAddress==='yes'} onChange={e=>u('siaAddress',e.target.value)}/>
-          <Radio name="siaAddress" value="no" label="No" checked={form.siaAddress==='no'} onChange={e=>u('siaAddress',e.target.value)}/>
-          <Radio name="siaAddress" value="na" label="Not applicable" checked={form.siaAddress==='na'} onChange={e=>u('siaAddress',e.target.value)}/>
+          <Radio name="siaAddress" value="yes" label="Yes" checked={form.siaAddress==='yes'} onChange={()=>u('siaAddress','yes')}/>
+          <Radio name="siaAddress" value="no" label="No" checked={form.siaAddress==='no'} onChange={()=>u('siaAddress','no')}/>
+          <Radio name="siaAddress" value="na" label="Not applicable" checked={form.siaAddress==='na'} onChange={()=>u('siaAddress','na')}/>
         </div>
       </Field>
       {form.siaAddress === 'no' && (
@@ -307,9 +307,9 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
 
       <Field label="Is your driving licence registered to this address?" hint="If you hold a driving licence">
         <div className="radio-row">
-          <Radio name="dvlaAddress" value="yes" label="Yes" checked={form.dvlaAddress==='yes'} onChange={e=>u('dvlaAddress',e.target.value)}/>
-          <Radio name="dvlaAddress" value="no" label="No" checked={form.dvlaAddress==='no'} onChange={e=>u('dvlaAddress',e.target.value)}/>
-          <Radio name="dvlaAddress" value="na" label="No driving licence" checked={form.dvlaAddress==='na'} onChange={e=>u('dvlaAddress',e.target.value)}/>
+          <Radio name="dvlaAddress" value="yes" label="Yes" checked={form.dvlaAddress==='yes'} onChange={()=>u('dvlaAddress','yes')}/>
+          <Radio name="dvlaAddress" value="no" label="No" checked={form.dvlaAddress==='no'} onChange={()=>u('dvlaAddress','no')}/>
+          <Radio name="dvlaAddress" value="na" label="No driving licence" checked={form.dvlaAddress==='na'} onChange={()=>u('dvlaAddress','na')}/>
         </div>
       </Field>
       {form.dvlaAddress === 'no' && (
@@ -321,8 +321,6 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
             You can update your driving licence address online in minutes — it is free and takes about 5 minutes:
             <br/>
             <a href="https://www.gov.uk/change-address-driving-licence" target="_blank" rel="noopener noreferrer" className="inline-link">&#8250; Update your driving licence address on GOV.UK</a>
-            <br/>
-            <a href="https://www.gov.uk/change-address-driving-licence" target="_blank" rel="noopener noreferrer" className="inline-link">&#8250; You will need your National Insurance number and a valid UK passport or biometric residence permit</a>
           </span>
         </div>
       )}
@@ -331,7 +329,7 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
           Now is a good time to prepare your proof of address
         </div>
-        <p>Later in your profile you will need to upload proof that you live at this address. Start gathering these now so they are ready when you need them.</p>
+        <p>Later in your profile you will need to upload proof that you live at this address. Start gathering these now so they are ready when you need them — and make sure you have them with you at any interview.</p>
         <div className="prepare-docs">
           <div className="prepare-doc"><span className="pd-check">✓</span> Bank statement — no older than 3 months</div>
           <div className="prepare-doc"><span className="pd-check">✓</span> Utility bill (gas, electric, water) — no older than 3 months</div>
