@@ -683,7 +683,7 @@ function ProfileBuilder() {
   const next = () => setStep(s=>s+1);
   const back = () => setStep(s=>s-1);
 
-  if(step === 0) return <StepWelcome onNext={next} name={user?.firstName || 'there'}/>;
+  if(step === 0) return <><ProgressRings sections={sections}/><StepWelcome onNext={next} name={user?.firstName || 'there'}/></>;
   if(step === 1) return <><ProgressRings sections={sections}/><StepSIA data={profileData} onChange={update} onBack={back} onNext={next}/></>;
   if(step === 2) return <><ProgressRings sections={sections}/><StepPersonal data={profileData} onChange={update} onBack={back} onNext={next}/></>;
   if(step === 3) return <><ProgressRings sections={sections}/><StepDriving data={profileData} onChange={update} onBack={back} onNext={next}/></>;
@@ -693,7 +693,7 @@ function ProfileBuilder() {
   if(step === 7) return <><ProgressRings sections={sections}/><StepPhoto data={profileData} onChange={update} onBack={back} onNext={next}/></>;
   if(step === 8) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={next}/></>;
   if(step === 9) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={next}/></>;
-  if(step === 10) return <StepComplete name={user?.firstName || 'there'}/>;
+  if(step === 10) return <><ProgressRings sections={sections}/><StepComplete name={user?.firstName || 'there'}/></>;
   return <StepComplete name={user?.firstName || 'there'}/>;
 }
 
