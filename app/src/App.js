@@ -42,8 +42,8 @@ function ProgressRings({ sections }) {
   const total = sections.length;
   const completed = sections.filter(s => s.complete).length;
   const overallPct = Math.round((completed / total) * 100);
-  const size = 140;
-  const cx = size / 2, cy = size / 2, r = 54;
+  const size = 180;
+  const cx = size / 2, cy = size / 2, r = 70;
   const circ = 2 * Math.PI * r;
   const offset = circ - (overallPct / 100) * circ;
   const color = overallPct >= 80 ? '#10b981' : overallPct >= 50 ? '#f59e0b' : '#1a52a8';
@@ -60,7 +60,7 @@ function ProgressRings({ sections }) {
             style={{transform:'rotate(-90deg)',transformOrigin:'center',transition:'stroke-dashoffset 0.6s ease'}}
           />
           {overallPct === 100 && (
-            <path d="M54 80 L62 88 L86 64" stroke="#10b981" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            <path d="M70 100 L80 110 L110 80" stroke="#10b981" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
           )}
         </svg>
         <div className="ring-label">
@@ -70,7 +70,7 @@ function ProgressRings({ sections }) {
       </div>
       <div className="ring-sections">
         {sections.map((s,i) => {
-          const r2=18, c2=2*Math.PI*r2;
+          const r2=22, c2=2*Math.PI*r2;
           const sectionColors = ['#1a52a8','#0891b2','#7c3aed','#db2777','#dc2626','#d97706','#059669','#0284c7','#6d28d9'];
           const baseColor = sectionColors[i % sectionColors.length];
           // pending = submitted but awaiting admin verification (SIA)
@@ -79,19 +79,19 @@ function ProgressRings({ sections }) {
           const off2 = c2 - (pct/100)*c2;
           return (
             <div key={i} className="ring-mini" title={s.name}>
-              <svg width="46" height="46" viewBox="0 0 46 46">
-                <circle cx="23" cy="23" r={r2} stroke="#f3f4f6" strokeWidth="5" fill="none"/>
-                <circle cx="23" cy="23" r={r2} stroke={col} strokeWidth="5" fill="none"
+              <svg width="56" height="56" viewBox="0 0 56 56">
+                <circle cx="28" cy="28" r={r2} stroke="#f3f4f6" strokeWidth="5" fill="none"/>
+                <circle cx="28" cy="28" r={r2} stroke={col} strokeWidth="5" fill="none"
                   strokeLinecap="round"
                   strokeDasharray={c2}
                   strokeDashoffset={off2}
                   style={{transform:'rotate(-90deg)',transformOrigin:'center',transition:'stroke-dashoffset 0.4s'}}
                 />
                 {s.complete && (
-                  <path d="M15 23 L20 28 L31 17" stroke={baseColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                  <path d="M19 28 L25 34 L37 22" stroke={baseColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                 )}
                 {s.pending && !s.complete && (
-                  <text x="23" y="27" textAnchor="middle" fontSize="10" fill="#f59e0b" fontWeight="700">?</text>
+                  <text x="28" y="33" textAnchor="middle" fontSize="12" fill="#f59e0b" fontWeight="700">?</text>
                 )}
               </svg>
               <div className="ring-mini-label" style={{color:col}}>{s.short}</div>
@@ -969,102 +969,197 @@ function StepEmployment({ data, onChange, onBack, onNext }) {
     contactName:'', contactTitle:'', contactEmail:'', contactPhone:'',
     fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false, reason:''
   });
-  const [jobs, setJobs] = useState(data.employment?.length ? data.employment : [emptyJob()]);
+
+  // Normalize API data (DB uses employer_name, job_title, start_date etc)
+  const normalizeJob = (j) => ({
+    employer: j.employer || j.employer_name || '',
+    role: j.role || j.job_title || '',
+    sector: j.sector || '',
+    duties: j.duties || '',
+    address1: j.address1 || j.employer_address || '',
+    address2: j.address2 || '',
+    town: j.town || '',
+    county: j.county || '',
+    postcode: j.postcode || j.employer_postcode || '',
+    website: j.website || '',
+    contactName: j.contactName || j.reference_name || '',
+    contactTitle: j.contactTitle || j.reference_job_title || '',
+    contactEmail: j.contactEmail || j.reference_email || '',
+    contactPhone: j.contactPhone || j.reference_phone || '',
+    fromMonth: j.fromMonth || (j.start_date ? j.start_date.split('-')[1] : '') || '',
+    fromYear: j.fromYear || (j.start_date ? j.start_date.split('-')[0] : '') || '',
+    toMonth: j.toMonth || (j.end_date ? j.end_date.split('-')[1] : '') || '',
+    toYear: j.toYear || (j.end_date ? j.end_date.split('-')[0] : '') || '',
+    current: j.current || j.is_current || false,
+    reason: j.reason || j.reason_for_leaving || '',
+  });
+
+  const [jobs, setJobs] = useState(
+    data.employment?.length ? data.employment.map(normalizeJob) : [emptyJob()]
+  );
+  const [saved, setSaved] = useState(new Set());
+
   const addJob = () => setJobs([...jobs, emptyJob()]);
   const update = (i,f,v) => setJobs(jobs.map((j,idx)=>idx===i?{...j,[f]:v}:j));
-  const remove = (i) => setJobs(jobs.filter((_,idx)=>idx!==i));
+  const remove = (i) => { setJobs(jobs.filter((_,idx)=>idx!==i)); setSaved(s=>{const n=new Set(s);n.delete(i);return n;}); };
+
+  const saveJob = (i) => setSaved(s => new Set([...s, i]));
+
   const sectors = ['Door Supervisor / Manned Guarding','CCTV / Control Room','Close Protection','Retail Security','Shopping Centre','Events / Festivals','Corporate / Commercial','Distribution / Logistics / Warehousing','Construction','Healthcare / Hospital','Education','Government / MOD','Residential / Concierge','Transport Hub','Cash in Transit','Key Holding / Mobile Patrol','Nightlife / Licensed Premises','Self Employed','Unemployed / Career Break','Other'];
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
   const isIncomplete = (j) => !j.employer?.trim() || !j.role?.trim() || !j.sector || !j.address1?.trim() || !j.town?.trim() || !j.postcode?.trim() || !j.contactName?.trim() || !j.contactEmail?.trim() || !j.contactPhone?.trim() || !j.fromMonth || !j.fromYear || (!j.current && (!j.toMonth || !j.toYear));
   const anyIncomplete = jobs.some(isIncomplete);
+
+  // Gap calculator — how many months covered vs 60 needed
+  const getCoverage = () => {
+    const now = new Date();
+    const fiveYearsAgo = new Date(now.getFullYear()-5, now.getMonth(), 1);
+    let totalDays = 0;
+    jobs.forEach(j => {
+      const from = j.fromYear && j.fromMonth ? new Date(j.fromYear+'-'+j.fromMonth+'-01') : null;
+      const to = j.current ? now : (j.toYear && j.toMonth ? new Date(j.toYear+'-'+j.toMonth+'-01') : null);
+      if (!from || !to) return;
+      const start = from < fiveYearsAgo ? fiveYearsAgo : from;
+      const end = to > now ? now : to;
+      if (end > start) totalDays += (end - start) / (1000*60*60*24);
+    });
+    const coveredMonths = Math.min(60, Math.round(totalDays / 30.5));
+    const remainingMonths = Math.max(0, 60 - coveredMonths);
+    return { coveredMonths, remainingMonths };
+  };
+
+  const { coveredMonths, remainingMonths } = getCoverage();
+
   const save = () => {
     if (anyIncomplete) return;
     const mapped = jobs.map(j => ({...j, from: j.fromYear&&j.fromMonth ? j.fromYear+'-'+j.fromMonth : '', to: j.toYear&&j.toMonth ? j.toYear+'-'+j.toMonth : ''}));
     onChange({ employment: mapped }); onNext();
   };
+
   return (
-    <StepShell step={8} total={11} title='Employment History'
-      why='A complete employment history with verified contact details is what makes vetting possible. Missing details stop the process.'
+    <StepShell step={8} total={11} title="Work History"
+      why="This is the most critical section for BS7858 vetting. Every employer needs a verifiable contact. Incomplete entries halt the vetting process completely — there is no excuse for missing details."
       onBack={onBack} onNext={save} nextLabel={anyIncomplete ? 'Complete all required fields' : 'Save & Continue'}>
-      <div className='history-note'>Cover the last <strong>5 years</strong> in full. No gaps — include self-employment, unemployment and career breaks.</div>
+
+      {/* Gap calculator */}
+      <div style={{background: remainingMonths === 0 ? '#dcfce7' : '#fef9c3', border: `1px solid ${remainingMonths === 0 ? '#bbf7d0' : '#fde047'}`, borderRadius:'10px', padding:'1rem 1.25rem', marginBottom:'1.5rem'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'0.5rem'}}>
+          <div>
+            <div style={{fontWeight:700,fontSize:'0.9rem',color: remainingMonths === 0 ? '#15803d' : '#854d0e'}}>
+              {remainingMonths === 0 ? '5-year work history complete' : `${remainingMonths} month${remainingMonths!==1?'s':''} still to account for`}
+            </div>
+            <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.2rem'}}>
+              {coveredMonths} of 60 months covered — BS7858 requires a full 5 years with no unexplained gaps
+            </div>
+          </div>
+          <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
+            <div style={{height:'8px',width:'160px',background:'#e2e8f0',borderRadius:'999px',overflow:'hidden'}}>
+              <div style={{height:'100%',width:`${(coveredMonths/60)*100}%`,background: remainingMonths === 0 ? '#10b981' : '#f59e0b',borderRadius:'999px',transition:'width 0.4s'}}/>
+            </div>
+            <span style={{fontSize:'0.78rem',fontWeight:700,color:'#64748b'}}>{Math.round((coveredMonths/60)*100)}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="history-note" style={{marginBottom:'1.25rem'}}>
+        Start with your <strong>current or most recent employer</strong> and work backwards. Include every position — self-employment, agency work, unemployment and career breaks all count.
+      </div>
+
       {jobs.map((job, i) => (
-        <div key={i} className='history-block'>
-          <div className='history-block-header'>
-            <span>Position {i+1}{job.employer ? ' — '+job.employer : ''}</span>
-            {i>0 && <button className='btn-remove' onClick={()=>remove(i)}>Remove</button>}
+        <div key={i} className="history-block" style={{border: saved.has(i) && !isIncomplete(job) ? '2px solid #10b981' : isIncomplete(job) ? '2px solid #e2e8f0' : '2px solid #e2e8f0'}}>
+          <div className="history-block-header">
+            <div>
+              <span style={{fontWeight:700}}>Position {i+1}{job.employer ? ' — '+job.employer : ''}</span>
+              {saved.has(i) && !isIncomplete(job) && <span style={{marginLeft:'0.5rem',fontSize:'0.75rem',color:'#10b981',fontWeight:700}}>Saved</span>}
+            </div>
+            {i>0 && <button className="btn-remove" onClick={()=>remove(i)}>Remove</button>}
           </div>
-          <div className='field-row'>
-            <Field label='Employer / Organisation Name *'><Input type='text' placeholder='Company name' value={job.employer} onChange={v=>update(i,'employer',v)}/></Field>
-            <Field label='Your Job Title *'><Input type='text' placeholder='e.g. Door Supervisor' value={job.role} onChange={v=>update(i,'role',v)}/></Field>
+
+          <div style={{background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:'8px',padding:'0.75rem 1rem',marginBottom:'1rem',fontSize:'0.82rem',color:'#166534'}}>
+            <strong>Tip:</strong> Fill in your outline of duties accurately and in detail — this information will be used to build your CV automatically when you apply for roles. The more detail you provide, the stronger your application.
           </div>
-          <Field label='Sector *'>
+
+          <div className="field-row">
+            <Field label="Employer / Organisation Name *"><Input type="text" placeholder="Company name" value={job.employer} onChange={v=>update(i,'employer',v)}/></Field>
+            <Field label="Your Job Title *"><Input type="text" placeholder="e.g. Door Supervisor" value={job.role} onChange={v=>update(i,'role',v)}/></Field>
+          </div>
+          <Field label="Sector *">
             <Select value={job.sector||''} onChange={v=>update(i,'sector',v)}>
-              <option value=''>Select sector</option>
+              <option value="">Select sector</option>
               {sectors.map(s=><option key={s}>{s}</option>)}
             </Select>
           </Field>
-          <Field label='Brief outline of duties'>
-            <textarea className='f-textarea' rows={2} placeholder='e.g. Manned guarding, access control, CCTV monitoring, incident reporting' value={job.duties||''} onChange={e=>update(i,'duties',e.target.value)}/>
+          <Field label="Outline of duties *" hint="Be specific — this builds your CV. Include responsibilities, equipment used, team size, site type.">
+            <textarea className="f-textarea" rows={3} placeholder="e.g. Manned guarding of 3 distribution warehouses across shift patterns. Responsibilities included access control, CCTV monitoring (16 camera system), lone working protocols, daily incident logging and emergency response. Worked within a 4-person team." value={job.duties||''} onChange={e=>update(i,'duties',e.target.value)}/>
           </Field>
-          <div className='divider' style={{margin:'1rem 0 0.75rem'}}></div>
-          <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222',marginBottom:'0.75rem'}}>Employer Address *</div>
-          <Field label='Address Line 1 *'><Input type='text' placeholder='Building/street' value={job.address1||''} onChange={v=>update(i,'address1',v)}/></Field>
-          <Field label='Address Line 2'><Input type='text' placeholder='Optional' value={job.address2||''} onChange={v=>update(i,'address2',v)}/></Field>
-          <div className='field-row'>
-            <Field label='Town / City *'><Input type='text' value={job.town||''} onChange={v=>update(i,'town',v)}/></Field>
-            <Field label='County'><Input type='text' value={job.county||''} onChange={v=>update(i,'county',v)}/></Field>
-            <Field label='Postcode *'><Input type='text' value={job.postcode||''} onChange={v=>update(i,'postcode',v)}/></Field>
+
+          <div className="divider" style={{margin:'1rem 0 0.75rem'}}></div>
+          <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.75rem'}}>Employer Address *</div>
+          <Field label="Address Line 1 *"><Input type="text" placeholder="Building/street" value={job.address1||''} onChange={v=>update(i,'address1',v)}/></Field>
+          <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={job.address2||''} onChange={v=>update(i,'address2',v)}/></Field>
+          <div className="field-row">
+            <Field label="Town / City *"><Input type="text" value={job.town||''} onChange={v=>update(i,'town',v)}/></Field>
+            <Field label="County"><Input type="text" value={job.county||''} onChange={v=>update(i,'county',v)}/></Field>
+            <Field label="Postcode *"><Input type="text" value={job.postcode||''} onChange={v=>update(i,'postcode',v)}/></Field>
           </div>
-          <Field label='Company Website or Generic Email' hint='e.g. www.company.com or hr@company.com'>
-            <Input type='text' placeholder='www.company.com' value={job.website||''} onChange={v=>update(i,'website',v)}/>
-          </Field>
-          <div className='divider' style={{margin:'1rem 0 0.75rem'}}></div>
-          <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222',marginBottom:'0.25rem'}}>Reference Contact *</div>
-          <div style={{fontSize:'0.78rem',color:'#64748b',marginBottom:'0.75rem'}}>HR manager, Operations manager or line manager who can verify your employment.</div>
-          <div className='field-row'>
-            <Field label='Contact Name *'><Input type='text' placeholder='Full name' value={job.contactName||''} onChange={v=>update(i,'contactName',v)}/></Field>
-            <Field label='Job Title'><Input type='text' placeholder='e.g. HR Manager' value={job.contactTitle||''} onChange={v=>update(i,'contactTitle',v)}/></Field>
+          <div className="field-row">
+            <Field label="Company Website" hint="e.g. www.company.com"><Input type="text" placeholder="www.company.com" value={job.website||''} onChange={v=>update(i,'website',v)}/></Field>
+            <Field label="Generic / HR Email" hint="e.g. hr@company.com"><Input type="email" placeholder="hr@company.com" value={job.contactEmail||''} onChange={v=>update(i,'contactEmail',v)}/></Field>
           </div>
-          <div className='field-row'>
-            <Field label='Email Address *'><Input type='email' placeholder='hr@company.com' value={job.contactEmail||''} onChange={v=>update(i,'contactEmail',v)}/></Field>
-            <Field label='Phone Number *'><Input type='tel' placeholder='01234 567890' value={job.contactPhone||''} onChange={v=>update(i,'contactPhone',v)}/></Field>
+
+          <div className="divider" style={{margin:'1rem 0 0.75rem'}}></div>
+          <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.25rem'}}>Reference Contact *</div>
+          <div style={{fontSize:'0.78rem',color:'#64748b',marginBottom:'0.75rem'}}>The HR manager, Operations manager or direct line manager who can verify your employment. This person will be contacted during vetting.</div>
+          <div className="field-row">
+            <Field label="Contact Name *"><Input type="text" placeholder="Full name" value={job.contactName||''} onChange={v=>update(i,'contactName',v)}/></Field>
+            <Field label="Job Title"><Input type="text" placeholder="e.g. HR Manager" value={job.contactTitle||''} onChange={v=>update(i,'contactTitle',v)}/></Field>
           </div>
-          <div className='divider' style={{margin:'1rem 0 0.75rem'}}></div>
-          <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222',marginBottom:'0.75rem'}}>Dates of Employment *</div>
-          <div className='field-row'>
-            <Field label='Start Date *'>
-              <div className='field-row' style={{gap:'0.5rem',marginBottom:0}}>
+          <Field label="Direct Phone Number *" hint="Mobile or direct line — not a switchboard"><Input type="tel" placeholder="01234 567890" value={job.contactPhone||''} onChange={v=>update(i,'contactPhone',v)}/></Field>
+
+          <div className="divider" style={{margin:'1rem 0 0.75rem'}}></div>
+          <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.75rem'}}>Dates of Employment *</div>
+          <div className="field-row">
+            <Field label="Start Date *">
+              <div className="field-row" style={{gap:'0.5rem',marginBottom:0}}>
                 <Select value={job.fromMonth||''} onChange={v=>update(i,'fromMonth',v)}>
-                  <option value=''>Month</option>
+                  <option value="">Month</option>
                   {months.map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,'0')}>{m}</option>)}
                 </Select>
-                <Input type='number' placeholder='Year' min='2000' max={new Date().getFullYear()} value={job.fromYear||''} onChange={v=>update(i,'fromYear',v)} style={{width:'90px'}}/>
+                <Input type="number" placeholder="Year" min="2000" max={new Date().getFullYear()} value={job.fromYear||''} onChange={v=>update(i,'fromYear',v)} style={{width:'90px'}}/>
               </div>
             </Field>
-            {!job.current && <Field label='End Date *'>
-              <div className='field-row' style={{gap:'0.5rem',marginBottom:0}}>
+            {!job.current && <Field label="End Date *">
+              <div className="field-row" style={{gap:'0.5rem',marginBottom:0}}>
                 <Select value={job.toMonth||''} onChange={v=>update(i,'toMonth',v)}>
-                  <option value=''>Month</option>
+                  <option value="">Month</option>
                   {months.map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,'0')}>{m}</option>)}
                 </Select>
-                <Input type='number' placeholder='Year' min='2000' max={new Date().getFullYear()} value={job.toYear||''} onChange={v=>update(i,'toYear',v)} style={{width:'90px'}}/>
+                <Input type="number" placeholder="Year" min="2000" max={new Date().getFullYear()} value={job.toYear||''} onChange={v=>update(i,'toYear',v)} style={{width:'90px'}}/>
               </div>
             </Field>}
-            <Field label=' '><div style={{paddingTop:'1.8rem'}}>
-              <Checkbox label='Current employer' checked={job.current} onChange={()=>update(i,'current',!job.current)}/>
+            <Field label=" "><div style={{paddingTop:'1.8rem'}}>
+              <Checkbox label="Current employer" checked={job.current} onChange={()=>update(i,'current',!job.current)}/>
             </div></Field>
           </div>
-          {!job.current && <Field label='Reason for leaving'>
-            <Input type='text' placeholder='e.g. Contract ended, career progression, redundancy' value={job.reason||''} onChange={v=>update(i,'reason',v)}/>
+          {!job.current && <Field label="Reason for leaving">
+            <Input type="text" placeholder="e.g. Contract ended, career progression, redundancy" value={job.reason||''} onChange={v=>update(i,'reason',v)}/>
           </Field>}
-          {isIncomplete(job) && (
-            <div style={{background:'#fef9c3',border:'1px solid #fde047',borderRadius:'6px',padding:'0.6rem 0.875rem',marginTop:'0.75rem',fontSize:'0.78rem',color:'#854d0e',fontWeight:600}}>
-              Complete all required fields marked * before continuing.
-            </div>
-          )}
+
+          {/* Save this position button */}
+          <div style={{marginTop:'1.25rem',paddingTop:'1rem',borderTop:'1px solid #f1f5f9',display:'flex',alignItems:'center',gap:'1rem'}}>
+            {!isIncomplete(job) ? (
+              <button type="button" onClick={()=>saveJob(i)} style={{background:'#10b981',color:'#fff',border:'none',borderRadius:'8px',padding:'0.65rem 1.5rem',fontSize:'0.88rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+                {saved.has(i) ? 'Position saved' : 'Save this position'}
+              </button>
+            ) : (
+              <div style={{fontSize:'0.78rem',color:'#dc2626',fontWeight:600}}>Complete all required fields * to save this position</div>
+            )}
+          </div>
         </div>
       ))}
-      <button className='btn-add' onClick={addJob}>+ Add Another Position</button>
+
+      <button className="btn-add" onClick={addJob}>+ Add Another Position</button>
     </StepShell>
   );
 }
