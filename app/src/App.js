@@ -195,7 +195,42 @@ function Checkbox({ label, checked, onChange }) {
   );
 }
 
-// ── STEP 1: WELCOME ──
+// ── COMPLETED STEP WRAPPER ──
+function CompletedStep({ title, summary, onEdit, onNext, onBack }) {
+  return (
+    <div className="step-shell">
+      <div className="step-progress-bar"><div className="step-progress-fill" style={{width:'100%',background:'#10b981'}}></div></div>
+      <div className="step-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem'}}>
+        <div>
+          <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.4rem'}}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+            <span style={{fontSize:'0.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.15em',color:'#10b981'}}>Completed</span>
+          </div>
+          <h2 className="step-title" style={{marginBottom:'0'}}>{title}</h2>
+        </div>
+        <button type="button" onClick={onEdit} style={{flexShrink:0,marginTop:'0.25rem',background:'#f1f5f9',color:'#0b1222',border:'1px solid #e2e8f0',borderRadius:'8px',padding:'0.5rem 1.1rem',fontSize:'0.85rem',fontWeight:600,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
+          Edit
+        </button>
+      </div>
+      <div className="step-body" style={{paddingTop:'1rem',paddingBottom:'1rem'}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:'0.75rem'}}>
+          {summary.map((item,i) => item.value ? (
+            <div key={i} style={{background:'#f8fafc',borderRadius:'8px',padding:'0.75rem'}}>
+              <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#94a3b8',marginBottom:'0.25rem'}}>{item.label}</div>
+              <div style={{fontSize:'0.875rem',color:'#0b1222',fontWeight:500}}>{item.value}</div>
+            </div>
+          ) : null)}
+        </div>
+      </div>
+      <div className="step-footer">
+        {onBack && <button className="btn-back" onClick={onBack}>&#8592; Back</button>}
+        <button className="btn-next" onClick={onNext}>Continue &#8250;</button>
+      </div>
+    </div>
+  );
+}
+
+
 function StepWelcome({ onNext, name }) {
   return (
     <div className="welcome-screen">
@@ -230,7 +265,8 @@ function StepWelcome({ onNext, name }) {
 }
 
 // ── STEP 2: SIA LICENCES ──
-function StepSIA({ data, onChange, onBack, onNext }) {
+function StepSIA({ data, onChange, onBack, onNext, isComplete }) {
+  const [editing, setEditing] = React.useState(!isComplete);
   const [licences, setLicences] = useState(data.licences || [{ type:'', number:'', expiry:'' }]);
   const addLicence = () => setLicences([...licences, { type:'', number:'', expiry:'' }]);
   const updateLicence = (i, field, val) => {
@@ -240,6 +276,22 @@ function StepSIA({ data, onChange, onBack, onNext }) {
   const removeLicence = (i) => setLicences(licences.filter((_,idx) => idx!==i));
   const save = () => { onChange({ licences }); onNext(); };
   const licenceTypes = ['Door Supervisor','Security Guard','CCTV Operator','Close Protection','Cash & Valuables in Transit','Key Holding','Non-Front Line'];
+
+  if (isComplete && !editing) {
+    return (
+      <CompletedStep
+        title="SIA Licence(s)"
+        summary={licences.map((l,i) => ([
+          { label: `Licence ${i+1} Type`, value: l.type || l.licence_type },
+          { label: `Licence ${i+1} Status`, value: l.verified ? 'Verified' : 'Pending verification' },
+          { label: `Licence ${i+1} Expiry`, value: l.expiry || l.expiry_date },
+        ])).flat()}
+        onEdit={() => setEditing(true)}
+        onBack={onBack}
+        onNext={onNext}
+      />
+    );
+  }
 
   return (
     <StepShell step={2} total={11} title="SIA Licence(s)"
@@ -274,7 +326,8 @@ function StepSIA({ data, onChange, onBack, onNext }) {
 }
 
 // ── STEP 3: PERSONAL DETAILS ──
-function StepPersonal({ data, onChange, onBack, onNext }) {
+function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
+  const [editing, setEditing] = React.useState(!isComplete);
   const raw = data.personal;
   const existingMovedIn = raw?.move_in_date || raw?.movedIn || '';
   const [form, setForm] = useState({
@@ -430,6 +483,25 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
     onChange({ personal: form });
     onNext();
   };
+
+  if (isComplete && !editing) {
+    return (
+      <CompletedStep
+        title="Personal Details"
+        summary={[
+          { label:'Phone', value: form.phone },
+          { label:'Date of Birth', value: form.dobDay && form.dobMonth && form.dobYear ? `${form.dobDay}/${form.dobMonth}/${form.dobYear}` : '' },
+          { label:'NI Number', value: form.ni ? '••••••••' : '' },
+          { label:'Address', value: [form.address1, form.town, form.postcode].filter(Boolean).join(', ') },
+          { label:'Moved In', value: form.movedInMonth && form.movedInYear ? `${form.movedInMonth}/${form.movedInYear}` : '' },
+          { label:'SIA Address Match', value: form.siaAddress === 'yes' ? 'Yes' : form.siaAddress === 'no' ? 'No — update needed' : form.siaAddress === 'na' ? 'Not applicable' : '' },
+        ]}
+        onEdit={() => setEditing(true)}
+        onBack={onBack}
+        onNext={onNext}
+      />
+    );
+  }
 
   return (
     <StepShell step={3} total={11} title="Personal Details"
@@ -650,7 +722,8 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
   );
 }
 // ── STEP 4: DRIVING LICENCE & TRANSPORT ──
-function StepDriving({ data, onChange, onBack, onNext }) {
+function StepDriving({ data, onChange, onBack, onNext, isComplete }) {
+  const [editing, setEditing] = React.useState(!isComplete);
   const [form, setForm] = useState(data.driving || {
     hasLicence: '', licenceType:'', licenceNumber:'', yearsHeld:'', points:'', endorsements:[], hasBan:'', banDate:'', banDuration:'', banReason:'',
     hasTransport:'', vehicleType:'', taxed:'', moted:'', insured:'', travelRadius:'',
@@ -663,6 +736,18 @@ function StepDriving({ data, onChange, onBack, onNext }) {
   };
   const endorsementCodes = ['SP30','SP50','IN10','CU80','CD10','CD30','DD40','DR10','DR20','MS10','TS10','TT99'];
   const save = () => { onChange({ driving: form }); onNext(); };
+
+  if (isComplete && !editing) {
+    return (
+      <CompletedStep
+        title="Driving & Transport"
+        summary={[{label:"Has Licence",value:form.hasLicence=="yes"?"Yes":"No"},{label:"Licence Type",value:form.licenceType},{label:"Has Transport",value:form.hasTransport=="yes"?"Yes":"No"},{label:"Travel Radius",value:form.travelRadius},{label:"DVLA Address",value:form.dvlaAddress=="yes"?"Matches":form.dvlaAddress=="no"?"Mismatch":"No licence"}]}
+        onEdit={() => setEditing(true)}
+        onBack={onBack}
+        onNext={onNext}
+      />
+    );
+  }
 
   return (
     <StepShell step={4} total={11} title="Driving Licence & Transport"
@@ -772,7 +857,8 @@ function StepDriving({ data, onChange, onBack, onNext }) {
 }
 
 // ── STEP 5: PREFERRED SECTORS & AVAILABILITY ──
-function StepSectors({ data, onChange, onBack, onNext }) {
+function StepSectors({ data, onChange, onBack, onNext, isComplete }) {
+  const [editing, setEditing] = React.useState(!isComplete);
   const raw = data.sectors;
   const [form, setForm] = useState({
     sectors: Array.isArray(raw?.sectors) ? raw.sectors : [],
@@ -791,6 +877,18 @@ function StepSectors({ data, onChange, onBack, onNext }) {
     setForm({...form,shiftType:list});
   };
   const save = () => { onChange({ sectors: form }); onNext(); };
+
+  if (isComplete && !editing) {
+    return (
+      <CompletedStep
+        title="Sectors & Availability"
+        summary={[{label:"Sectors",value:(form.sectors||[]).join(", ")||"None selected"},{label:"Employment Type",value:form.employmentType},{label:"Availability",value:(form.availability||[]).join(", ")}]}
+        onEdit={() => setEditing(true)}
+        onBack={onBack}
+        onNext={onNext}
+      />
+    );
+  }
 
   return (
     <StepShell step={5} total={11} title="Preferred Sectors & Availability"
@@ -842,7 +940,8 @@ function StepSectors({ data, onChange, onBack, onNext }) {
 }
 
 // ── STEP 6: QUALIFICATIONS & FIRST AID ──
-function StepQualifications({ data, onChange, onBack, onNext }) {
+function StepQualifications({ data, onChange, onBack, onNext, isComplete }) {
+  const [editing, setEditing] = React.useState(!isComplete);
   const [form, setForm] = useState(data.qualifications || {
     hasFirstAid:'', certType:'', issuingBody:'', certNumber:'', dateAchieved:'', expiry:'',
     hasUniform:'', hasPPE:'', languages:[], isSIATrainer:'', trainerDetails:'',
@@ -855,6 +954,18 @@ function StepQualifications({ data, onChange, onBack, onNext }) {
     setForm({...form,languages:list});
   };
   const save = () => { onChange({ qualifications: form }); onNext(); };
+
+  if (isComplete && !editing) {
+    return (
+      <CompletedStep
+        title="Qualifications"
+        summary={[{label:"First Aid",value:form.hasFirstAid=="yes"?form.certType||"Yes":"No"},{label:"SIA Trainer",value:form.isSIATrainer=="yes"?"Yes":"No"},{label:"Security Clearance",value:form.clearanceLevel||"None"}]}
+        onEdit={() => setEditing(true)}
+        onBack={onBack}
+        onNext={onNext}
+      />
+    );
+  }
 
   return (
     <StepShell step={6} total={11} title="Qualifications & Capabilities"
@@ -921,13 +1032,26 @@ function StepQualifications({ data, onChange, onBack, onNext }) {
 }
 
 // ── STEP 7: BACKGROUND ──
-function StepBackground({ data, onChange, onBack, onNext }) {
+function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
+  const [editing, setEditing] = React.useState(!isComplete);
   const [form, setForm] = useState(data.background || {
     hasForces:'', forcesBranch:'', forcesRank:'', forcesYears:'', forcesDischarge:'',
     hasBID:'', bidSchemes:'', hasCriminal:'', criminalDetails:''
   });
   const u = (f,v) => setForm({...form,[f]:v});
   const save = () => { onChange({ background: form }); onNext(); };
+
+  if (isComplete && !editing) {
+    return (
+      <CompletedStep
+        title="Professional Background"
+        summary={[{label:"Forces/Police",value:form.hasForces=="yes"?form.forcesBranch:"No"},{label:"Criminal Record",value:form.hasCriminal=="yes"?"Yes — declared":"No"}]}
+        onEdit={() => setEditing(true)}
+        onBack={onBack}
+        onNext={onNext}
+      />
+    );
+  }
 
   return (
     <StepShell step={7} total={11} title="Professional Background"
@@ -962,7 +1086,8 @@ function StepBackground({ data, onChange, onBack, onNext }) {
 }
 
 // ── STEP 8: EMPLOYMENT HISTORY ──
-function StepEmployment({ data, onChange, onBack, onNext }) {
+function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
+  const [editing, setEditing] = React.useState(!isComplete);
   const emptyJob = () => ({
     employer:'', role:'', sector:'', duties:'',
     address1:'', address2:'', town:'', county:'', postcode:'', website:'',
@@ -1036,6 +1161,22 @@ function StepEmployment({ data, onChange, onBack, onNext }) {
     const mapped = jobs.map(j => ({...j, from: j.fromYear&&j.fromMonth ? j.fromYear+'-'+j.fromMonth : '', to: j.toYear&&j.toMonth ? j.toYear+'-'+j.toMonth : ''}));
     onChange({ employment: mapped }); onNext();
   };
+
+  if (isComplete && !editing) {
+    return (
+      <CompletedStep
+        title="Work History"
+        summary={[
+          { label:'Positions recorded', value: jobs.length + ' position' + (jobs.length!==1?'s':'') },
+          { label:'Coverage', value: coveredMonths + ' of 60 months' },
+          { label:'Status', value: remainingMonths === 0 ? '5-year history complete' : remainingMonths + ' months still needed' },
+        ]}
+        onEdit={() => setEditing(true)}
+        onBack={onBack}
+        onNext={onNext}
+      />
+    );
+  }
 
   return (
     <StepShell step={8} total={11} title="Work History"
@@ -1165,7 +1306,8 @@ function StepEmployment({ data, onChange, onBack, onNext }) {
 }
 
 // ── STEP 9: ADDRESS HISTORY ──
-function StepAddress({ data, onChange, onBack, onNext }) {
+function StepAddress({ data, onChange, onBack, onNext, isComplete }) {
+  const [editing, setEditing] = React.useState(!isComplete);
   const [addresses, setAddresses] = useState(data.addresses || [{ line1:'', line2:'', town:'', postcode:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false }]);
   const add = () => setAddresses([...addresses,{ line1:'', line2:'', town:'', postcode:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false }]);
   const update = (i,f,v) => setAddresses(addresses.map((a,idx)=>idx===i?{...a,[f]:v}:a));
@@ -1180,6 +1322,18 @@ function StepAddress({ data, onChange, onBack, onNext }) {
     onNext();
   };
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  if (isComplete && !editing) {
+    return (
+      <CompletedStep
+        title="Address History"
+        summary={[{label:"Addresses recorded",value:(data.addresses?.length||jobs?.length||0)+" address(es)"},{label:"Status",value:"Complete"}]}
+        onEdit={() => setEditing(true)}
+        onBack={onBack}
+        onNext={onNext}
+      />
+    );
+  }
 
   return (
     <StepShell step={9} total={11} title="Address History"
@@ -1415,15 +1569,15 @@ function ProfileBuilder() {
   const back = () => setStep(s=>s-1);
 
   if(step === 0) return <><ProgressRings sections={sections}/><StepWelcome onNext={next} name={user?.firstName || 'there'}/></>;
-  if(step === 1) return <><ProgressRings sections={sections}/><StepSIA data={profileData} onChange={update} onBack={back} onNext={next}/></>;
-  if(step === 2) return <><ProgressRings sections={sections}/><StepPersonal data={profileData} onChange={update} onBack={back} onNext={next}/></>;
-  if(step === 3) return <><ProgressRings sections={sections}/><StepDriving data={profileData} onChange={update} onBack={back} onNext={next}/></>;
-  if(step === 4) return <><ProgressRings sections={sections}/><StepSectors data={profileData} onChange={update} onBack={back} onNext={next}/></>;
-  if(step === 5) return <><ProgressRings sections={sections}/><StepQualifications data={profileData} onChange={update} onBack={back} onNext={next}/></>;
-  if(step === 6) return <><ProgressRings sections={sections}/><StepBackground data={profileData} onChange={update} onBack={back} onNext={next}/></>;
+  if(step === 1) return <><ProgressRings sections={sections}/><StepSIA data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("licences")}/></>;
+  if(step === 2) return <><ProgressRings sections={sections}/><StepPersonal data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("personal")}/></>;
+  if(step === 3) return <><ProgressRings sections={sections}/><StepDriving data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("driving")}/></>;
+  if(step === 4) return <><ProgressRings sections={sections}/><StepSectors data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("sectors")}/></>;
+  if(step === 5) return <><ProgressRings sections={sections}/><StepQualifications data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("qualifications")}/></>;
+  if(step === 6) return <><ProgressRings sections={sections}/><StepBackground data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("background")}/></>;
   if(step === 7) return <><ProgressRings sections={sections}/><StepPhoto data={profileData} onChange={update} onBack={back} onNext={next}/></>;
-  if(step === 8) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={next}/></>;
-  if(step === 9) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={next}/></>;
+  if(step === 8) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("employment")}/></>;
+  if(step === 9) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("addresses")}/></>;
   if(step === 10) return <><ProgressRings sections={sections}/><StepComplete name={user?.firstName || 'there'}/></>;
   return <StepComplete name={user?.firstName || 'there'}/>;
 }
