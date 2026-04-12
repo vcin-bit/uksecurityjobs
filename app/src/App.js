@@ -41,10 +41,9 @@ function Nav() {
 function ProgressRings({ sections }) {
   const total = sections.length;
   const completed = sections.filter(s => s.complete).length;
-  const inProgress = sections.filter(s => s.started && !s.complete).length;
   const overallPct = Math.round((completed / total) * 100);
-  const size = 120;
-  const cx = size / 2, cy = size / 2, r = 46;
+  const size = 140;
+  const cx = size / 2, cy = size / 2, r = 54;
   const circ = 2 * Math.PI * r;
   const offset = circ - (overallPct / 100) * circ;
   const color = overallPct >= 80 ? '#10b981' : overallPct >= 50 ? '#f59e0b' : '#1a52a8';
@@ -53,13 +52,16 @@ function ProgressRings({ sections }) {
     <div className="rings-wrap">
       <div className="ring-main">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          <circle cx={cx} cy={cy} r={r} stroke="#f3f4f6" strokeWidth="8" fill="none"/>
-          <circle cx={cx} cy={cy} r={r} stroke={color} strokeWidth="8" fill="none"
+          <circle cx={cx} cy={cy} r={r} stroke="#f3f4f6" strokeWidth="10" fill="none"/>
+          <circle cx={cx} cy={cy} r={r} stroke={color} strokeWidth="10" fill="none"
             strokeLinecap="round"
             strokeDasharray={circ}
             strokeDashoffset={offset}
             style={{transform:'rotate(-90deg)',transformOrigin:'center',transition:'stroke-dashoffset 0.6s ease'}}
           />
+          {overallPct === 100 && (
+            <path d="M54 80 L62 88 L86 64" stroke="#10b981" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+          )}
         </svg>
         <div className="ring-label">
           <div className="ring-pct" style={{color}}>{overallPct}%</div>
@@ -68,22 +70,29 @@ function ProgressRings({ sections }) {
       </div>
       <div className="ring-sections">
         {sections.map((s,i) => {
-          const r2=14, c2=2*Math.PI*r2;
-          const pct=s.complete?100:s.started?50:0;
-          const off2=c2-(pct/100)*c2;
+          const r2=18, c2=2*Math.PI*r2;
           const sectionColors = ['#1a52a8','#0891b2','#7c3aed','#db2777','#dc2626','#d97706','#059669','#0284c7','#6d28d9'];
           const baseColor = sectionColors[i % sectionColors.length];
-          const col = s.complete ? baseColor : s.started ? baseColor + 'aa' : '#e2e8f0';
+          // pending = submitted but awaiting admin verification (SIA)
+          const col = s.complete ? baseColor : s.pending ? '#f59e0b' : s.started ? baseColor + 'aa' : '#e2e8f0';
+          const pct = s.complete ? 100 : s.pending ? 75 : s.started ? 50 : 0;
+          const off2 = c2 - (pct/100)*c2;
           return (
             <div key={i} className="ring-mini" title={s.name}>
-              <svg width="36" height="36" viewBox="0 0 36 36">
-                <circle cx="18" cy="18" r={r2} stroke="#f3f4f6" strokeWidth="4" fill="none"/>
-                <circle cx="18" cy="18" r={r2} stroke={col} strokeWidth="4" fill="none"
+              <svg width="46" height="46" viewBox="0 0 46 46">
+                <circle cx="23" cy="23" r={r2} stroke="#f3f4f6" strokeWidth="5" fill="none"/>
+                <circle cx="23" cy="23" r={r2} stroke={col} strokeWidth="5" fill="none"
                   strokeLinecap="round"
                   strokeDasharray={c2}
                   strokeDashoffset={off2}
                   style={{transform:'rotate(-90deg)',transformOrigin:'center',transition:'stroke-dashoffset 0.4s'}}
                 />
+                {s.complete && (
+                  <path d="M15 23 L20 28 L31 17" stroke={baseColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                )}
+                {s.pending && !s.complete && (
+                  <text x="23" y="27" textAnchor="middle" fontSize="10" fill="#f59e0b" fontWeight="700">?</text>
+                )}
               </svg>
               <div className="ring-mini-label" style={{color:col}}>{s.short}</div>
             </div>
@@ -1255,13 +1264,13 @@ function ProfileBuilder() {
   }, []);
 
   const sections = [
-    { name:'SIA Licence', short:'SIA', complete: completedSteps.has('licences'), started: completedSteps.has('licences') || !!profileData.licences?.[0] },
+    { name:'SIA Licence', short:'SIA', complete: profileData.licences?.[0]?.verified === true, pending: completedSteps.has('licences') && !profileData.licences?.[0]?.verified, started: completedSteps.has('licences') || !!profileData.licences?.[0] },
     { name:'Personal Details', short:'Info', complete: completedSteps.has('personal'), started: completedSteps.has('personal') || !!profileData.personal },
     { name:'Driving & Transport', short:'Drive', complete: completedSteps.has('driving'), started: completedSteps.has('driving') || !!profileData.driving },
     { name:'Sectors & Availability', short:'Work', complete: completedSteps.has('sectors'), started: completedSteps.has('sectors') || !!profileData.sectors },
     { name:'Qualifications', short:'Quals', complete: completedSteps.has('qualifications'), started: completedSteps.has('qualifications') || !!profileData.qualifications },
-    { name:'Background', short:'BG', complete: completedSteps.has('background'), started: completedSteps.has('background') || !!profileData.background },
-    { name:'Employment History', short:'Jobs', complete: completedSteps.has('employment'), started: completedSteps.has('employment') || !!profileData.employment?.length },
+    { name:'Criminal Record', short:'Record', complete: completedSteps.has('background'), started: completedSteps.has('background') || !!profileData.background },
+    { name:'Work History', short:'Work H', complete: completedSteps.has('employment'), started: completedSteps.has('employment') || !!profileData.employment?.length },
     { name:'Photo', short:'Photo', complete: completedSteps.has('photo'), started: completedSteps.has('photo') || !!profileData.photo?.uploaded },
     { name:'Address History', short:'Addr', complete: completedSteps.has('addresses'), started: completedSteps.has('addresses') || !!profileData.addresses?.length },
   ];
@@ -1397,13 +1406,13 @@ function Dashboard() {
   }, []);
 
   const sections = [
-    { name:'SIA Licence', short:'SIA', complete: profileData?.licences?.[0]?.verified === true, started: !!profileData?.licences?.[0] },
+    { name:'SIA Licence', short:'SIA', complete: profileData?.licences?.[0]?.verified === true, pending: !!profileData?.licences?.[0] && !profileData?.licences?.[0]?.verified, started: !!profileData?.licences?.[0] },
     { name:'Personal Details', short:'Info', complete: !!profileData?.personal?.phone, started: !!profileData?.personal },
     { name:'Driving & Transport', short:'Drive', complete: false, started: false },
     { name:'Sectors & Availability', short:'Work', complete: false, started: false },
     { name:'Qualifications', short:'Quals', complete: false, started: false },
-    { name:'Background', short:'BG', complete: false, started: false },
-    { name:'Employment History', short:'Jobs', complete: profileData?.employment?.length > 0, started: !!profileData?.employment?.length },
+    { name:'Criminal Record', short:'Record', complete: false, started: false },
+    { name:'Work History', short:'Work H', complete: profileData?.employment?.length > 0, started: !!profileData?.employment?.length },
     { name:'Photo', short:'Photo', complete: false, started: false },
     { name:'Address History', short:'Addr', complete: profileData?.addresses?.length > 0, started: !!profileData?.addresses?.length },
   ];
