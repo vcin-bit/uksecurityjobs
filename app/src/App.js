@@ -413,7 +413,6 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
   if (!form.postcode?.trim()) missingFields.push('Postcode');
   if (!movedInDate) missingFields.push('Month moved in');
   if (!form.siaAddress) missingFields.push('SIA licence address confirmation');
-  if (!form.dvlaAddress) missingFields.push('Driving licence address confirmation');
 
   const canSave = missingFields.length === 0 && !hasUnexplainedGaps;
 
@@ -482,7 +481,7 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
         </div>
       </Field>
 
-      {/* SIA and DVLA questions sit here, directly under current address */}
+      {/* SIA question directly under address */}
       <Field label="Is your SIA licence registered to this address?">
         <div className="radio-row">
           <Radio name="siaAddress" value="yes" label="Yes" checked={form.siaAddress==='yes'} onChange={v=>u('siaAddress',v)}/>
@@ -497,21 +496,17 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
         </div>
       )}
 
-      <Field label="Is your driving licence registered to this address?" hint="If you hold a driving licence">
-        <div className="radio-row">
-          <Radio name="dvlaAddress" value="yes" label="Yes" checked={form.dvlaAddress==='yes'} onChange={v=>u('dvlaAddress',v)}/>
-          <Radio name="dvlaAddress" value="no" label="No" checked={form.dvlaAddress==='no'} onChange={v=>u('dvlaAddress',v)}/>
-          <Radio name="dvlaAddress" value="na" label="No driving licence" checked={form.dvlaAddress==='na'} onChange={v=>u('dvlaAddress',v)}/>
-        </div>
-      </Field>
-      {form.dvlaAddress === 'no' && (
-        <div className="address-warning" style={{marginTop:'0.5rem'}}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
-          <span>Your driving licence must show your current address by law — £1,000 DVLA fine if not updated within 3 months of moving.{' '}
-            <a href="https://www.gov.uk/change-address-driving-licence" target="_blank" rel="noopener noreferrer" className="inline-link">Update on GOV.UK</a>
-          </span>
-        </div>
-      )}
+      {/* Save address progress button */}
+      <div style={{marginTop:'1.25rem',marginBottom:'0.5rem'}}>
+        <button type="button" onClick={()=>onChange({personal:form})} style={{
+          background:'#f0f4ff',color:'#1a52a8',border:'1px solid #bfdbfe',
+          borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.85rem',
+          fontWeight:600,cursor:'pointer',fontFamily:'inherit'
+        }}>
+          Save progress
+        </button>
+        <span style={{fontSize:'0.78rem',color:'#94a3b8',marginLeft:'0.75rem'}}>Your information is saved — you can continue later.</span>
+      </div>
 
       {/* How long at current address */}
       {form.movedIn && (() => {
@@ -649,7 +644,8 @@ function StepPersonal({ data, onChange, onBack, onNext }) {
 function StepDriving({ data, onChange, onBack, onNext }) {
   const [form, setForm] = useState(data.driving || {
     hasLicence: '', licenceType:'', licenceNumber:'', yearsHeld:'', points:'', endorsements:[], hasBan:'', banDate:'', banDuration:'', banReason:'',
-    hasTransport:'', vehicleType:'', taxed:'', moted:'', insured:'', travelRadius:''
+    hasTransport:'', vehicleType:'', taxed:'', moted:'', insured:'', travelRadius:'',
+    dvlaAddress:''
   });
   const u = (f,v) => setForm({...form,[f]:v});
   const toggleEndorsement = (code) => {
@@ -745,6 +741,23 @@ function StepDriving({ data, onChange, onBack, onNext }) {
           </Field>
         </div>
       </>}
+
+      <div className="divider"></div>
+      <Field label="Is your driving licence registered to your current address?" hint="If you hold a driving licence">
+        <div className="radio-row">
+          <Radio name="dvlaAddress" value="yes" label="Yes" checked={form.dvlaAddress==='yes'} onChange={v=>u('dvlaAddress',v)}/>
+          <Radio name="dvlaAddress" value="no" label="No" checked={form.dvlaAddress==='no'} onChange={v=>u('dvlaAddress',v)}/>
+          <Radio name="dvlaAddress" value="na" label="No driving licence" checked={form.dvlaAddress==='na'} onChange={v=>u('dvlaAddress',v)}/>
+        </div>
+      </Field>
+      {form.dvlaAddress === 'no' && (
+        <div className="address-warning" style={{marginTop:'0.5rem'}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+          <span>Your driving licence must show your current address by law — £1,000 DVLA fine if not updated within 3 months of moving.{' '}
+            <a href="https://www.gov.uk/change-address-driving-licence" target="_blank" rel="noopener noreferrer" className="inline-link">Update on GOV.UK — free, takes 5 minutes</a>
+          </span>
+        </div>
+      )}
     </StepShell>
   );
 }
