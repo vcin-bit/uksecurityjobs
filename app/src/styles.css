@@ -225,3 +225,48 @@ input,select,textarea{-webkit-appearance:none;appearance:none;font-family:inheri
 /* INLINE LINK */
 .inline-link{color:#92400e;font-weight:600;text-decoration:underline;}
 .inline-link:hover{color:#78350f;}
+
+/* ── CV PANEL LAYOUT ── */
+.profile-layout{display:grid;grid-template-columns:1fr 380px;gap:2rem;max-width:1300px;margin:0 auto;padding:2rem 1.5rem 4rem;align-items:start;}
+.profile-form{min-width:0;}
+.cv-panel{position:sticky;top:80px;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;max-height:calc(100vh - 100px);display:flex;flex-direction:column;}
+.cv-panel-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.cv-tab{flex:1;padding:0.75rem;font-size:0.78rem;font-weight:600;text-align:center;cursor:pointer;border:none;background:none;font-family:inherit;color:var(--body);transition:all 0.15s;border-bottom:2px solid transparent;}
+.cv-tab.active{color:var(--blue);border-bottom-color:var(--blue);background:#f8fafc;}
+.cv-panel-body{overflow-y:auto;flex:1;padding:1.25rem;}
+.cv-actions{padding:0.875rem 1.25rem;border-top:1px solid var(--border);display:flex;gap:0.5rem;flex-shrink:0;}
+.cv-dl-btn{flex:1;padding:0.55rem;border-radius:7px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;border:none;transition:all 0.15s;}
+.cv-dl-btn.primary{background:var(--blue);color:#fff;}
+.cv-dl-btn.secondary{background:#f1f5f9;color:var(--navy);border:1px solid var(--border);}
+
+/* CV DOCUMENT STYLES */
+.cv-doc{font-size:0.78rem;line-height:1.5;color:#1a1a2e;}
+.cv-name{font-size:1.1rem;font-weight:800;color:#0b1222;margin-bottom:0.1rem;}
+.cv-contact{font-size:0.72rem;color:#64748b;margin-bottom:0.875rem;}
+.cv-section{margin-bottom:0.875rem;}
+.cv-section-title{font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--blue);border-bottom:1.5px solid var(--blue);padding-bottom:0.2rem;margin-bottom:0.5rem;}
+.cv-job{margin-bottom:0.6rem;}
+.cv-job-title{font-weight:700;font-size:0.78rem;color:#0b1222;}
+.cv-job-employer{font-size:0.72rem;color:#64748b;}
+.cv-job-dates{font-size:0.68rem;color:#94a3b8;margin-bottom:0.2rem;}
+.cv-job-duties{font-size:0.72rem;color:#374151;line-height:1.5;}
+.cv-badge{display:inline-flex;align-items:center;gap:0.25rem;background:#eff6ff;color:var(--blue);font-size:0.65rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:999px;margin:0.15rem 0.15rem 0 0;}
+.cv-badge.verified{background:#dcfce7;color:#15803d;}
+.cv-badge.pending{background:#fef9c3;color:#854d0e;}
+.cv-field{margin-bottom:0.35rem;}
+.cv-field label{display:block;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;}
+.cv-field span{font-size:0.75rem;color:#0b1222;}
+.cv-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;}
+
+/* Mobile CV toggle */
+.cv-mobile-toggle{display:none;position:fixed;bottom:1.5rem;right:1.5rem;z-index:50;background:var(--blue);color:#fff;border:none;border-radius:999px;padding:0.75rem 1.25rem;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(26,82,168,0.4);}
+.cv-mobile-drawer{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.5);}
+.cv-mobile-drawer.open{display:block;}
+.cv-mobile-sheet{position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;max-height:85vh;display:flex;flex-direction:column;}
+.cv-mobile-handle{width:40px;height:4px;background:#e2e8f0;border-radius:999px;margin:0.75rem auto 0;}
+
+@media(max-width:1000px){
+  .profile-layout{grid-template-columns:1fr;}
+  .cv-panel{display:none;}
+  .cv-mobile-toggle{display:block;}
+}

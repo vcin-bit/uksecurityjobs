@@ -1565,21 +1565,266 @@ function ProfileBuilder() {
 
   if (loading) return <div style={{textAlign:'center',padding:'4rem',color:'#64748b'}}>Loading your profile...</div>;
 
+  const [cvMobileOpen, setCvMobileOpen] = React.useState(false);
   const next = () => setStep(s=>s+1);
   const back = () => setStep(s=>s-1);
 
-  if(step === 0) return <><ProgressRings sections={sections}/><StepWelcome onNext={next} name={user?.firstName || 'there'}/></>;
-  if(step === 1) return <><ProgressRings sections={sections}/><StepSIA data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("licences")}/></>;
-  if(step === 2) return <><ProgressRings sections={sections}/><StepPersonal data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("personal")}/></>;
-  if(step === 3) return <><ProgressRings sections={sections}/><StepDriving data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("driving")}/></>;
-  if(step === 4) return <><ProgressRings sections={sections}/><StepSectors data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("sectors")}/></>;
-  if(step === 5) return <><ProgressRings sections={sections}/><StepQualifications data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("qualifications")}/></>;
-  if(step === 6) return <><ProgressRings sections={sections}/><StepBackground data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("background")}/></>;
-  if(step === 7) return <><ProgressRings sections={sections}/><StepPhoto data={profileData} onChange={update} onBack={back} onNext={next}/></>;
-  if(step === 8) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("employment")}/></>;
-  if(step === 9) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has("addresses")}/></>;
-  if(step === 10) return <><ProgressRings sections={sections}/><StepComplete name={user?.firstName || 'there'}/></>;
-  return <StepComplete name={user?.firstName || 'there'}/>;
+  const stepContent = (() => {
+    if(step === 0) return <><ProgressRings sections={sections}/><StepWelcome onNext={next} name={user?.firstName || 'there'}/></>;
+    if(step === 1) return <><ProgressRings sections={sections}/><StepSIA data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('licences')}/></>;
+    if(step === 2) return <><ProgressRings sections={sections}/><StepPersonal data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('personal')}/></>;
+    if(step === 3) return <><ProgressRings sections={sections}/><StepDriving data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('driving')}/></>;
+    if(step === 4) return <><ProgressRings sections={sections}/><StepSectors data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('sectors')}/></>;
+    if(step === 5) return <><ProgressRings sections={sections}/><StepQualifications data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('qualifications')}/></>;
+    if(step === 6) return <><ProgressRings sections={sections}/><StepBackground data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('background')}/></>;
+    if(step === 7) return <><ProgressRings sections={sections}/><StepPhoto data={profileData} onChange={update} onBack={back} onNext={next}/></>;
+    if(step === 8) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('employment')}/></>;
+    if(step === 9) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('addresses')}/></>;
+    if(step === 10) return <><ProgressRings sections={sections}/><StepComplete name={user?.firstName || 'there'}/></>;
+    return <StepComplete name={user?.firstName || 'there'}/>;
+  })();
+
+  return (
+    <>
+      <div className="profile-layout">
+        <div className="profile-form">{stepContent}</div>
+        <CVPanel
+          profileData={profileData}
+          userName={user?.firstName ? user.firstName + ' ' + (user.lastName||'') : ''}
+          mobileOpen={cvMobileOpen}
+          onMobileClose={() => setCvMobileOpen(false)}
+        />
+      </div>
+      <button className="cv-mobile-toggle" onClick={() => setCvMobileOpen(true)}>
+        View my CV
+      </button>
+    </>
+  );
+}
+
+// ── CV PANEL ──
+function CVPanel({ profileData, userName, mobileOpen, onMobileClose }) {
+  const [activeTab, setActiveTab] = React.useState('cv');
+  const p = profileData.personal || {};
+  const licences = profileData.licences || [];
+  const employment = profileData.employment || [];
+  const qualifications = profileData.qualifications || {};
+  const driving = profileData.driving || {};
+  const background = profileData.background || {};
+  const addresses = profileData.addresses || [];
+
+  const name = userName || [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Your Name';
+  const phone = p.phone || '';
+  const town = p.city || p.town || '';
+  const postcode = p.postcode || '';
+
+  const fmtDate = (d) => {
+    if (!d) return '';
+    const parts = d.split('-');
+    if (parts.length === 2) {
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return months[parseInt(parts[1])-1] + ' ' + parts[0];
+    }
+    return d;
+  };
+
+  const CandidateCV = () => (
+    <div className="cv-doc">
+      {/* Header */}
+      <div className="cv-name">{name}</div>
+      <div className="cv-contact">
+        {[phone, town, postcode].filter(Boolean).join(' · ')}
+        {licences.length > 0 && ' · SIA Licensed'}
+      </div>
+
+      {/* SIA Licences */}
+      {licences.length > 0 && (
+        <div className="cv-section">
+          <div className="cv-section-title">SIA Licences</div>
+          {licences.map((l,i) => (
+            <span key={i} className={'cv-badge ' + (l.verified ? 'verified' : 'pending')}>
+              {l.verified ? '✓' : '⏳'} {l.licence_type || l.type}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Personal Statement */}
+      {employment.length > 0 && (
+        <div className="cv-section">
+          <div className="cv-section-title">Professional Summary</div>
+          <div className="cv-job-duties">
+            {name} is a{licences.length > 0 ? ` SIA licensed ${licences.map(l=>l.licence_type||l.type).join(' and ')} professional` : ' security professional'} with {employment.filter(j=>!j.current&&!j.is_current).length > 0 ? 'extensive' : 'relevant'} experience across{employment.map(j=>j.sector).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).slice(0,3).map(s=>' '+s).join(',') || ' the security sector'}. {driving.hasLicence==='yes'?'Full UK driving licence held. ': ''}{qualifications.has_efaw||qualifications.has_faw?'First Aid certified. ': ''}{background.served_in_forces?'Former '+background.forces_branch+'. ': ''}Available and ready to deploy.
+          </div>
+        </div>
+      )}
+
+      {/* Employment */}
+      {employment.length > 0 && (
+        <div className="cv-section">
+          <div className="cv-section-title">Employment History</div>
+          {employment.map((j,i) => {
+            const employer = j.employer || j.employer_name || '';
+            const role = j.role || j.job_title || '';
+            const from = j.from || j.start_date || '';
+            const to = j.to || j.end_date || '';
+            const current = j.current || j.is_current;
+            const duties = j.duties || '';
+            return (
+              <div key={i} className="cv-job">
+                <div className="cv-job-title">{role}</div>
+                <div className="cv-job-employer">{employer}{j.sector ? ' · '+j.sector : ''}</div>
+                <div className="cv-job-dates">{fmtDate(from)} — {current ? 'Present' : fmtDate(to)}</div>
+                {duties && <div className="cv-job-duties">{duties}</div>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Qualifications */}
+      {(qualifications.frec_level || qualifications.has_efaw || qualifications.has_faw || qualifications.security_clearance) && (
+        <div className="cv-section">
+          <div className="cv-section-title">Qualifications</div>
+          {qualifications.frec_level && qualifications.frec_level !== 'None' && <div className="cv-job-duties">{qualifications.frec_level}</div>}
+          {qualifications.has_efaw && <div className="cv-job-duties">Emergency First Aid at Work (EFAW)</div>}
+          {qualifications.has_faw && <div className="cv-job-duties">First Aid at Work (FAW)</div>}
+          {qualifications.security_clearance && qualifications.security_clearance !== 'None' && <div className="cv-job-duties">Security Clearance: {qualifications.security_clearance}</div>}
+          {qualifications.is_sia_trainer && <div className="cv-job-duties">Qualified SIA Trainer / Assessor</div>}
+        </div>
+      )}
+
+      {/* Skills */}
+      {(driving.hasLicence === 'yes' || (qualifications.languages||[]).length > 0 || driving.hasTransport === 'yes') && (
+        <div className="cv-section">
+          <div className="cv-section-title">Additional Skills</div>
+          <div>
+            {driving.hasLicence === 'yes' && <span className="cv-badge">Full UK Driving Licence</span>}
+            {driving.hasTransport === 'yes' && <span className="cv-badge">Own Transport</span>}
+            {(qualifications.languages||[]).map(l=><span key={l} className="cv-badge">{l}</span>)}
+            {background.served_in_forces && <span className="cv-badge">{background.forces_branch}</span>}
+          </div>
+        </div>
+      )}
+
+      {employment.length === 0 && licences.length === 0 && (
+        <div style={{color:'#94a3b8',fontSize:'0.78rem',textAlign:'center',padding:'2rem 0'}}>
+          Your CV builds automatically as you complete each step.
+        </div>
+      )}
+    </div>
+  );
+
+  const VettingProfile = () => (
+    <div className="cv-doc">
+      <div className="cv-name">{name}</div>
+      <div className="cv-contact" style={{marginBottom:'1rem'}}>BS7858 Vetting Profile · {new Date().toLocaleDateString('en-GB')}</div>
+
+      {/* Personal */}
+      <div className="cv-section">
+        <div className="cv-section-title">Personal Details</div>
+        <div className="cv-grid">
+          {phone && <div className="cv-field"><label>Phone</label><span>{phone}</span></div>}
+          {p.date_of_birth && <div className="cv-field"><label>Date of Birth</label><span>{p.date_of_birth}</span></div>}
+          {p.ni_number && <div className="cv-field"><label>NI Number</label><span>••••••••</span></div>}
+          {postcode && <div className="cv-field"><label>Postcode</label><span>{postcode}</span></div>}
+        </div>
+      </div>
+
+      {/* SIA */}
+      {licences.length > 0 && (
+        <div className="cv-section">
+          <div className="cv-section-title">SIA Licences</div>
+          {licences.map((l,i) => (
+            <div key={i} style={{marginBottom:'0.4rem'}}>
+              <div className="cv-job-title">{l.licence_type||l.type}</div>
+              <div className="cv-job-dates">Expires: {l.expiry_date||l.expiry} · <span style={{color:l.verified?'#15803d':'#a16207'}}>{l.verified?'Verified':'Pending verification'}</span></div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Address history */}
+      {addresses.length > 0 && (
+        <div className="cv-section">
+          <div className="cv-section-title">Address History</div>
+          {addresses.map((a,i) => (
+            <div key={i} className="cv-job">
+              <div className="cv-job-title">{[a.address_line1||a.line1, a.city||a.town].filter(Boolean).join(', ')}</div>
+              <div className="cv-job-dates">{fmtDate(a.moved_in_date||a.from)} — {a.is_current||a.current?'Present':fmtDate(a.moved_out_date||a.to)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Employment with references */}
+      {employment.length > 0 && (
+        <div className="cv-section">
+          <div className="cv-section-title">Employment History</div>
+          {employment.map((j,i) => {
+            const employer = j.employer || j.employer_name || '';
+            const role = j.role || j.job_title || '';
+            const from = j.from || j.start_date || '';
+            const to = j.to || j.end_date || '';
+            const current = j.current || j.is_current;
+            return (
+              <div key={i} className="cv-job">
+                <div className="cv-job-title">{role} — {employer}</div>
+                <div className="cv-job-dates">{fmtDate(from)} — {current?'Present':fmtDate(to)}</div>
+                {j.contactName && <div className="cv-job-duties">Ref: {j.contactName}{j.contactTitle?' ('+j.contactTitle+')':''} · {j.contactEmail} · {j.contactPhone}</div>}
+                {(j.address1||j.employer_address) && <div className="cv-job-duties">{[j.address1||j.employer_address, j.postcode||j.employer_postcode].filter(Boolean).join(', ')}</div>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Criminal */}
+      <div className="cv-section">
+        <div className="cv-section-title">Criminal Disclosure</div>
+        <div className="cv-job-duties">{background.has_criminal_record ? 'Disclosed — see case notes' : 'No unspent convictions declared'}</div>
+      </div>
+
+      {addresses.length === 0 && employment.length === 0 && (
+        <div style={{color:'#94a3b8',fontSize:'0.78rem',textAlign:'center',padding:'2rem 0'}}>
+          Your vetting profile builds automatically as you complete each step.
+        </div>
+      )}
+    </div>
+  );
+
+  const panelContent = (
+    <>
+      <div className="cv-panel-tabs">
+        <button className={'cv-tab'+(activeTab==='cv'?' active':'')} onClick={()=>setActiveTab('cv')}>Candidate CV</button>
+        <button className={'cv-tab'+(activeTab==='vetting'?' active':'')} onClick={()=>setActiveTab('vetting')}>Vetting Profile</button>
+      </div>
+      <div className="cv-panel-body">
+        {activeTab === 'cv' ? <CandidateCV/> : <VettingProfile/>}
+      </div>
+      <div className="cv-actions">
+        <button className="cv-dl-btn primary" onClick={()=>window.print()}>Download CV</button>
+        <button className="cv-dl-btn secondary" onClick={()=>window.print()}>Download Profile</button>
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop panel */}
+      <div className="cv-panel">{panelContent}</div>
+
+      {/* Mobile drawer */}
+      <div className={'cv-mobile-drawer'+(mobileOpen?' open':'')} onClick={onMobileClose}>
+        <div className="cv-mobile-sheet" onClick={e=>e.stopPropagation()}>
+          <div className="cv-mobile-handle"></div>
+          <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+            {panelContent}
+          </div>
+        </div>
+      </div>
+    </>
+  );
 }
 
 // ── INDUSTRY FACTS ──
@@ -1843,7 +2088,7 @@ export default function App() {
           <Route path="/sign-up" element={<SignUpPage/>}/>
           <Route path="/sign-in" element={<SignInPage/>}/>
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard/></ProtectedRoute>}/>
-          <Route path="/profile" element={<ProtectedRoute><div className="page" style={{background:'var(--off)'}}><Nav/><div className="profile-builder"><ProfileBuilder/></div></div></ProtectedRoute>}/>
+          <Route path="/profile" element={<ProtectedRoute><div className="page" style={{background:'var(--off)'}}><Nav/><ProfileBuilder/></div></ProtectedRoute>}/>
           <Route path="*" element={<Navigate to="/dashboard" replace/>}/>
         </Routes>
       </BrowserRouter>
