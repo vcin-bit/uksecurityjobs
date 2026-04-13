@@ -2159,7 +2159,7 @@ function ProfileBuilder() {
   };
 
   const next = () => {
-    if (step === 10 && !addressesCoverFiveYears()) {
+    if (step === 9 && !addressesCoverFiveYears()) {
       alert('You must cover a full 5-year address history before continuing. Add your previous addresses below.');
       return;
     }
@@ -2173,7 +2173,7 @@ function ProfileBuilder() {
 
   // Gated next — only advances if current step is complete
   const gatedNext = () => {
-    if (step === 10 && !completedSteps.has('addresses') && !addressesCoverFiveYears()) {
+    if (step === 9 && !completedSteps.has('addresses') && !addressesCoverFiveYears()) {
       alert('You must cover a full 5-year address history before continuing. Add your previous addresses below.');
       return;
     }
@@ -2188,16 +2188,15 @@ function ProfileBuilder() {
     if(step === 4) return <><ProgressRings sections={sections}/><StepSectors data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('sectors') && forceEditKey !== 'sectors'}/></>;
     if(step === 5) return <><ProgressRings sections={sections}/><StepQualifications data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('qualifications') && forceEditKey !== 'qualifications'}/></>;
     if(step === 6) return <><ProgressRings sections={sections}/><StepBackground data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('background') && forceEditKey !== 'background'}/></>;
-    if(step === 7) return <><ProgressRings sections={sections}/><StepPhoto data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('photo') && forceEditKey !== 'photo'}/></>;
-    if(step === 8) return <><ProgressRings sections={sections}/><StepInterview data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('interview') && forceEditKey !== 'interview'}/></>;
-    if(step === 9) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('employment') && forceEditKey !== 'employment'}/></>;
-    if(step === 10) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('addresses') && forceEditKey !== 'addresses'}/></>;
-    if(step === 11) {
-      const sectionToStep = [1,2,3,4,5,6,8,9,7,10];
-      const sectionKeys = ['licences','personal','driving','sectors','qualifications','background','interview','employment','photo','addresses'];
+    if(step === 7) return <><ProgressRings sections={sections}/><StepInterview data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('interview') && forceEditKey !== 'interview'}/></>;
+    if(step === 8) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('employment') && forceEditKey !== 'employment'}/></>;
+    if(step === 9) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('addresses') && forceEditKey !== 'addresses'}/></>;
+    if(step === 10) {
+      const sectionToStep = [1,2,3,4,5,6,7,8,9];
+      const sectionKeys = ['licences','personal','driving','sectors','qualifications','background','interview','employment','addresses'];
       return <><ProgressRings sections={sections}/><StepComplete name={user?.firstName || "there"} sections={sections} onGoToStep={i=>{setForceEditKey(sectionKeys[i]||null);setStep(sectionToStep[i]||1);}}/></>;
     }
-    return <StepComplete name={user?.firstName || 'there'} sections={sections} onGoToStep={i=>{const m=[1,2,3,4,5,6,8,9,7,10];setStep(m[i]||i+1);}}/>;
+    return <StepComplete name={user?.firstName || 'there'} sections={sections} onGoToStep={i=>{const m=[1,2,3,4,5,6,7,8,9];setStep(m[i]||1);}}/>;
   })();
 
   return (
@@ -2531,7 +2530,6 @@ function Dashboard() {
     { name:'Qualifications', short:'Quals', complete: !!profileData?.qualifications, started: !!profileData?.qualifications },
     { name:'Criminal Record', short:'Record', complete: !!(profileData?.background?.has_criminal_record !== undefined || profileData?.background?.has_criminal_record !== null) && !!profileData?.background, started: !!profileData?.background },
     { name:'Work History', short:'Work H', complete: profileData?.employment?.length > 0, started: !!profileData?.employment?.length },
-    { name:'Photo', short:'Photo', complete: false, started: false },
     { name:'Address History', short:'Addr', complete: profileData?.addresses?.length > 0, started: !!profileData?.addresses?.length },
   ];
 
