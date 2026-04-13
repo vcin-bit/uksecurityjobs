@@ -3203,12 +3203,12 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
         <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222'}}>Post a New Job</div>
         <button type="button" onClick={onCancel} style={{background:'none',border:'none',color:'#64748b',cursor:'pointer',fontSize:'1.25rem'}}>×</button>
       </div>
-      <div style={{background:'#0b1222',border:'none',borderRadius:'10px',padding:'1.25rem 1.5rem',marginBottom:'1.5rem',fontSize:'0.88rem',color:'#e2e8f0',lineHeight:'1.75'}}>
-        <div style={{fontWeight:800,marginBottom:'0.6rem',fontSize:'1rem',color:'#fff'}}>A note on detail</div>
+      <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'10px',padding:'1.25rem 1.5rem',marginBottom:'1.5rem',fontSize:'0.88rem',color:'#374151',lineHeight:'1.75'}}>
+        <div style={{fontWeight:800,marginBottom:'0.6rem',fontSize:'1rem',color:'#0b1222'}}>A note on detail</div>
         <p style={{margin:'0 0 0.6rem'}}>We ask for more information than most job boards. This is deliberate.</p>
         <p style={{margin:'0 0 0.6rem'}}>Every candidate on this platform holds a valid SIA licence and has a complete, vetting-ready profile — no gaps in work history, addresses verified, supporting documents in order. They are security professionals, and they apply to roles that match their skills, location and availability. You will not be flooded with irrelevant applications, time wasters or unlicensed candidates.</p>
         <p style={{margin:'0 0 0.6rem'}}>The detail you provide here does the filtering for you. Shift times, start dates, parking, duties — candidates read all of this before they apply. A well-written posting attracts the right people and rules out the wrong ones before you ever pick up the phone.</p>
-        <p style={{margin:0,color:'#94a3b8'}}>We handle candidate verification. Your job is simply to describe the role accurately.</p>
+        <p style={{margin:0,color:'#64748b'}}>We handle candidate verification. Your job is simply to describe the role accurately.</p>
       </div>
       {error && <div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'0.75rem',marginBottom:'1rem',fontSize:'0.82rem',color:'#dc2626'}}>{error}</div>}
       <form onSubmit={save}>
