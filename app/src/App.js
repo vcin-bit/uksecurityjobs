@@ -3139,11 +3139,12 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
         <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222'}}>Post a New Job</div>
         <button type="button" onClick={onCancel} style={{background:'none',border:'none',color:'#64748b',cursor:'pointer',fontSize:'1.25rem'}}>×</button>
       </div>
-      <div style={{background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'8px',padding:'1rem 1.25rem',marginBottom:'1.25rem',fontSize:'0.8rem',color:'#1e40af',lineHeight:'1.65'}}>
-        <div style={{fontWeight:700,marginBottom:'0.35rem'}}>A note on detail</div>
-        <p style={{margin:'0 0 0.4rem'}}>We ask for more information than a standard job board. This is deliberate. Every candidate on this platform holds a valid SIA licence and has a complete, vetting-ready profile. They are security professionals — they expect to be taken seriously.</p>
-        <p style={{margin:'0 0 0.4rem'}}>The more detail you provide, the fewer questions land in your inbox. Shift times, parking, start dates, duties — candidates read this before applying. A well-written posting attracts the right people and filters out the wrong ones before you ever speak to them.</p>
-        <p style={{margin:0}}>We pre-screen candidates so you don't have to. Your job is to describe the role accurately. Ours is to make sure only qualified, verified people see it.</p>
+      <div style={{background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'8px',padding:'1rem 1.25rem',marginBottom:'1.25rem',fontSize:'0.8rem',color:'#1e40af',lineHeight:'1.7'}}>
+        <div style={{fontWeight:700,marginBottom:'0.5rem',fontSize:'0.85rem'}}>A note on detail</div>
+        <p style={{margin:'0 0 0.5rem'}}>We ask for more information than most job boards. This is deliberate.</p>
+        <p style={{margin:'0 0 0.5rem'}}>Every candidate on this platform holds a valid SIA licence and has a complete, vetting-ready profile — no gaps in work history, addresses verified, supporting documents in order. They are security professionals, and they apply to roles that match their skills, location and availability. You will not be flooded with irrelevant applications, time wasters or unlicensed candidates.</p>
+        <p style={{margin:'0 0 0.5rem'}}>The detail you provide here does the filtering for you. Shift times, start dates, parking, duties — candidates read all of this before they apply. A well-written posting attracts the right people and rules out the wrong ones before you ever pick up the phone or open your inbox.</p>
+        <p style={{margin:0}}>We handle candidate verification. Your job is simply to describe the role accurately — and to be the best employer you can be.</p>
       </div>
       {error && <div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'0.75rem',marginBottom:'1rem',fontSize:'0.82rem',color:'#dc2626'}}>{error}</div>}
       <form onSubmit={save}>
