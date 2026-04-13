@@ -2192,9 +2192,8 @@ function ProfileBuilder() {
     if(step === 9) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('employment')}/></>;
     if(step === 10) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('addresses')}/></>;
     if(step === 11) {
-      // Save final step to DB so profile doesn't loop back
-      apiRequest('/api/candidates/me/step', 'PATCH', { profile_step: 11 }, getToken).catch(()=>{});
-      return <><ProgressRings sections={sections}/><StepComplete name={user?.firstName || 'there'} sections={sections} onGoToStep={i=>setStep(i+1)}/></>;
+      const sectionToStep = [1,2,3,4,5,6,8,9,7,10];
+      return <><ProgressRings sections={sections}/><StepComplete name={user?.firstName || "there"} sections={sections} onGoToStep={i=>setStep(sectionToStep[i]||1)}/></>;
     }
     return <StepComplete name={user?.firstName || 'there'} sections={sections} onGoToStep={i=>{const m=[1,2,3,4,5,6,8,9,7,10];setStep(m[i]||i+1);}}/>;
   })();
