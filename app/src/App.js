@@ -2158,7 +2158,7 @@ function ProfileBuilder() {
   };
 
   const next = () => {
-    if (step === 9 && !addressesCoverFiveYears()) {
+    if (step === 10 && !addressesCoverFiveYears()) {
       alert('You must cover a full 5-year address history before continuing. Add your previous addresses below.');
       return;
     }
@@ -2172,7 +2172,7 @@ function ProfileBuilder() {
 
   // Gated next — only advances if current step is complete
   const gatedNext = () => {
-    if (step === 9 && !completedSteps.has('addresses') && !addressesCoverFiveYears()) {
+    if (step === 10 && !completedSteps.has('addresses') && !addressesCoverFiveYears()) {
       alert('You must cover a full 5-year address history before continuing. Add your previous addresses below.');
       return;
     }
