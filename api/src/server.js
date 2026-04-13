@@ -58,7 +58,8 @@ app.use('/api/sia', siaRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/employers', requireAuth, employerRoutes);
-app.use('/api/jobs', employerRoutes);
+app.use('/api/jobs/public', employerRoutes); // no auth needed
+app.use('/api/jobs', requireAuth, employerRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {

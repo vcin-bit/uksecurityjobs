@@ -74,3 +74,27 @@ router.get('/public', async (req, res) => {
 });
 
 module.exports = router;
+
+// POST /api/jobs/apply — candidate applies for a job
+router.post('/apply', async (req, res) => {
+  try {
+    const { job_id } = req.body;
+    if (!job_id) return res.status(400).json({ error: 'job_id required' });
+
+    // Get candidate id
+    const { data: candidate } = await supabase
+      .from('candidates').select('id').eq('clerk_user_id', req.userId).single();
+    if (!candidate) return res.status(404).json({ error: 'Candidate profile not found' });
+
+    const { data, error } = await supabase.from('job_applications').insert({
+      job_id, candidate_id: candidate.id, status: 'applied'
+    }).select().single();
+
+    if (error && error.code === '23505') return res.status(400).json({ error: 'Already applied' });
+    if (error) throw error;
+    res.json({ success: true, application: data });
+  } catch(err) {
+    console.error('POST /jobs/apply error:', err);
+    res.status(500).json({ error: 'Failed to apply' });
+  }
+});

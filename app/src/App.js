@@ -25,6 +25,7 @@ function Nav() {
       <div className="nav-inner">
         <Logo />
         <div className="nav-links">
+          <a className="nav-link" href="/jobs">Jobs</a>
           <SignedIn>
             <a className="nav-link" href="/dashboard">My Profile</a>
             <button className="nav-btn" onClick={() => signOut({ redirectUrl: '/' })}>Sign out</button>
@@ -3197,6 +3198,152 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
   );
 }
 
+// ── JOB LISTINGS PAGE ──
+function JobListingsPage() {
+  const { isSignedIn } = useUser();
+  const { getToken } = useAuth();
+  const [jobs, setJobs] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [filters, setFilters] = React.useState({ licence:'', location:'', type:'' });
+  const [applying, setApplying] = React.useState(null);
+  const [applied, setApplied] = React.useState(new Set());
+
+  React.useEffect(() => {
+    fetch('https://uksecurityjobs-api.onrender.com/api/jobs/public')
+      .then(r => r.json())
+      .then(d => { setJobs(d.jobs || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const licenceMap = {
+    'Door Supervisor': ['Door Supervisor','Security Guard'],
+    'Security Guard': ['Security Guard'],
+    'CCTV Operator': ['CCTV Operator'],
+    'Close Protection': ['Door Supervisor','Security Guard','CCTV Operator','Close Protection','Cash & Valuables in Transit','Key Holding'],
+    'Cash & Valuables in Transit': ['Cash & Valuables in Transit'],
+    'Key Holding': ['Key Holding','Security Guard'],
+  };
+
+  const filtered = jobs.filter(job => {
+    if (filters.licence) {
+      const canApply = licenceMap[filters.licence] || [filters.licence];
+      if (!(job.licences_required||[]).some(l => canApply.includes(l))) return false;
+    }
+    if (filters.location) {
+      if (!(job.location||'').toLowerCase().includes(filters.location.toLowerCase()) &&
+          !(job.postcode||'').toLowerCase().includes(filters.location.toLowerCase())) return false;
+    }
+    if (filters.type && job.employment_type !== filters.type) return false;
+    return true;
+  });
+
+  const applyForJob = async (jobId) => {
+    if (!isSignedIn) { window.location.href = '/sign-in'; return; }
+    setApplying(jobId);
+    try {
+      await apiRequest('/api/jobs/apply', 'POST', { job_id: jobId }, getToken);
+      setApplied(prev => new Set([...prev, jobId]));
+    } catch(e) { alert('Failed to apply. Please try again.'); }
+    setApplying(null);
+  };
+
+  return (
+    <div className="page" style={{background:'var(--off)'}}>
+      <Nav/>
+      <div style={{maxWidth:'900px',margin:'0 auto',padding:'2rem 1.5rem'}}>
+        <div style={{marginBottom:'2rem'}}>
+          <h1 style={{fontSize:'1.75rem',fontWeight:900,color:'#0b1222',marginBottom:'0.5rem'}}>Security Jobs UK</h1>
+          <p style={{color:'#64748b',fontSize:'0.9rem'}}>Every role on this platform requires a valid SIA licence. All candidates are BS7858 vetted.</p>
+        </div>
+
+        {/* Filters */}
+        <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap',marginBottom:'1.5rem'}}>
+          <select className="f-select" style={{flex:'1',minWidth:'150px'}} value={filters.licence} onChange={e=>setFilters({...filters,licence:e.target.value})}>
+            <option value="">All licences</option>
+            <option>Door Supervisor</option>
+            <option>Security Guard</option>
+            <option>CCTV Operator</option>
+            <option>Close Protection</option>
+            <option>Cash & Valuables in Transit</option>
+            <option>Key Holding</option>
+          </select>
+          <input className="f-input" style={{flex:'2',minWidth:'150px'}} placeholder="Location or postcode" value={filters.location} onChange={e=>setFilters({...filters,location:e.target.value})}/>
+          <select className="f-select" style={{flex:'1',minWidth:'120px'}} value={filters.type} onChange={e=>setFilters({...filters,type:e.target.value})}>
+            <option value="">All types</option>
+            <option>Full Time</option>
+            <option>Part Time</option>
+            <option>Contract</option>
+          </select>
+        </div>
+
+        {loading ? (
+          <div style={{textAlign:'center',padding:'3rem',color:'#94a3b8'}}>Loading jobs...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{textAlign:'center',padding:'3rem',color:'#94a3b8'}}>
+            <div style={{fontSize:'2rem',marginBottom:'0.5rem'}}>🔍</div>
+            <div style={{fontWeight:600,color:'#64748b'}}>No jobs match your filters</div>
+            <div style={{fontSize:'0.82rem',marginTop:'0.25rem'}}>Try broadening your search or check back soon</div>
+          </div>
+        ) : (
+          <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
+            <div style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'0.25rem'}}>{filtered.length} job{filtered.length!==1?'s':''} found</div>
+            {filtered.map(job => (
+              <div key={job.id} style={{background:'#fff',borderRadius:'12px',padding:'1.5rem',border:'1px solid #e2e8f0',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
+                <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:800,fontSize:'1.05rem',color:'#0b1222',marginBottom:'0.2rem'}}>{job.title}</div>
+                    <div style={{fontWeight:600,fontSize:'0.85rem',color:'#1a52a8',marginBottom:'0.4rem'}}>{job.company_name}</div>
+                    <div style={{fontSize:'0.8rem',color:'#64748b',display:'flex',flexWrap:'wrap',gap:'0.75rem',marginBottom:'0.75rem'}}>
+                      <span>📍 {job.location}</span>
+                      {job.rate_from && <span>💷 £{job.rate_from}{job.rate_to?'–£'+job.rate_to:''}/hr</span>}
+                      <span>🕐 {job.employment_type}</span>
+                      {job.sector && <span>🏢 {job.sector}</span>}
+                    </div>
+                    {job.description && (
+                      <div style={{fontSize:'0.78rem',color:'#374151',lineHeight:'1.6',marginBottom:'0.75rem',maxHeight:'60px',overflow:'hidden'}}>
+                        {job.description}
+                      </div>
+                    )}
+                    <div style={{display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
+                      {(job.licences_required||[]).map(l => (
+                        <span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8',border:'1px solid #bfdbfe'}}>{l}</span>
+                      ))}
+                      {job.driving_licence_required !== 'Not Required' && (
+                        <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#f0fdf4',color:'#15803d',border:'1px solid #bbf7d0'}}>
+                          Driving {job.driving_licence_required}
+                        </span>
+                      )}
+                      {job.own_transport_required !== 'Not Required' && (
+                        <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#f0fdf4',color:'#15803d',border:'1px solid #bbf7d0'}}>
+                          Own Transport {job.own_transport_required}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.5rem',flexShrink:0}}>
+                    <div style={{fontSize:'0.68rem',color:'#94a3b8'}}>{new Date(job.created_at).toLocaleDateString('en-GB')}</div>
+                    {applied.has(job.id) ? (
+                      <div style={{background:'#dcfce7',color:'#15803d',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.85rem',fontWeight:700}}>✓ Applied</div>
+                    ) : (
+                      <button
+                        onClick={() => applyForJob(job.id)}
+                        disabled={applying === job.id}
+                        style={{background:'#1a52a8',color:'#fff',border:'none',borderRadius:'8px',padding:'0.65rem 1.5rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}
+                      >
+                        {applying === job.id ? 'Applying...' : isSignedIn ? 'Apply Now' : 'Sign in to Apply'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }) {
   return <><SignedIn>{children}</SignedIn><SignedOut><Navigate to="/sign-in" replace/></SignedOut></>;
 }
@@ -3212,6 +3359,7 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage/>}/>
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard/></ProtectedRoute>}/>
           <Route path="/employer" element={<ProtectedRoute><EmployerDashboard/></ProtectedRoute>}/>
+          <Route path="/jobs" element={<JobListingsPage/>}/>
           <Route path="/profile" element={<ProtectedRoute><div className="page" style={{background:'var(--off)'}}><Nav/><ProfileBuilder/></div></ProtectedRoute>}/>
           <Route path="*" element={<Navigate to="/dashboard" replace/>}/>
         </Routes>
