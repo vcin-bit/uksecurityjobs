@@ -207,12 +207,14 @@ router.put('/background', async (req, res) => {
 
     const payload = {
       candidate_id: candidateId,
-      served_in_forces: b.served_in_forces ?? b.hasForces === 'yes' ?? false,
-      forces_branch: b.forces_branch || b.forcesBranch || null,
-      forces_rank: b.forces_rank || b.forcesRank || null,
-      years_served: b.years_served || b.yearsServed || null,
-      discharge_type: b.discharge_type || b.dischargeType || null,
-      has_criminal_record: b.has_criminal_record ?? b.hasCriminal === 'yes' ?? false,
+      served_in_forces: b.served_in_forces ?? false,
+      forces_branch: b.forces_branch || null,
+      forces_rank: b.forces_rank || null,
+      forces_years: b.forces_years || null,
+      forces_discharge_type: b.forces_discharge_type || null,
+      served_in_police: b.served_in_police ?? false,
+      has_criminal_record: b.has_criminal_record ?? false,
+      has_dbs_certificate: b.has_dbs_certificate ?? false,
       ...(criminal_record_encrypted && { criminal_record_encrypted }),
     };
 

@@ -2055,11 +2055,24 @@ function ProfileBuilder() {
           served_in_forces: b.hasForces === 'yes' || b.served_in_forces || false,
           forces_branch: b.forcesBranch || b.forces_branch || null,
           forces_rank: b.forcesRank || b.forces_rank || null,
-          years_served: parseInt(b.yearsServed || b.years_served || 0) || null,
-          discharge_type: b.dischargeType || b.discharge_type || null,
+          forces_years: parseInt(b.yearsServed || b.forces_years || 0) || null,
+          forces_discharge_type: b.dischargeType || b.forces_discharge_type || null,
+          served_in_police: false,
           has_criminal_record: b.hasCriminal === 'yes' || b.has_criminal_record || false,
           criminal_record: b.criminalDetails || b.criminal_record || null,
-        }, getToken); } catch(e) { console.error("Failed to save background:", e.message); }
+          has_dbs_certificate: false,
+        }, getToken); } catch(e) { console.error('Failed to save background:', e.message); }
+      }
+      if (d.photo) {
+        // Photo upload handled separately via Supabase Storage
+        // Mark step complete in profile_step only
+      }
+      if (d.interview) {
+        // Store interview answers in candidates table notes field for now
+        try { await apiRequest('/api/candidates/me/step', 'PATCH', {
+          profile_step: step + 1,
+          interview_answers: d.interview,
+        }, getToken); } catch(e) { /* handled below */ }
       }
       if (d.employment) {
         await apiRequest('/api/profile/employment/clear', 'DELETE', null, getToken);
