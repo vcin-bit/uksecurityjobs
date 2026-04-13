@@ -122,22 +122,6 @@ h2.white{color:#fff;}
 .welfare-quote p{font-size:1.05rem;color:rgba(255,255,255,0.85);line-height:1.75;font-style:italic;margin-bottom:1.2rem;font-weight:300;}
 .welfare-quote cite{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;color:rgba(255,255,255,0.4);font-style:normal;}
 
-/* FOOTER */
-footer{background:#0b1222;border-top:none;padding:4rem 2rem 2.5rem;}
-.foot-top{max-width:1160px;margin:0 auto;display:grid;grid-template-columns:240px 1fr;gap:4rem;padding-bottom:3rem;border-bottom:1px solid #1e293b;margin-bottom:2rem;align-items:start;}
-.foot-logo .uk{color:#1a52a8;}.foot-logo .sec{color:#e2e8f0;}.foot-logo .job{color:#1a52a8;}
-.foot-desc{font-size:0.82rem;color:#475569;line-height:1.75;margin-top:0.75rem;max-width:210px;}
-.foot-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;}
-.foot-col h4{font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.16em;color:#334155;margin-bottom:1rem;}
-.foot-col a{display:block;font-size:0.82rem;color:#64748b;margin-bottom:0.55rem;transition:color 0.15s;text-decoration:none;}
-.foot-col a:hover{color:#e2e8f0;}
-.foot-bottom{max-width:1160px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;padding-top:2rem;border-top:1px solid #1e293b;}
-.foot-copy{font-size:0.72rem;color:#334155;}
-.foot-legal{display:flex;gap:1.5rem;}
-.foot-legal a{font-size:0.72rem;color:#334155;text-decoration:none;transition:color 0.15s;}
-.foot-legal a:hover{color:#e2e8f0;}
-
-/* MOBILE */
 .mob-menu{display:none;position:fixed;inset:0;background:#fff;z-index:300;flex-direction:column;padding:1rem 1.5rem;overflow-y:auto;}
 .mob-menu.open{display:flex;}
 .mob-top{display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0 1.5rem;border-bottom:1px solid var(--border);margin-bottom:1rem;}
@@ -150,11 +134,28 @@ footer{background:#0b1222;border-top:none;padding:4rem 2rem 2.5rem;}
   .hero-inner{grid-template-columns:1fr;gap:2.5rem;}
   .perks-grid{grid-template-columns:repeat(2,1fr);}
   .score-layout,.welfare-layout{grid-template-columns:1fr;}
-  .foot-top{grid-template-columns:1fr;gap:2rem;}
-  .foot-nav{grid-template-columns:repeat(2,1fr);}
-  .foot-bottom{flex-direction:column;text-align:center;}.foot-legal{justify-content:center;}
-}
-@media(max-width:480px){.perks-grid{grid-template-columns:1fr;}.foot-nav{grid-template-columns:1fr;}}
+      }
+@media(max-width:480px){.perks-grid{grid-template-columns:1fr;}}
+/* FOOTER */
+footer{background:#0b1222;padding:4rem 2rem 2rem;}
+footer *{box-sizing:border-box;}
+.foot-wrap{max-width:1160px;margin:0 auto;}
+.foot-top{display:grid;grid-template-columns:240px 1fr;gap:4rem;padding-bottom:3rem;border-bottom:1px solid #1e293b;margin-bottom:2rem;}
+.foot-brand p{font-size:0.8rem;color:#475569;line-height:1.75;margin-top:0.75rem;max-width:210px;}
+.foot-logo{font-size:1.1rem;font-weight:800;text-decoration:none;display:inline-block;}
+.foot-logo .uk{color:#1a52a8;}.foot-logo .sec{color:#fff;}.foot-logo .job{color:#1a52a8;}
+.foot-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;}
+.foot-col{}
+.foot-col h4{font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.16em;color:#334155;margin-bottom:0.875rem;display:block;}
+.foot-col a{display:block;font-size:0.82rem;color:#64748b;margin-bottom:0.5rem;text-decoration:none;transition:color 0.15s;}
+.foot-col a:hover{color:#fff;}
+.foot-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;}
+.foot-copy{font-size:0.72rem;color:#334155;}
+.foot-legal{display:flex;gap:1.25rem;background:transparent;}
+.foot-legal a{font-size:0.72rem;color:#334155;text-decoration:none;transition:color 0.15s;background:transparent;}
+.foot-legal a:hover{color:#94a3b8;}
+@media(max-width:900px){.foot-top{grid-template-columns:1fr;gap:2rem;}.foot-nav{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:500px){.foot-nav{grid-template-columns:1fr;}.foot-bottom{flex-direction:column;gap:0.5rem;}}
 </style>
 </head>
 <body>
@@ -352,50 +353,52 @@ footer{background:#0b1222;border-top:none;padding:4rem 2rem 2.5rem;}
 </section>
 
 <footer>
-  <div class="foot-top">
-    <div>
-      <a href="/" class="logo foot-logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a>
-      <p class="foot-desc">The UK's only verified security jobs platform. Built by the industry, for the industry.</p>
-      <p class="foot-desc" style="margin-top:0.5rem;color:#475569;">Digital Software Group Ltd<br>Registered in England &amp; Wales</p>
+  <div class="foot-wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <a href="/" class="foot-logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a>
+        <p>The UK's only verified security jobs platform. Built by the industry, for the industry.</p>
+        <p style="margin-top:0.5rem;font-size:0.75rem;color:#334155;">Digital Software Group Ltd<br>Registered in England &amp; Wales</p>
+      </div>
+      <nav class="foot-nav">
+        <div class="foot-col">
+          <h4>Security Officers</h4>
+          <a href="/officers">For Security Officers</a>
+          <a href="https://app.uksecurityjobs.co.uk/sign-up">Register Free</a>
+          <a href="https://app.uksecurityjobs.co.uk/jobs">Security Jobs</a>
+          <a href="https://app.uksecurityjobs.co.uk/sign-in">Sign In</a>
+        </div>
+        <div class="foot-col">
+          <h4>Security Companies</h4>
+          <a href="/employers">For Employers</a>
+          <a href="https://app.uksecurityjobs.co.uk/employer/sign-up">Register a Company</a>
+          <a href="https://app.uksecurityjobs.co.uk/sign-in">Employer Sign In</a>
+        </div>
+        <div class="foot-col">
+          <h4>SIA Job Types</h4>
+          <a href="/door-supervisor-jobs">Door Supervisor Jobs</a>
+          <a href="/cctv-jobs">CCTV Operator Jobs</a>
+          <a href="/close-protection-jobs">Close Protection Jobs</a>
+          <a href="/security-guard-jobs">Security Guard Jobs</a>
+        </div>
+        <div class="foot-col">
+          <h4>Company</h4>
+          <a href="/blog">Blog</a>
+          <a href="/about">About</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms &amp; Conditions</a>
+          <a href="mailto:support@uksecurityjobs.co.uk">Contact Us</a>
+        </div>
+      </nav>
     </div>
-    <nav class="foot-nav">
-      <div class="foot-col">
-        <h4>Security Officers</h4>
-        <a href="/officers">For Security Officers</a>
-        <a href="https://app.uksecurityjobs.co.uk/sign-up">Register Free</a>
-        <a href="https://app.uksecurityjobs.co.uk/jobs">Security Jobs</a>
-        <a href="https://app.uksecurityjobs.co.uk/sign-in">Sign In</a>
-      </div>
-      <div class="foot-col">
-        <h4>Security Companies</h4>
-        <a href="/employers">For Employers</a>
-        <a href="https://app.uksecurityjobs.co.uk/employer/sign-up">Register a Company</a>
-        <a href="https://app.uksecurityjobs.co.uk/sign-in">Employer Sign In</a>
-      </div>
-      <div class="foot-col">
-        <h4>SIA Job Types</h4>
-        <a href="/door-supervisor-jobs">Door Supervisor Jobs</a>
-        <a href="/cctv-jobs">CCTV Operator Jobs</a>
-        <a href="/close-protection-jobs">Close Protection Jobs</a>
-        <a href="/security-guard-jobs">Security Guard Jobs</a>
-      </div>
-      <div class="foot-col">
-        <h4>Company</h4>
-        <a href="/blog">Blog</a>
-        <a href="/about">About</a>
-        <a href="/privacy">Privacy Policy</a>
-        <a href="/terms">Terms &amp; Conditions</a>
-        <a href="mailto:support@uksecurityjobs.co.uk">Contact Us</a>
-      </div>
-    </nav>
-  </div>
-  <div class="foot-bottom">
-    <p class="foot-copy">&copy; 2026 UKSecurityJobs.co.uk &mdash; Digital Software Group Ltd. All rights reserved.</p>
-    <nav class="foot-legal">
-      <a href="/privacy">Privacy</a>
-      <a href="/terms">Terms</a>
-      <a href="/cookies">Cookies</a>
-    </nav>
+    <div class="foot-bottom">
+      <p class="foot-copy">&copy; 2026 UKSecurityJobs.co.uk &mdash; Digital Software Group Ltd. All rights reserved.</p>
+      <nav class="foot-legal">
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/cookies">Cookies</a>
+      </nav>
+    </div>
   </div>
 </footer>
 
