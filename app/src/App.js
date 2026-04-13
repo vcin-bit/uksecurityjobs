@@ -936,6 +936,8 @@ function StepSectors({ data, onChange, onBack, onNext, isComplete }) {
     shiftType: Array.isArray(raw?.shiftType) ? raw.shiftType : [],
     employmentType: raw?.employmentType || '',
     roleType: raw?.roleType || '',
+    yearsInIndustry: raw?.yearsInIndustry || '',
+    employmentStatus: raw?.employmentStatus || '',
   });
   const allSectors = ['Shopping Centres / Retail','Distribution / Logistics / Warehousing','Construction Sites','Corporate / Commercial','Nightlife / Licensed Premises','Events / Festivals','Close Protection / Private','Transport Hubs (airports, stations)','Healthcare / Hospital','Education','Government / MOD','Residential / Concierge','Cash & Valuables in Transit','Control Room / CCTV','BID / Town Centre Rangers'];
   const toggleSector = (s) => {
@@ -971,6 +973,38 @@ function StepSectors({ data, onChange, onBack, onNext, isComplete }) {
         </div>
       </Field>
       <div className="divider"></div>
+      <div className="field-row">
+        <Field label="Continuous years in the security industry *" hint="Count from when you first started working continuously in security or a related field">
+          <Select value={form.yearsInIndustry} onChange={v=>setForm({...form,yearsInIndustry:v})}>
+            <option value="">Select</option>
+            <option>Less than 1 year</option>
+            <option>1 year</option>
+            <option>2 years</option>
+            <option>3 years</option>
+            <option>4 years</option>
+            <option>5 years</option>
+            <option>6 years</option>
+            <option>7 years</option>
+            <option>8 years</option>
+            <option>9 years</option>
+            <option>10 years</option>
+            <option>11–15 years</option>
+            <option>16–20 years</option>
+            <option>20+ years</option>
+          </Select>
+        </Field>
+        <Field label="Current employment status">
+          <Select value={form.employmentStatus} onChange={v=>setForm({...form,employmentStatus:v})}>
+            <option value="">Select</option>
+            <option>Employed — security industry</option>
+            <option>Employed — other sector</option>
+            <option>Self-employed / contracting</option>
+            <option>Unemployed — seeking work</option>
+            <option>Between contracts</option>
+          </Select>
+        </Field>
+      </div>
+
       <Field label="What type of role are you looking for?">
         <Select value={form.roleType} onChange={v=>setForm({...form,roleType:v})}>
           <option value="">Select role type</option>
@@ -1146,6 +1180,8 @@ function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
     forcesDischarge: raw.forcesDischarge || raw.forces_discharge_type || '',
     hasCriminal: raw.hasCriminal || (raw.has_criminal_record ? 'yes' : raw.has_criminal_record === false ? 'no' : ''),
     criminalDetails: raw.criminalDetails || raw.criminal_record || '',
+    healthDeclaration: raw.healthDeclaration || '',
+    healthDetails: raw.healthDetails || '',
   });
   const u = (f,v) => setForm({...form,[f]:v});
   const save = () => { onChange({ background: form }); onNext(); };
@@ -1190,6 +1226,23 @@ function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
         <div className="radio-row"><Radio name="hasCriminal" value="yes" label="Yes" checked={form.hasCriminal==='yes'} onChange={v=>u('hasCriminal',v)}/><Radio name="hasCriminal" value="no" label="No" checked={form.hasCriminal==='no'} onChange={v=>u('hasCriminal',v)}/></div>
       </Field>
       {form.hasCriminal==='yes' && <Field label="Please provide brief details" hint="Date, offence, sentence. This is confidential and only visible to you and our admin team."><textarea className="f-textarea" rows={3} value={form.criminalDetails} onChange={e=>u('criminalDetails',e.target.value)} placeholder="e.g. 2019 — SP30 — 3 points and £100 fine"/></Field>}
+
+      <div className="divider"></div>
+      <Field label="Health Declaration" hint="Under the Equality Act 2010, you are not required to disclose medical information. This is voluntary and entirely your choice.">
+        <div style={{fontSize:'0.78rem',color:'#64748b',marginBottom:'0.75rem',lineHeight:'1.5'}}>
+          Do you have any medical conditions or physical restrictions you wish to declare to a prospective employer? This information is encrypted and you control whether it is shared.
+        </div>
+        <div className="radio-row">
+          <Radio name="healthDeclaration" value="no" label="Nothing to declare" checked={form.healthDeclaration==='no'} onChange={v=>u('healthDeclaration',v)}/>
+          <Radio name="healthDeclaration" value="yes" label="I wish to declare something" checked={form.healthDeclaration==='yes'} onChange={v=>u('healthDeclaration',v)}/>
+          <Radio name="healthDeclaration" value="prefer_not" label="Prefer not to say" checked={form.healthDeclaration==='prefer_not'} onChange={v=>u('healthDeclaration',v)}/>
+        </div>
+      </Field>
+      {form.healthDeclaration === 'yes' && (
+        <Field label="Brief details" hint="This is encrypted and confidential. Only share what you are comfortable with.">
+          <textarea className="f-textarea" rows={2} value={form.healthDetails} onChange={e=>u('healthDetails',e.target.value)} placeholder="e.g. Managed diabetes — no impact on duties. Or: Reduced mobility in left arm."/>
+        </Field>
+      )}
     </StepShell>
   );
 }
@@ -2260,7 +2313,7 @@ function CVPanel({ profileData, userName, mobileOpen, onMobileClose }) {
           <div style={titleStyle}>Professional Profile</div>
           <div style={{fontSize:'0.78rem',lineHeight:'1.65',color:'#374151'}}>
             {interview.whyHire || (
-              `${name} is a${licences.length > 0 ? ` SIA licensed ${licences.map(l=>l.licence_type||l.type).filter(Boolean).join(' and ')} professional` : ' security professional'} with experience across ${(sectors.sectors||[]).slice(0,2).join(' and ') || 'the security sector'}. ${driving.has_driving_licence||driving.hasLicence==='yes'?'Full UK driving licence held. ':''}${qualifications.has_efaw||qualifications.has_faw?'First Aid certified. ':''}${background.served_in_forces?'Former '+background.forces_branch+'. ':''}Available and ready to deploy.`
+              `${name} is a${licences.length > 0 ? ` SIA licensed ${licences.map(l=>l.licence_type||l.type).filter(Boolean).join(' and ')} professional` : ' security professional'}${sectors.yearsInIndustry ? ` with ${sectors.yearsInIndustry} of continuous security industry experience` : ` with experience`} across ${(sectors.sectors||[]).slice(0,2).join(' and ') || 'the security sector'}. ${driving.has_driving_licence||driving.hasLicence==='yes'?'Full UK driving licence held. ':''}${qualifications.has_efaw||qualifications.has_faw?'First Aid certified. ':''}${background.served_in_forces?'Former '+background.forces_branch+'. ':''}Available and ready to deploy.`
             )}
           </div>
         </div>
