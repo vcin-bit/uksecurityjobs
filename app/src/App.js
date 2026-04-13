@@ -2388,6 +2388,14 @@ function Dashboard() {
             </button>
           </div>
           <ProgressRings sections={sections}/>
+          <div style={{display:'flex',flexWrap:'wrap',gap:'0.5rem',marginTop:'1rem'}}>
+            {sections.map((s,i) => (
+              <button key={i} onClick={()=>navigate('/profile')}
+                style={{fontSize:'0.72rem',padding:'0.3rem 0.75rem',borderRadius:'999px',border:'1px solid #e2e8f0',background: s.complete?'#f0fdf4':s.pending?'#fef9c3':'#f8fafc',color:s.complete?'#15803d':s.pending?'#854d0e':'#64748b',cursor:'pointer',fontFamily:'inherit',fontWeight:600}}>
+                {s.complete ? '✓ ' : s.pending ? '⏳ ' : '○ '}{s.name}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* SUBTLE FACT */}
