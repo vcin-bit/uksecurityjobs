@@ -773,10 +773,25 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
 function StepDriving({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
   React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
-  const [form, setForm] = useState(data.driving || {
-    hasLicence: '', licenceType:'', licenceNumber:'', yearsHeld:'', points:'', endorsements:[], hasBan:'', banDate:'', banDuration:'', banReason:'',
-    hasTransport:'', vehicleType:'', taxed:'', moted:'', insured:'', travelRadius:'',
-    dvlaAddress:''
+  const raw = data.driving || {};
+  const [form, setForm] = useState({
+    hasLicence: raw.hasLicence || (raw.has_driving_licence ? 'yes' : raw.has_driving_licence === false ? 'no' : ''),
+    licenceType: raw.licenceType || raw.licence_type || '',
+    licenceNumber: raw.licenceNumber || '',
+    yearsHeld: raw.yearsHeld || '',
+    points: raw.points || '',
+    endorsements: raw.endorsements || raw.endorsement_codes || [],
+    hasBan: raw.hasBan || (raw.has_ban_history ? 'yes' : ''),
+    banDate: raw.banDate || '',
+    banDuration: raw.banDuration || '',
+    banReason: raw.banReason || '',
+    hasTransport: raw.hasTransport || (raw.has_own_vehicle ? 'yes' : raw.has_own_vehicle === false ? 'no' : ''),
+    vehicleType: raw.vehicleType || '',
+    taxed: raw.taxed || (raw.vehicle_taxed ? 'yes' : ''),
+    moted: raw.moted || (raw.vehicle_mot_valid ? 'yes' : ''),
+    insured: raw.insured || (raw.vehicle_insured ? 'yes' : ''),
+    travelRadius: raw.travelRadius || (raw.travel_radius_miles ? String(raw.travel_radius_miles) : ''),
+    dvlaAddress: raw.dvlaAddress || '',
   });
   const u = (f,v) => setForm({...form,[f]:v});
   const toggleEndorsement = (code) => {
@@ -845,7 +860,7 @@ function StepDriving({ data, onChange, onBack, onNext, isComplete }) {
           </div>
         </Field>
         {form.hasBan === 'yes' && <div className="field-row">
-          <Field label="Date of ban"><Input type="date" value={form.banDate} onChange={v=>u('banDate',v)}/></Field>
+          <Field label="Date of ban"><div className="field-row" style={{gap:"0.5rem",marginBottom:0}}><Select value={form.banDateMonth||""} onChange={v=>u("banDateMonth",v)}><option value="">Month</option>{["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,"0")}>{m}</option>)}</Select><Input type="number" placeholder="Year" min="2010" max={new Date().getFullYear()} value={form.banDateYear||""} onChange={v=>u("banDateYear",v)} style={{width:"90px"}}/></div></Field>
           <Field label="Duration"><Input type="text" placeholder="e.g. 12 months" value={form.banDuration} onChange={v=>u('banDuration',v)}/></Field>
           <Field label="Reason"><Input type="text" placeholder="e.g. SP30" value={form.banReason} onChange={v=>u('banReason',v)}/></Field>
         </div>}
@@ -993,10 +1008,22 @@ function StepSectors({ data, onChange, onBack, onNext, isComplete }) {
 function StepQualifications({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
   React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
-  const [form, setForm] = useState(data.qualifications || {
-    hasFirstAid:'', certType:'', issuingBody:'', certNumber:'', dateAchieved:'', expiry:'',
-    hasUniform:'', hasPPE:'', languages:[], isSIATrainer:'', trainerDetails:'',
-    hasClearance:'', clearanceLevel:'', clearanceActive:''
+  const raw = data.qualifications || {};
+  const [form, setForm] = useState({
+    hasFirstAid: raw.hasFirstAid || (raw.has_efaw || raw.has_faw ? 'yes' : raw.frec_level && raw.frec_level !== 'None' ? 'yes' : ''),
+    certType: raw.certType || raw.frec_level || '',
+    issuingBody: raw.issuingBody || '',
+    certNumber: raw.certNumber || '',
+    dateAchieved: raw.dateAchieved || '',
+    expiry: raw.expiry || raw.first_aid_expiry || '',
+    hasUniform: raw.hasUniform || '',
+    hasPPE: raw.hasPPE || '',
+    languages: raw.languages || [],
+    isSIATrainer: raw.isSIATrainer || (raw.is_sia_trainer ? 'yes' : ''),
+    trainerDetails: raw.trainerDetails || '',
+    hasClearance: raw.hasClearance || (raw.security_clearance && raw.security_clearance !== 'None' ? 'yes' : ''),
+    clearanceLevel: raw.clearanceLevel || raw.security_clearance || '',
+    clearanceActive: raw.clearanceActive || '',
   });
   const u = (f,v) => setForm({...form,[f]:v});
   const allLangs = ['Welsh','French','Spanish','Portuguese','Polish','Romanian','Arabic','Urdu','Hindi','Punjabi','Somali','Other'];
@@ -1040,8 +1067,8 @@ function StepQualifications({ data, onChange, onBack, onNext, isComplete }) {
         </div>
         <div className="field-row">
           <Field label="Certificate Number"><Input type="text" value={form.certNumber} onChange={v=>u('certNumber',v)}/></Field>
-          <Field label="Date Achieved"><Input type="date" value={form.dateAchieved} onChange={v=>u('dateAchieved',v)}/></Field>
-          <Field label="Expiry Date"><Input type="date" value={form.expiry} onChange={v=>u('expiry',v)}/></Field>
+          <Field label="Date Achieved"><div className="field-row" style={{gap:"0.5rem",marginBottom:0}}><Select value={form.dateAchievedMonth||""} onChange={v=>u("dateAchievedMonth",v)}><option value="">Month</option>{["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,"0")}>{m}</option>)}</Select><Input type="number" placeholder="Year" min="2000" max={new Date().getFullYear()} value={form.dateAchievedYear||""} onChange={v=>u("dateAchievedYear",v)} style={{width:"90px"}}/></div></Field>
+          <Field label="Expiry Date"><div className="field-row" style={{gap:"0.5rem",marginBottom:0}}><Select value={form.expiryMonth||""} onChange={v=>u("expiryMonth",v)}><option value="">Month</option>{["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,"0")}>{m}</option>)}</Select><Input type="number" placeholder="Year" min={new Date().getFullYear()} max={new Date().getFullYear()+10} value={form.expiryYear||""} onChange={v=>u("expiryYear",v)} style={{width:"90px"}}/></div></Field>
         </div>
       </>}
       <div className="divider"></div>
@@ -1086,9 +1113,15 @@ function StepQualifications({ data, onChange, onBack, onNext, isComplete }) {
 function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
   React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
-  const [form, setForm] = useState(data.background || {
-    hasForces:'', forcesBranch:'', forcesRank:'', forcesYears:'', forcesDischarge:'',
-    hasBID:'', bidSchemes:'', hasCriminal:'', criminalDetails:''
+  const raw = data.background || {};
+  const [form, setForm] = useState({
+    hasForces: raw.hasForces || (raw.served_in_forces ? 'yes' : raw.served_in_forces === false ? 'no' : ''),
+    forcesBranch: raw.forcesBranch || raw.forces_branch || '',
+    forcesRank: raw.forcesRank || raw.forces_rank || '',
+    forcesYears: raw.forcesYears || raw.forces_years || '',
+    forcesDischarge: raw.forcesDischarge || raw.forces_discharge_type || '',
+    hasCriminal: raw.hasCriminal || (raw.has_criminal_record ? 'yes' : raw.has_criminal_record === false ? 'no' : ''),
+    criminalDetails: raw.criminalDetails || raw.criminal_record || '',
   });
   const u = (f,v) => setForm({...form,[f]:v});
   const save = () => { onChange({ background: form }); onNext(); };
@@ -1132,7 +1165,7 @@ function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
       <Field label="Do you have any unspent criminal convictions?" hint="This does not automatically disqualify you — we assess each case individually">
         <div className="radio-row"><Radio name="hasCriminal" value="yes" label="Yes" checked={form.hasCriminal==='yes'} onChange={v=>u('hasCriminal',v)}/><Radio name="hasCriminal" value="no" label="No" checked={form.hasCriminal==='no'} onChange={v=>u('hasCriminal',v)}/></div>
       </Field>
-      {form.hasCriminal==='yes' && <Field label="Please provide brief details" hint="Date, offence, sentence. This is confidential and only visible to you and our admin team."><textarea className="f-textarea" rows={3} value={form.criminalDetails} onChange={v=>u('criminalDetails',v)} placeholder="e.g. 2019 — SP30 — 3 points and £100 fine"/></Field>}
+      {form.hasCriminal==='yes' && <Field label="Please provide brief details" hint="Date, offence, sentence. This is confidential and only visible to you and our admin team."><textarea className="f-textarea" rows={3} value={form.criminalDetails} onChange={e=>u('criminalDetails',e.target.value)} placeholder="e.g. 2019 — SP30 — 3 points and £100 fine"/></Field>}
     </StepShell>
   );
 }
@@ -1791,10 +1824,62 @@ function ProfileBuilder() {
           if (lic.number) await apiRequest('/api/sia', 'POST', { licence_number: lic.number, licence_type: lic.type, expiry_date: lic.expiry }, getToken);
         }
       }
-      if (d.driving) await apiRequest('/api/profile/driving', 'PUT', d.driving, getToken);
-      if (d.sectors) await apiRequest('/api/profile/sectors', 'PUT', d.sectors, getToken);
-      if (d.qualifications) await apiRequest('/api/profile/qualifications', 'PUT', d.qualifications, getToken);
-      if (d.background) await apiRequest('/api/profile/background', 'PUT', d.background, getToken);
+      if (d.driving) {
+        const dr = d.driving;
+        await apiRequest('/api/profile/driving', 'PUT', {
+          has_driving_licence: dr.hasLicence === 'yes',
+          licence_type: dr.licenceType || null,
+          endorsement_codes: dr.endorsements || [],
+          has_ban_history: dr.hasBan === 'yes',
+          has_own_vehicle: dr.hasTransport === 'yes',
+          vehicle_insured: dr.insured === 'yes',
+          vehicle_taxed: dr.taxed === 'yes',
+          vehicle_mot_valid: dr.moted === 'yes',
+          travel_radius_miles: parseInt(dr.travelRadius) || 20,
+          willing_to_relocate: false,
+          dvlaAddress: dr.dvlaAddress || '',
+        }, getToken);
+      }
+      if (d.sectors) {
+        const s = d.sectors;
+        await apiRequest('/api/profile/sectors', 'PUT', {
+          sectors: s.sectors || [],
+          available_from: null,
+          preferred_shift: Array.isArray(s.availability) ? s.availability.join(',') : s.availability || null,
+          min_hourly_rate: null,
+          employmentType: s.employmentType || '',
+          availability: s.availability || [],
+          shiftType: s.shiftType || [],
+        }, getToken);
+      }
+      if (d.qualifications) {
+        const q = d.qualifications;
+        await apiRequest('/api/profile/qualifications', 'PUT', {
+          frec_level: q.certType || q.frec_level || 'None',
+          has_efaw: q.certType === 'Emergency First Aid at Work (EFAW)' || q.has_efaw || false,
+          has_faw: q.certType === 'First Aid at Work (FAW)' || q.has_faw || false,
+          first_aid_expiry: q.expiry || q.first_aid_expiry || null,
+          languages: q.languages || [],
+          is_sia_trainer: q.isSIATrainer === 'yes' || q.is_sia_trainer || false,
+          security_clearance: q.clearanceLevel || q.security_clearance || 'None',
+          security_clearance_ref: q.trainerDetails || null,
+          other_qualifications: q.issuingBody || null,
+        }, getToken);
+      }
+      if (d.background) {
+        const b = d.background;
+        await apiRequest('/api/profile/background', 'PUT', {
+          served_in_forces: b.hasForces === 'yes' || b.served_in_forces || false,
+          forces_branch: b.forcesBranch || b.forces_branch || null,
+          forces_rank: b.forcesRank || b.forces_rank || null,
+          forces_years: parseInt(b.forcesYears || b.forces_years || 0) || null,
+          forces_discharge_type: b.forcesDischarge || b.forces_discharge_type || null,
+          served_in_police: false,
+          has_criminal_record: b.hasCriminal === 'yes' || b.has_criminal_record || false,
+          criminal_record: b.criminalDetails || b.criminal_record || null,
+          has_dbs_certificate: false,
+        }, getToken);
+      }
       if (d.employment) {
         for (const job of d.employment) {
           await apiRequest('/api/profile/employment', 'POST', {
