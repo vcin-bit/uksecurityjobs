@@ -41,7 +41,7 @@ function Nav() {
           </a>
           <SignedIn>
             {isEmployer && <a className="nav-link" href="/employer" style={{color:'#1a52a8',fontWeight:700}}>Employer Dashboard</a>}
-            <a className="nav-link" href="/dashboard">My Profile</a>
+            {!isEmployer && <a className="nav-link" href="/dashboard">My Profile</a>}
             <button className="nav-btn" onClick={() => signOut({ redirectUrl: '/' })}>Sign out</button>
           </SignedIn>
           <SignedOut>
@@ -3037,11 +3037,16 @@ function LogoUpload({ currentUrl, getToken, onUploaded }) {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-      const res = await apiRequest('/api/employers/logo', 'POST', {
-        base64, mimeType: file.type, fileName: file.name
-      }, getToken);
-      setPreview(res.logo_url);
-      onUploaded && onUploaded(res.logo_url);
+      const token = await getToken({ skipCache: true });
+      const res = await fetch('https://uksecurityjobs-api.onrender.com/api/employers/logo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ base64, mimeType: file.type, fileName: file.name })
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Upload failed'); }
+      const data = await res.json();
+      setPreview(data.logo_url);
+      onUploaded && onUploaded(data.logo_url);
     } catch(err) {
       console.error('Logo upload error:', err);
       alert('Upload failed: ' + (err.message || 'Please try again.'));
@@ -3326,7 +3331,7 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
       {error && <div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'0.75rem',marginBottom:'1rem',fontSize:'0.82rem',color:'#dc2626'}}>{error}</div>}
       <form onSubmit={save}>
         <div style={{display:'grid',gap:'1rem'}}>
-          <div className="field-row">
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"1rem",alignItems:"start"}}>
             <Field label="Job Title *"><Input type="text" placeholder="e.g. Door Supervisor" value={form.title} onChange={v=>u('title',v)}/></Field>
             <Field label="Location *" hint="Town or city"><Input type="text" placeholder="e.g. Central London" value={form.location} onChange={v=>u('location',v)}/></Field>
             <Field label="Postcode Area *" hint="e.g. SW1, B1, M1"><Input type="text" placeholder="e.g. SW1" value={form.postcode} onChange={v=>u('postcode',v)}/></Field>
@@ -3349,7 +3354,7 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
 
           <div className="divider"></div>
           <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.75rem'}}>Contract & Hours</div>
-          <div className="field-row">
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"1rem",alignItems:"start"}}>
             <Field label="Contract Type *">
               <Select value={form.contract_type} onChange={v=>u('contract_type',v)}>
                 <option value="">Select</option>
@@ -3389,7 +3394,7 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
           </div>
 
           <div className="divider"></div>
-          <div className="field-row">
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"1rem",alignItems:"start"}}>
             <Field label="Rate From (£/hr)"><Input type="number" placeholder="13.50" value={form.rate_from} onChange={v=>u('rate_from',v)}/></Field>
             <Field label="Rate To (£/hr)"><Input type="number" placeholder="15.00" value={form.rate_to} onChange={v=>u('rate_to',v)}/></Field>
           </div>
@@ -3398,7 +3403,7 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
             <textarea className="f-textarea" rows={2} placeholder="e.g. Company pension, 28 days holiday, uniform provided, progression to supervisory roles" value={form.benefits} onChange={e=>u('benefits',e.target.value)}/>
           </Field>
 
-          <div className="field-row">
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"1rem",alignItems:"start"}}>
             <Field label="On-site Parking">
               <Select value={form.parking} onChange={v=>u('parking',v)}>
                 <option value="">Select</option>
@@ -3422,7 +3427,7 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
             </Field>
           </div>
 
-          <div className="field-row">
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"1rem",alignItems:"start"}}>
             <Field label="Driving Licence">
               <Select value={form.driving_licence_required} onChange={v=>u('driving_licence_required',v)}>
                 <option>Not Required</option>
