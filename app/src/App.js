@@ -934,7 +934,8 @@ function StepSectors({ data, onChange, onBack, onNext, isComplete }) {
     availability: Array.isArray(raw?.availability) ? raw.availability : [],
     availabilityAll: false,
     shiftType: Array.isArray(raw?.shiftType) ? raw.shiftType : [],
-    employmentType: raw?.employmentType || ''
+    employmentType: raw?.employmentType || '',
+    roleType: raw?.roleType || '',
   });
   const allSectors = ['Shopping Centres / Retail','Distribution / Logistics / Warehousing','Construction Sites','Corporate / Commercial','Nightlife / Licensed Premises','Events / Festivals','Close Protection / Private','Transport Hubs (airports, stations)','Healthcare / Hospital','Education','Government / MOD','Residential / Concierge','Cash & Valuables in Transit','Control Room / CCTV','BID / Town Centre Rangers'];
   const toggleSector = (s) => {
@@ -970,6 +971,25 @@ function StepSectors({ data, onChange, onBack, onNext, isComplete }) {
         </div>
       </Field>
       <div className="divider"></div>
+      <Field label="What type of role are you looking for?">
+        <Select value={form.roleType} onChange={v=>setForm({...form,roleType:v})}>
+          <option value="">Select role type</option>
+          <option>Operational — Door Supervisor / Manned Guarding</option>
+          <option>Operational — CCTV / Control Room</option>
+          <option>Operational — Close Protection</option>
+          <option>Operational — Mobile Patrol / Key Holding</option>
+          <option>Operational — Retail Security</option>
+          <option>Operational — Events Security</option>
+          <option>Supervisory — Team Leader / Supervisor</option>
+          <option>Management — Security Manager</option>
+          <option>Management — Operations Manager</option>
+          <option>Management — Contract Manager</option>
+          <option>Training — SIA Trainer / Assessor</option>
+          <option>Consultancy / Risk Management</option>
+          <option>Any / Open to opportunities</option>
+        </Select>
+      </Field>
+
       <Field label="Employment Type">
         <div className="radio-row">
           {['Full Time','Part Time','Either'].map(t=><Radio key={t} name="employmentType" value={t} label={t} checked={form.employmentType===t} onChange={v=>setForm({...form,employmentType:v})}/>)}
@@ -1174,7 +1194,93 @@ function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
   );
 }
 
-// ── STEP 8: EMPLOYMENT HISTORY ──
+// ── STEP 8: INTERVIEW QUESTIONS ──
+function StepInterview({ data, onChange, onBack, onNext, isComplete }) {
+  const [editing, setEditing] = React.useState(!isComplete);
+  React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
+  const raw = data.interview || {};
+  const [form, setForm] = useState({
+    whyHire: raw.whyHire || '',
+    proudOf: raw.proudOf || '',
+    difficult: raw.difficult || '',
+    strengthen: raw.strengthen || '',
+    availability: raw.availability || '',
+    salary: raw.salary || '',
+  });
+  const u = (f,v) => setForm(prev=>({...prev,[f]:v}));
+  const save = () => { onChange({ interview: form }); onNext(); };
+
+  if (isComplete && !editing) {
+    return (
+      <CompletedStep title="Interview Questions"
+        summary={[
+          { label:'Why hire you', value: form.whyHire ? form.whyHire.substring(0,60)+'...' : '' },
+          { label:'Salary expectation', value: form.salary },
+          { label:'Availability', value: form.availability },
+        ]}
+        onEdit={()=>setEditing(true)} onBack={onBack} onNext={onNext}/>
+    );
+  }
+
+  return (
+    <StepShell step={8} total={12} title="About You"
+      why="These answers are shown to employers when you apply for a role. A strong, honest answer here sets you apart from candidates who leave these blank."
+      onBack={onBack} onNext={save}>
+
+      <div style={{background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'8px',padding:'0.875rem 1rem',marginBottom:'1.5rem',fontSize:'0.82rem',color:'#1e40af'}}>
+        These questions will be shown to employers when you apply. Take your time — your answers help employers understand who you are before they even meet you.
+      </div>
+
+      <Field label="Why should an employer hire you?" hint="2–3 sentences. Be specific — mention your licence, experience, and reliability.">
+        <textarea className="f-textarea" rows={3} placeholder="e.g. I am a licenced Close Protection officer with 6 years experience across corporate and residential sectors. I have a clean record, valid SIA licence and never missed a shift in my career." value={form.whyHire} onChange={e=>u('whyHire',e.target.value)}/>
+      </Field>
+
+      <Field label="What are you most proud of in your security career?" hint="A specific situation, achievement or moment that shows your character.">
+        <textarea className="f-textarea" rows={3} placeholder="e.g. Successfully managing a hostile situation at a licensed premises without escalation or police involvement." value={form.proudOf} onChange={e=>u('proudOf',e.target.value)}/>
+      </Field>
+
+      <Field label="Describe a difficult situation you handled well." hint="Employers want to know how you react under pressure.">
+        <textarea className="f-textarea" rows={3} placeholder="e.g. Dealt with a medical emergency on site before paramedics arrived — administered first aid and kept bystanders calm." value={form.difficult} onChange={e=>u('difficult',e.target.value)}/>
+      </Field>
+
+      <Field label="What would you do to strengthen this industry?" hint="Optional — shows professional thinking and ambition.">
+        <textarea className="f-textarea" rows={2} placeholder="e.g. Better training standards and clearer career progression routes for front-line officers." value={form.strengthen} onChange={e=>u('strengthen',e.target.value)}/>
+      </Field>
+
+      <div className="divider"></div>
+      <div className="field-row">
+        <Field label="When can you start?">
+          <Select value={form.availability} onChange={v=>u('availability',v)}>
+            <option value="">Select</option>
+            <option>Immediately</option>
+            <option>Within 1 week</option>
+            <option>Within 2 weeks</option>
+            <option>Within 1 month</option>
+            <option>I am currently employed</option>
+          </Select>
+        </Field>
+        <Field label="Salary / Rate expectation">
+          <Select value={form.salary} onChange={v=>u('salary',v)}>
+            <option value="">Select</option>
+            <option>£11–£12/hr</option>
+            <option>£12–£13/hr</option>
+            <option>£13–£15/hr</option>
+            <option>£15–£18/hr</option>
+            <option>£18–£22/hr</option>
+            <option>£22+/hr</option>
+            <option>£25,000–£30,000/yr</option>
+            <option>£30,000–£35,000/yr</option>
+            <option>£35,000–£45,000/yr</option>
+            <option>£45,000+/yr</option>
+            <option>Negotiable</option>
+          </Select>
+        </Field>
+      </div>
+    </StepShell>
+  );
+}
+
+// ── STEP 9: EMPLOYMENT HISTORY ──
 function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
   React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
@@ -1819,6 +1925,7 @@ function ProfileBuilder() {
         if (qualifications) completed.add('qualifications');
         if (background) completed.add('background');
         if (employment?.length) completed.add('employment');
+        if (profileData.interview?.whyHire) completed.add('interview');
         if (addresses?.length) {
           // Only mark complete if 5 years covered
           const now = new Date();
@@ -1854,6 +1961,7 @@ function ProfileBuilder() {
     { name:'Sectors & Availability', short:'Work', complete: completedSteps.has('sectors'), started: completedSteps.has('sectors') || !!profileData.sectors },
     { name:'Qualifications', short:'Quals', complete: completedSteps.has('qualifications'), started: completedSteps.has('qualifications') || !!profileData.qualifications },
     { name:'Criminal Record', short:'Record', complete: completedSteps.has('background'), started: completedSteps.has('background') || !!profileData.background },
+    { name:'About You', short:'About', complete: completedSteps.has('interview'), started: completedSteps.has('interview') || !!profileData.interview },
     { name:'Work History', short:'Work H', complete: completedSteps.has('employment'), started: completedSteps.has('employment') || !!profileData.employment?.length },
     { name:'Photo', short:'Photo', complete: completedSteps.has('photo'), started: completedSteps.has('photo') || !!profileData.photo?.uploaded },
     { name:'Address History', short:'Addr', complete: completedSteps.has('addresses'), started: completedSteps.has('addresses') || !!profileData.addresses?.length },
@@ -1909,7 +2017,6 @@ function ProfileBuilder() {
       }
       if (d.sectors) {
         const s = d.sectors;
-        // preferred_shift only allows 'Days', 'Nights', 'Either' - map array to single value
         const avail = Array.isArray(s.availability) ? s.availability : [];
         let preferredShift = null;
         if (avail.includes('Days') && avail.includes('Nights')) preferredShift = 'Either';
@@ -1918,13 +2025,11 @@ function ProfileBuilder() {
         else if (avail.length > 0) preferredShift = 'Either';
         try { await apiRequest('/api/profile/sectors', 'PUT', {
           sectors: s.sectors || [],
-          available_from: null,
           preferred_shift: preferredShift,
+          employment_type: s.employmentType || null,
+          available_from: null,
           min_hourly_rate: null,
-          employmentType: s.employmentType || '',
-          availability: avail,
-          shiftType: s.shiftType || [],
-        }, getToken); } catch(e) { console.error("Failed to save sectors:", e.message); }
+        }, getToken); } catch(e) { console.error('Failed to save sectors:', e.message); }
       }
       if (d.qualifications) {
         const q = d.qualifications;
@@ -2050,9 +2155,10 @@ function ProfileBuilder() {
     if(step === 5) return <><ProgressRings sections={sections}/><StepQualifications data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('qualifications')}/></>;
     if(step === 6) return <><ProgressRings sections={sections}/><StepBackground data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('background')}/></>;
     if(step === 7) return <><ProgressRings sections={sections}/><StepPhoto data={profileData} onChange={update} onBack={back} onNext={next}/></>;
-    if(step === 8) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('employment')}/></>;
-    if(step === 9) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('addresses')}/></>;
-    if(step === 10) return <><ProgressRings sections={sections}/><StepComplete name={user?.firstName || 'there'} sections={sections} onGoToStep={i=>setStep(i+1)}/></>;
+    if(step === 8) return <><ProgressRings sections={sections}/><StepInterview data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('interview')}/></>;
+    if(step === 9) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('employment')}/></>;
+    if(step === 10) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('addresses')}/></>;
+    if(step === 11) return <><ProgressRings sections={sections}/><StepComplete name={user?.firstName || 'there'} sections={sections} onGoToStep={i=>setStep(i+1)}/></>;
     return <StepComplete name={user?.firstName || 'there'} sections={sections} onGoToStep={i=>setStep(i+1)}/>;
   })();
 
