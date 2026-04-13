@@ -1914,7 +1914,8 @@ function ProfileBuilder() {
         const employment = empRes.status === 'fulfilled' ? empRes.value.employment : null;
         const addresses = addrRes.status === 'fulfilled' ? addrRes.value.addresses : null;
 
-        setProfileData({ licences, personal, driving, sectors, qualifications, background, employment, photo: null, addresses });
+        const interviewAnswers = candidateRes.status === 'fulfilled' ? candidateRes.value.candidate?.interview_answers : null;
+        setProfileData({ licences, personal, driving, sectors, qualifications, background, employment, photo: null, addresses, interview: interviewAnswers });
 
         // Infer which steps are already complete from API data
         const completed = new Set();
@@ -1946,10 +1947,7 @@ function ProfileBuilder() {
         if (candidateRes.status === 'fulfilled') {
           const c = candidateRes.value.candidate;
           setStep(c?.profile_step || 0);
-          if (c?.interview_answers) {
-            setProfileData(prev => ({...prev, interview: c.interview_answers}));
-            if (c.interview_answers.whyHire) completed.add('interview');
-          }
+          if (interviewAnswers?.whyHire) completed.add('interview');
         }
       } catch(err) {
         console.error('Failed to load profile:', err);
