@@ -898,7 +898,7 @@ function StepDriving({ data, onChange, onBack, onNext, isComplete }) {
           <Field label="Willing to travel">
             <Select value={form.travelRadius} onChange={v=>u('travelRadius',v)}>
               <option value="">Select radius</option>
-              {['Up to 10 miles','Up to 25 miles','Up to 50 miles','Up to 100 miles','Nationwide'].map(r=><option key={r}>{r}</option>)}
+              {[{l:'Up to 10 miles',v:'10'},{l:'Up to 25 miles',v:'25'},{l:'Up to 50 miles',v:'50'},{l:'Up to 100 miles',v:'100'},{l:'Nationwide',v:'999'}].map(r=><option key={r.v} value={r.v}>{r.l}</option>)}
             </Select>
           </Field>
         </div>
@@ -1867,20 +1867,20 @@ function ProfileBuilder() {
     try {
       if (d.personal) {
         const p = d.personal;
-        const dob = p.dobYear && p.dobMonth && p.dobDay ? `${p.dobYear}-${p.dobMonth}-${p.dobDay}` : p.date_of_birth || '';
-        const movedIn = p.movedInYear && p.movedInMonth ? `${p.movedInYear}-${p.movedInMonth}-01` : p.move_in_date || '';
+        const dob = p.dobYear && p.dobMonth && p.dobDay ? `${p.dobYear}-${p.dobMonth}-${p.dobDay}` : p.date_of_birth || null;
+        const movedIn = p.movedInYear && p.movedInMonth ? `${p.movedInYear}-${p.movedInMonth}-01` : p.move_in_date || null;
         await apiRequest('/api/candidates/me/personal', 'PUT', {
           first_name: p.firstName || p.first_name || user?.firstName || '',
           last_name: p.lastName || p.last_name || user?.lastName || '',
-          date_of_birth: dob,
+          date_of_birth: dob || null,
           phone: p.phone || '',
           address_line1: p.address_line1 || p.address1 || '',
-          address_line2: p.address_line2 || p.address2 || '',
+          address_line2: p.address_line2 || p.address2 || null,
           city: p.city || p.town || '',
-          county: p.county || '',
+          county: p.county || null,
           postcode: p.postcode || '',
-          move_in_date: movedIn,
-          ni_number: p.ni_number || p.ni || '',
+          move_in_date: movedIn || null,
+          ni_number: p.ni_number || p.ni || null,
           sia_address_match: p.siaAddress === 'yes' || p.sia_address_match === true,
           dvla_address_match: p.dvlaAddress === 'yes' || p.dvla_address_match === true,
         }, getToken);
@@ -1899,9 +1899,8 @@ function ProfileBuilder() {
           vehicle_insured: dr.insured === 'yes',
           vehicle_taxed: dr.taxed === 'yes',
           vehicle_mot_valid: dr.moted === 'yes',
-          travel_radius_miles: parseInt(dr.travelRadius) || 20,
+          travel_radius_miles: parseInt(dr.travelRadius) || null,
           willing_to_relocate: false,
-          dvlaAddress: dr.dvlaAddress || '',
         }, getToken);
       }
       if (d.sectors) {
