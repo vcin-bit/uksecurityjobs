@@ -1738,15 +1738,15 @@ function StepComplete({ name, sections, onGoToStep }) {
         <p>You have {incomplete.length} section{incomplete.length!==1?'s':''} still to complete before your profile can go live.</p>
         <div className="complete-next" style={{textAlign:'left'}}>
           {sections.map((s,i) => (
-            <div key={i} className="cn-item" style={{cursor: !s.complete ? 'pointer' : 'default'}}
-              onClick={() => !s.complete && onGoToStep && onGoToStep(i)}>
+            <div key={i} className="cn-item" style={{cursor:'pointer'}}
+              onClick={() => onGoToStep && onGoToStep(i)}>
               <div className="cn-n" style={{background: s.complete ? '#10b981' : s.pending ? '#f59e0b' : '#e2e8f0', color: s.complete||s.pending ? '#fff' : '#64748b'}}>
                 {s.complete ? '✓' : s.pending ? '?' : i+1}
               </div>
               <div>
                 <strong style={{color: s.complete ? '#15803d' : '#0b1222'}}>{s.name}</strong>
                 <p style={{margin:'0.1rem 0 0',fontSize:'0.78rem',color:'#64748b'}}>
-                  {s.complete ? 'Complete' : s.pending ? 'Pending verification' : 'Not yet completed — click to go to this step'}
+                  {s.complete ? 'Complete — click to edit' : s.pending ? 'Pending verification' : 'Not yet completed — click to complete'}
                 </p>
               </div>
             </div>
@@ -1891,6 +1891,7 @@ function ProfileBuilder() {
   const { user } = useUser();
   const { getToken } = useAuth();
   const [step, setStep] = useState(0);
+  const [forceEditKey, setForceEditKey] = useState(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [completedSteps, setCompletedSteps] = useState(new Set());
@@ -2181,19 +2182,20 @@ function ProfileBuilder() {
 
   const stepContent = (() => {
     if(step === 0) return <><ProgressRings sections={sections}/><StepWelcome onNext={next} name={user?.firstName || 'there'}/></>;
-    if(step === 1) return <><ProgressRings sections={sections}/><StepSIA data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('licences')}/></>;
-    if(step === 2) return <><ProgressRings sections={sections}/><StepPersonal data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('personal')}/></>;
-    if(step === 3) return <><ProgressRings sections={sections}/><StepDriving data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('driving')}/></>;
-    if(step === 4) return <><ProgressRings sections={sections}/><StepSectors data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('sectors')}/></>;
-    if(step === 5) return <><ProgressRings sections={sections}/><StepQualifications data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('qualifications')}/></>;
-    if(step === 6) return <><ProgressRings sections={sections}/><StepBackground data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('background')}/></>;
-    if(step === 7) return <><ProgressRings sections={sections}/><StepPhoto data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('photo')}/></>;
-    if(step === 8) return <><ProgressRings sections={sections}/><StepInterview data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('interview')}/></>;
-    if(step === 9) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('employment')}/></>;
-    if(step === 10) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('addresses')}/></>;
+    if(step === 1) return <><ProgressRings sections={sections}/><StepSIA data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('licences') && forceEditKey !== 'licences'}/></>;
+    if(step === 2) return <><ProgressRings sections={sections}/><StepPersonal data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('personal') && forceEditKey !== 'personal'}/></>;
+    if(step === 3) return <><ProgressRings sections={sections}/><StepDriving data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('driving') && forceEditKey !== 'driving'}/></>;
+    if(step === 4) return <><ProgressRings sections={sections}/><StepSectors data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('sectors') && forceEditKey !== 'sectors'}/></>;
+    if(step === 5) return <><ProgressRings sections={sections}/><StepQualifications data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('qualifications') && forceEditKey !== 'qualifications'}/></>;
+    if(step === 6) return <><ProgressRings sections={sections}/><StepBackground data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('background') && forceEditKey !== 'background'}/></>;
+    if(step === 7) return <><ProgressRings sections={sections}/><StepPhoto data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('photo') && forceEditKey !== 'photo'}/></>;
+    if(step === 8) return <><ProgressRings sections={sections}/><StepInterview data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('interview') && forceEditKey !== 'interview'}/></>;
+    if(step === 9) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('employment') && forceEditKey !== 'employment'}/></>;
+    if(step === 10) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('addresses') && forceEditKey !== 'addresses'}/></>;
     if(step === 11) {
       const sectionToStep = [1,2,3,4,5,6,8,9,7,10];
-      return <><ProgressRings sections={sections}/><StepComplete name={user?.firstName || "there"} sections={sections} onGoToStep={i=>setStep(sectionToStep[i]||1)}/></>;
+      const sectionKeys = ['licences','personal','driving','sectors','qualifications','background','interview','employment','photo','addresses'];
+      return <><ProgressRings sections={sections}/><StepComplete name={user?.firstName || "there"} sections={sections} onGoToStep={i=>{setForceEditKey(sectionKeys[i]||null);setStep(sectionToStep[i]||1);}}/></>;
     }
     return <StepComplete name={user?.firstName || 'there'} sections={sections} onGoToStep={i=>{const m=[1,2,3,4,5,6,8,9,7,10];setStep(m[i]||i+1);}}/>;
   })();
