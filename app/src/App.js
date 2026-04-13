@@ -1438,7 +1438,30 @@ function StepAddress({ data, onChange, onBack, onNext, isComplete }) {
   const add = () => setAddresses([...addresses,{ line1:'', line2:'', town:'', postcode:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false }]);
   const update = (i,f,v) => setAddresses(addresses.map((a,idx)=>idx===i?{...a,[f]:v}:a));
   const remove = (i) => setAddresses(addresses.filter((_,idx)=>idx!==i));
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Calculate total months covered across all addresses (capped at 60)
+  const getCoveredMonths = () => {
+    const now = new Date();
+    const fiveYearsAgo = new Date(now.getFullYear()-5, now.getMonth(), 1);
+    let total = 0;
+    addresses.forEach(a => {
+      const from = a.fromYear && a.fromMonth ? new Date(a.fromYear+'-'+a.fromMonth+'-01') : null;
+      const to = a.current ? now : (a.toYear && a.toMonth ? new Date(a.toYear+'-'+a.toMonth+'-01') : null);
+      if (!from || !to || to <= from) return;
+      const start = from < fiveYearsAgo ? fiveYearsAgo : from;
+      const end = to > now ? now : to;
+      if (end > start) total += (end - start) / (1000*60*60*24*30.5);
+    });
+    return Math.min(60, Math.round(total));
+  };
+
+  const coveredMonths = getCoveredMonths();
+  const remainingMonths = Math.max(0, 60 - coveredMonths);
+  const isFiveYearsCovered = remainingMonths === 0;
+
   const save = () => {
+    if (!isFiveYearsCovered) return;
     const mapped = addresses.map(a => ({
       ...a,
       from: a.fromYear && a.fromMonth ? `${a.fromYear}-${a.fromMonth}` : a.from || '',
@@ -1447,7 +1470,6 @@ function StepAddress({ data, onChange, onBack, onNext, isComplete }) {
     onChange({ addresses: mapped });
     onNext();
   };
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   if (isComplete && !editing) {
     return (
@@ -1463,9 +1485,31 @@ function StepAddress({ data, onChange, onBack, onNext, isComplete }) {
 
   return (
     <StepShell step={9} total={11} title="Address History"
-      why="A complete 5-year address history with no gaps is a core BS7858 requirement. Getting this right now means employers can start vetting immediately when you apply."
-      onBack={onBack} onNext={save}>
-      <div className="history-note">Cover the last <strong>5 years</strong> in full. Every address, exact dates. No gaps.</div>
+      why="A complete 5-year address history with no gaps is a core BS7858 requirement. You cannot proceed until all 5 years are accounted for."
+      onBack={onBack} onNext={save}
+      nextLabel={!isFiveYearsCovered ? `${remainingMonths} months still needed — cannot proceed` : 'Save & Continue'}>
+
+      {/* Coverage bar */}
+      <div style={{background: isFiveYearsCovered ? '#dcfce7' : '#fef9c3', border: `1px solid ${isFiveYearsCovered ? '#bbf7d0' : '#fde047'}`, borderRadius:'10px', padding:'1rem 1.25rem', marginBottom:'1.5rem'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'0.5rem'}}>
+          <div>
+            <div style={{fontWeight:700,fontSize:'0.9rem',color: isFiveYearsCovered ? '#15803d' : '#854d0e'}}>
+              {isFiveYearsCovered ? '5-year address history complete' : `${remainingMonths} month${remainingMonths!==1?'s':''} still to account for`}
+            </div>
+            <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.2rem'}}>
+              {coveredMonths} of 60 months covered — BS7858 requires a full 5 years with no gaps
+            </div>
+          </div>
+          <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
+            <div style={{height:'8px',width:'160px',background:'#e2e8f0',borderRadius:'999px',overflow:'hidden'}}>
+              <div style={{height:'100%',width:`${(coveredMonths/60)*100}%`,background: isFiveYearsCovered ? '#10b981' : '#f59e0b',borderRadius:'999px',transition:'width 0.4s'}}/>
+            </div>
+            <span style={{fontSize:'0.78rem',fontWeight:700,color:'#64748b'}}>{Math.round((coveredMonths/60)*100)}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="history-note">Every address for the last <strong>5 years</strong>. Exact dates. No gaps.</div>
       {addresses.map((addr, i) => (
         <div key={i} className="history-block">
           <div className="history-block-header">
@@ -1765,7 +1809,21 @@ function ProfileBuilder() {
         if (qualifications) completed.add('qualifications');
         if (background) completed.add('background');
         if (employment?.length) completed.add('employment');
-        if (addresses?.length) completed.add('addresses');
+        if (addresses?.length) {
+          // Only mark complete if 5 years covered
+          const now = new Date();
+          const fiveYearsAgo = new Date(now.getFullYear()-5, now.getMonth(), 1);
+          let total = 0;
+          addresses.forEach(a => {
+            const from = a.moved_in_date ? new Date(a.moved_in_date) : null;
+            const to = a.is_current ? now : (a.moved_out_date ? new Date(a.moved_out_date) : null);
+            if (!from || !to) return;
+            const start = from < fiveYearsAgo ? fiveYearsAgo : from;
+            const end = to > now ? now : to;
+            if (end > start) total += (end - start) / (1000*60*60*24*30.5);
+          });
+          if (Math.round(total) >= 60) completed.add('addresses');
+        }
         setCompletedSteps(completed);
 
         if (candidateRes.status === 'fulfilled') {
