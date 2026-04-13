@@ -1980,7 +1980,6 @@ function ProfileBuilder() {
     { name:'Criminal Record', short:'Record', complete: completedSteps.has('background'), started: completedSteps.has('background') || !!profileData.background },
     { name:'About You', short:'About', complete: completedSteps.has('interview'), started: completedSteps.has('interview') || !!profileData.interview },
     { name:'Work History', short:'Work H', complete: completedSteps.has('employment'), started: completedSteps.has('employment') || !!profileData.employment?.length },
-    { name:'Photo', short:'Photo', complete: completedSteps.has('photo'), started: completedSteps.has('photo') || !!profileData.photo?.uploaded },
     { name:'Address History', short:'Addr', complete: completedSteps.has('addresses'), started: completedSteps.has('addresses') || !!profileData.addresses?.length },
   ];
 
