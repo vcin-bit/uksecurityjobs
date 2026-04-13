@@ -1872,7 +1872,7 @@ function ProfileBuilder() {
         const p = d.personal;
         const dob = p.dobYear && p.dobMonth && p.dobDay ? `${p.dobYear}-${p.dobMonth}-${p.dobDay}` : p.date_of_birth || null;
         const movedIn = p.movedInYear && p.movedInMonth ? `${p.movedInYear}-${p.movedInMonth}-01` : p.move_in_date || null;
-        await apiRequest('/api/candidates/me/personal', 'PUT', {
+        try { await apiRequest('/api/candidates/me/personal', 'PUT', {
           first_name: p.firstName || p.first_name || user?.firstName || '',
           last_name: p.lastName || p.last_name || user?.lastName || '',
           date_of_birth: dob || null,
@@ -1886,14 +1886,14 @@ function ProfileBuilder() {
           ni_number: p.ni_number || p.ni || null,
           sia_address_match: p.siaAddress === 'yes' || p.sia_address_match === true,
           dvla_address_match: p.dvlaAddress === 'yes' || p.dvla_address_match === true,
-        }, getToken);
+        }, getToken); } catch(e) { console.error("Failed to save personal details:", e.message); }
       }
       if (d.licences) {
-        await apiRequest('/api/sia', 'PUT', { licences: d.licences }, getToken);
+        try { await apiRequest('/api/sia', 'PUT', { licences: d.licences }, getToken); } catch(e) { console.error("Failed to save SIA licences:", e.message); }
       }
       if (d.driving) {
         const dr = d.driving;
-        await apiRequest('/api/profile/driving', 'PUT', {
+        try { await apiRequest('/api/profile/driving', 'PUT', {
           has_driving_licence: dr.hasLicence === 'yes',
           licence_type: dr.licenceType || null,
           endorsement_codes: dr.endorsements || [],
@@ -1904,7 +1904,7 @@ function ProfileBuilder() {
           vehicle_mot_valid: dr.moted === 'yes',
           travel_radius_miles: parseInt(dr.travelRadius) || null,
           willing_to_relocate: false,
-        }, getToken);
+        }, getToken); } catch(e) { console.error("Failed to save driving details:", e.message); }
       }
       if (d.sectors) {
         const s = d.sectors;
@@ -1915,7 +1915,7 @@ function ProfileBuilder() {
         else if (avail.includes('Days')) preferredShift = 'Days';
         else if (avail.includes('Nights')) preferredShift = 'Nights';
         else if (avail.length > 0) preferredShift = 'Either';
-        await apiRequest('/api/profile/sectors', 'PUT', {
+        try { await apiRequest('/api/profile/sectors', 'PUT', {
           sectors: s.sectors || [],
           available_from: null,
           preferred_shift: preferredShift,
@@ -1923,7 +1923,7 @@ function ProfileBuilder() {
           employmentType: s.employmentType || '',
           availability: avail,
           shiftType: s.shiftType || [],
-        }, getToken);
+        }, getToken); } catch(e) { console.error("Failed to save sectors:", e.message); }
       }
       if (d.qualifications) {
         const q = d.qualifications;
@@ -1932,7 +1932,7 @@ function ProfileBuilder() {
         // security_clearance only allows 'None','BPSS','SC','DV','CTC','Other'
         const validClearance = ['None','BPSS','SC','DV','CTC','Other'];
         const clearance = validClearance.includes(q.clearanceLevel||q.security_clearance) ? (q.clearanceLevel||q.security_clearance) : 'None';
-        await apiRequest('/api/profile/qualifications', 'PUT', {
+        try { await apiRequest('/api/profile/qualifications', 'PUT', {
           frec_level: frecLevel,
           has_efaw: !!(q.hasFirstAid === 'yes' && q.certType === 'EFAW') || q.has_efaw || false,
           has_faw: !!(q.hasFirstAid === 'yes' && q.certType === 'FAW') || q.has_faw || false,
@@ -1941,11 +1941,11 @@ function ProfileBuilder() {
           is_sia_trainer: q.isSIATrainer === 'yes' || q.is_sia_trainer || false,
           security_clearance: clearance,
           other_qualifications: q.otherQuals || q.other_qualifications || null,
-        }, getToken);
+        }, getToken); } catch(e) { console.error("Failed to save qualifications:", e.message); }
       }
       if (d.background) {
         const b = d.background;
-        await apiRequest('/api/profile/background', 'PUT', {
+        try { await apiRequest('/api/profile/background', 'PUT', {
           served_in_forces: b.hasForces === 'yes' || b.served_in_forces || false,
           forces_branch: b.forcesBranch || b.forces_branch || null,
           forces_rank: b.forcesRank || b.forces_rank || null,
@@ -1953,14 +1953,10 @@ function ProfileBuilder() {
           discharge_type: b.dischargeType || b.discharge_type || null,
           has_criminal_record: b.hasCriminal === 'yes' || b.has_criminal_record || false,
           criminal_record: b.criminalDetails || b.criminal_record || null,
-        }, getToken);
+        }, getToken); } catch(e) { console.error("Failed to save background:", e.message); }
       }
       if (d.employment) {
-        // Delete existing and reinsert to avoid duplicates
-        const cRes = await apiRequest('/api/candidates/me', 'GET', null, getToken);
-        if (cRes?.candidate?.id) {
-          await apiRequest('/api/profile/employment/clear', 'DELETE', null, getToken);
-        }
+        await apiRequest('/api/profile/employment/clear', 'DELETE', null, getToken);
         for (const job of d.employment) {
           if (!job.employer && !job.role) continue;
           await apiRequest('/api/profile/employment', 'POST', {
