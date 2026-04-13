@@ -3019,7 +3019,7 @@ function EmployerDashboard() {
 
 // ── EMPLOYER REGISTER FORM ──
 function EmployerRegisterForm({ onSaved, getToken }) {
-  const [form, setForm] = React.useState({ company_name:'', company_number:'', contact_name:'', contact_position:'', contact_email:'', contact_mobile:'', contact_office:'', contact_dd:'', website:'', address:'', postcode:'' });
+  const [form, setForm] = React.useState({ company_name:'', company_number:'', contact_name:'', contact_position:'', contact_email:'', contact_mobile:'', contact_office:'', contact_dd:'', website:'', address:'', postcode:'', sia_acs:'' });
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState('');
   const u = (f,v) => setForm(prev=>({...prev,[f]:v}));
@@ -3073,6 +3073,15 @@ function EmployerRegisterForm({ onSaved, getToken }) {
             <Field label="Postcode *"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={v=>u('postcode',v)}/></Field>
           </div>
           <Field label="Company Address *"><Input type="text" placeholder="Full registered address" value={form.address} onChange={v=>u('address',v)}/></Field>
+
+          <div className="divider"></div>
+          <Field label="Does your company hold SIA Approved Contractor Scheme (ACS) status?" hint="SIA ACS is the quality standard for the private security industry">
+            <div className="radio-row">
+              <Radio name="sia_acs" value="yes" label="Yes — ACS approved" checked={form.sia_acs==='yes'} onChange={v=>u('sia_acs',v)}/>
+              <Radio name="sia_acs" value="no" label="No" checked={form.sia_acs==='no'} onChange={v=>u('sia_acs',v)}/>
+              <Radio name="sia_acs" value="pending" label="Application in progress" checked={form.sia_acs==='pending'} onChange={v=>u('sia_acs',v)}/>
+            </div>
+          </Field>
 
           <button className="btn-next" type="submit" disabled={saving} style={{width:'100%'}}>{saving?'Saving...':'Register Company →'}</button>
         </div>
