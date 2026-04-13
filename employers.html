@@ -94,18 +94,18 @@ h2.white{color:#fff;}
 
 /* FOOTER */
 footer{background:#0b1222;border-top:none;padding:4rem 2rem 2.5rem;}
-.foot-top{max-width:1160px;margin:0 auto;display:grid;grid-template-columns:220px 1fr;gap:4rem;padding-bottom:3rem;border-bottom:1px solid var(--border);margin-bottom:2rem;align-items:start;}
-.foot-desc{font-size:0.83rem;color:#64748b;line-height:1.75;margin-top:0.75rem;max-width:200px;}
+.foot-top{max-width:1160px;margin:0 auto;display:grid;grid-template-columns:240px 1fr;gap:4rem;padding-bottom:3rem;border-bottom:1px solid #1e293b;margin-bottom:2rem;align-items:start;}
+.foot-logo .uk{color:#1a52a8;}.foot-logo .sec{color:#fff;}.foot-logo .job{color:#1a52a8;}
+.foot-desc{font-size:0.82rem;color:#64748b;line-height:1.75;margin-top:0.75rem;max-width:210px;}
 .foot-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;}
-.foot-col h4{font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.18em;color:#475569;margin-bottom:1rem;}
-.foot-col a{display:block;font-size:0.82rem;color:#94a3b8;margin-bottom:0.6rem;transition:color 0.15s;text-decoration:none;}
+.foot-col h4{font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.16em;color:#475569;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:1px solid #1e293b;}
+.foot-col a{display:block;font-size:0.82rem;color:#94a3b8;margin-bottom:0.55rem;transition:color 0.15s;text-decoration:none;}
 .foot-col a:hover{color:#fff;}
 .foot-bottom{max-width:1160px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
 .foot-copy{font-size:0.72rem;color:#475569;}
 .foot-legal{display:flex;gap:1.5rem;}
-.foot-legal a{font-size:0.72rem;color:#475569;transition:color 0.15s;text-decoration:none;}
+.foot-legal a{font-size:0.72rem;color:#475569;text-decoration:none;transition:color 0.15s;}
 .foot-legal a:hover{color:#fff;}
-.foot-top .logo .uk{color:#1a52a8;}.foot-top .logo .sec{color:#fff;}.foot-top .logo .job{color:#1a52a8;}
 
 .mob-menu{display:none;position:fixed;inset:0;background:#fff;z-index:300;flex-direction:column;padding:1rem 1.5rem;overflow-y:auto;}
 .mob-menu.open{display:flex;}
@@ -261,22 +261,23 @@ footer{background:#0b1222;border-top:none;padding:4rem 2rem 2.5rem;}
 <footer>
   <div class="foot-top">
     <div>
-      <a href="/" class="logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a>
+      <a href="/" class="logo foot-logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a>
       <p class="foot-desc">The UK's only verified security jobs platform. Built by the industry, for the industry.</p>
+      <p class="foot-desc" style="margin-top:0.5rem;color:#475569;">Digital Software Group Ltd<br>Registered in England &amp; Wales</p>
     </div>
     <nav class="foot-nav">
       <div class="foot-col">
         <h4>Security Officers</h4>
-        <a href="/officers">Register as a Candidate</a>
-        <a href="/jobs">Security Jobs</a>
-        <a href="/vacancies">Security Vacancies</a>
-        <a href="/training">SIA Training</a>
+        <a href="/officers">For Security Officers</a>
+        <a href="https://app.uksecurityjobs.co.uk/sign-up">Register Free</a>
+        <a href="https://app.uksecurityjobs.co.uk/jobs">Security Jobs</a>
+        <a href="https://app.uksecurityjobs.co.uk/sign-in">Sign In</a>
       </div>
       <div class="foot-col">
         <h4>Security Companies</h4>
-        <a href="/employers">Register as an Employer</a>
-        <a href="/post-job">Post a Job</a>
-        <a href="/verified-candidates">Verified Candidates</a>
+        <a href="/employers">For Employers</a>
+        <a href="https://app.uksecurityjobs.co.uk/employer/sign-up">Register a Company</a>
+        <a href="https://app.uksecurityjobs.co.uk/sign-in">Employer Sign In</a>
       </div>
       <div class="foot-col">
         <h4>SIA Job Types</h4>
@@ -291,11 +292,12 @@ footer{background:#0b1222;border-top:none;padding:4rem 2rem 2.5rem;}
         <a href="/about">About</a>
         <a href="/privacy">Privacy Policy</a>
         <a href="/terms">Terms &amp; Conditions</a>
+        <a href="mailto:support@uksecurityjobs.co.uk">Contact Us</a>
       </div>
     </nav>
   </div>
   <div class="foot-bottom">
-    <p class="foot-copy">&copy; 2026 UKSecurityJobs.co.uk &mdash; Digital Software Group Ltd</p>
+    <p class="foot-copy">&copy; 2026 UKSecurityJobs.co.uk &mdash; Digital Software Group Ltd. All rights reserved.</p>
     <nav class="foot-legal">
       <a href="/privacy">Privacy</a>
       <a href="/terms">Terms</a>
