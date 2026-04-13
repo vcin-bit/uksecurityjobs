@@ -2591,6 +2591,40 @@ function Dashboard() {
           <div className="dash-sub">Complete your profile to unlock security vacancies and exclusive member benefits.</div>
         </div>
 
+        {/* PREPARATION GUIDE — only shown when profile incomplete */}
+        {pct < 100 && (
+          <div className="dash-card" style={{marginBottom:'1.5rem',background:'#f0f9ff',border:'1px solid #bae6fd'}}>
+            <div style={{fontWeight:700,fontSize:'0.95rem',color:'#0b1222',marginBottom:'0.75rem',display:'flex',alignItems:'center',gap:'0.5rem'}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16.5"/></svg>
+              Before you start — have these to hand
+            </div>
+            <div style={{fontSize:'0.82rem',color:'#334155',marginBottom:'1rem',lineHeight:'1.6'}}>
+              Your profile is used for BS7858 vetting. The more accurate and complete it is, the faster you get hired. Take your time — rushing causes errors that delay the process.
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:'0.75rem'}}>
+              {[
+                { icon:'🪪', title:'SIA Licence', desc:'Your 16-digit licence number and expiry date. Check it\'s registered to your current address.' },
+                { icon:'🚗', title:'Driving Licence', desc:'Licence number, type and any endorsement codes. Check your address is up to date with DVLA.' },
+                { icon:'📋', title:'National Insurance Number', desc:'Your NI number in full. This is encrypted and used for identity verification only.' },
+                { icon:'🏠', title:'5 Years Address History', desc:'Every address you\'ve lived at for the last 5 years. Exact move-in and move-out dates.' },
+                { icon:'💼', title:'5 Years Work History', desc:'Every employer for the last 5 years including self-employment and gaps. HR contact details for each.' },
+                { icon:'📞', title:'Reference Contacts', desc:'Name, direct phone and email for a manager or HR contact at each employer.' },
+                { icon:'🎓', title:'Qualifications', desc:'First aid certificates, SIA trainer status, security clearance, any additional licences.' },
+                { icon:'📄', title:'Proof of Address Documents', desc:'Bank statement or utility bill no older than 3 months. Council tax letter from current year.' },
+              ].map((item,i) => (
+                <div key={i} style={{background:'#fff',borderRadius:'8px',padding:'0.75rem',border:'1px solid #e0f2fe'}}>
+                  <div style={{fontSize:'1.1rem',marginBottom:'0.25rem'}}>{item.icon}</div>
+                  <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222',marginBottom:'0.2rem'}}>{item.title}</div>
+                  <div style={{fontSize:'0.75rem',color:'#64748b',lineHeight:'1.5'}}>{item.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{marginTop:'1rem',padding:'0.75rem 1rem',background:'#fff',borderRadius:'8px',border:'1px solid #bae6fd',fontSize:'0.8rem',color:'#0369a1'}}>
+              <strong>Important:</strong> Your profile cannot go live until it is complete and your SIA licence is verified. A complete profile typically takes 20–30 minutes. You can save your progress and return at any time.
+            </div>
+          </div>
+        )}
+
         {/* PROGRESS + CTA */}
         <div className="dash-card" style={{marginBottom:'1.5rem'}}>
           <div className="dash-card-top">
