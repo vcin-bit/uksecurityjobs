@@ -39,15 +39,31 @@ router.put('/driving', async (req, res) => {
     const candidateId = await getCandidateId(req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
+    const b = req.body;
+    const payload = {
+      candidate_id: candidateId,
+      has_driving_licence: b.has_driving_licence ?? false,
+      licence_type: b.licence_type || null,
+      endorsement_codes: b.endorsement_codes || [],
+      has_ban_history: b.has_ban_history ?? false,
+      has_own_vehicle: b.has_own_vehicle ?? false,
+      vehicle_insured: b.vehicle_insured ?? false,
+      vehicle_taxed: b.vehicle_taxed ?? false,
+      vehicle_mot_valid: b.vehicle_mot_valid ?? false,
+      travel_radius_miles: b.travel_radius_miles || null,
+      willing_to_relocate: b.willing_to_relocate ?? false,
+    };
+
     const { data, error } = await supabase
       .from('driving_details')
-      .upsert({ ...req.body, candidate_id: candidateId }, { onConflict: 'candidate_id' })
+      .upsert(payload, { onConflict: 'candidate_id' })
       .select().single();
 
     if (error) throw error;
     await auditLog({ tableName: 'driving_details', recordId: data.id, action: 'UPDATE', performedBy: req.userId, ipAddress: req.ip });
     res.json({ success: true });
   } catch (err) {
+    console.error('PUT /driving error:', err);
     res.status(500).json({ error: 'Failed to save driving details' });
   }
 });
@@ -77,15 +93,28 @@ router.put('/sectors', async (req, res) => {
     const candidateId = await getCandidateId(req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
+    const b = req.body;
+    const payload = {
+      candidate_id: candidateId,
+      sectors: b.sectors || [],
+      preferred_shift: b.preferred_shift || null,
+      employment_type: b.employmentType || null,
+      availability: Array.isArray(b.availability) ? b.availability : [],
+      shift_lengths: b.shiftType || [],
+      available_from: b.available_from || null,
+      min_hourly_rate: b.min_hourly_rate || null,
+    };
+
     const { data, error } = await supabase
       .from('preferred_sectors')
-      .upsert({ ...req.body, candidate_id: candidateId }, { onConflict: 'candidate_id' })
+      .upsert(payload, { onConflict: 'candidate_id' })
       .select().single();
 
     if (error) throw error;
     await auditLog({ tableName: 'preferred_sectors', recordId: data.id, action: 'UPDATE', performedBy: req.userId, ipAddress: req.ip });
     res.json({ success: true });
   } catch (err) {
+    console.error('PUT /sectors error:', err);
     res.status(500).json({ error: 'Failed to save sectors' });
   }
 });
@@ -115,15 +144,29 @@ router.put('/qualifications', async (req, res) => {
     const candidateId = await getCandidateId(req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
+    const b = req.body;
+    const payload = {
+      candidate_id: candidateId,
+      frec_level: b.frec_level || b.frecLevel || null,
+      has_efaw: b.has_efaw ?? b.hasEfaw ?? false,
+      has_faw: b.has_faw ?? b.hasFaw ?? false,
+      first_aid_expiry: b.first_aid_expiry || null,
+      languages: b.languages || [],
+      is_sia_trainer: b.is_sia_trainer ?? b.isSIATrainer ?? false,
+      security_clearance: b.security_clearance || b.clearanceLevel || null,
+      other_qualifications: b.other_qualifications || null,
+    };
+
     const { data, error } = await supabase
       .from('qualifications')
-      .upsert({ ...req.body, candidate_id: candidateId }, { onConflict: 'candidate_id' })
+      .upsert(payload, { onConflict: 'candidate_id' })
       .select().single();
 
     if (error) throw error;
     await auditLog({ tableName: 'qualifications', recordId: data.id, action: 'UPDATE', performedBy: req.userId, ipAddress: req.ip });
     res.json({ success: true });
   } catch (err) {
+    console.error('PUT /qualifications error:', err);
     res.status(500).json({ error: 'Failed to save qualifications' });
   }
 });
@@ -160,16 +203,19 @@ router.put('/background', async (req, res) => {
     const candidateId = await getCandidateId(req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
-    const { criminal_record, ...rest } = req.body;
-
-    const criminal_record_encrypted = criminal_record
-      ? await encrypt(criminal_record)
-      : undefined;
+    const b = req.body;
+    const criminal_record_encrypted = b.criminal_record
+      ? await encrypt(b.criminal_record) : undefined;
 
     const payload = {
-      ...rest,
       candidate_id: candidateId,
-      ...(criminal_record_encrypted && { criminal_record_encrypted })
+      served_in_forces: b.served_in_forces ?? b.hasForces === 'yes' ?? false,
+      forces_branch: b.forces_branch || b.forcesBranch || null,
+      forces_rank: b.forces_rank || b.forcesRank || null,
+      years_served: b.years_served || b.yearsServed || null,
+      discharge_type: b.discharge_type || b.dischargeType || null,
+      has_criminal_record: b.has_criminal_record ?? b.hasCriminal === 'yes' ?? false,
+      ...(criminal_record_encrypted && { criminal_record_encrypted }),
     };
 
     const { data, error } = await supabase
@@ -181,6 +227,7 @@ router.put('/background', async (req, res) => {
     await auditLog({ tableName: 'professional_background', recordId: data.id, action: 'UPDATE', performedBy: req.userId, ipAddress: req.ip });
     res.json({ success: true });
   } catch (err) {
+    console.error('PUT /background error:', err);
     res.status(500).json({ error: 'Failed to save professional background' });
   }
 });
