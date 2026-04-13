@@ -1670,7 +1670,9 @@ function StepAddress({ data, onChange, onBack, onNext, isComplete }) {
 
 
 // ── STEP PHOTO ──
-function StepPhoto({ data, onChange, onBack, onNext }) {
+function StepPhoto({ data, onChange, onBack, onNext, isComplete }) {
+  const [editing, setEditing] = React.useState(!isComplete);
+  React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
   const [preview, setPreview] = React.useState(data.photo?.preview || null);
   const [uploaded, setUploaded] = React.useState(data.photo?.uploaded || false);
 
@@ -1686,10 +1688,21 @@ function StepPhoto({ data, onChange, onBack, onNext }) {
     reader.readAsDataURL(file);
   };
 
+  if (isComplete && !editing) {
+    return (
+      <CompletedStep title="Profile Photo"
+        summary={[
+          { label:'Status', value: 'Photo uploaded' },
+          { label:'Visibility', value: 'Never shown to employers' },
+        ]}
+        onEdit={() => setEditing(true)} onBack={onBack} onNext={onNext}/>
+    );
+  }
+
   return (
-    <StepShell step={8} total={11} title="Profile Photo"
+    <StepShell step={7} total={12} title="Profile Photo"
       why="A clear photo helps our team verify your identity. This is the only reason we ask for it."
-      onBack={onBack} onNext={onNext} nextLabel={uploaded ? 'Save & Continue' : 'Skip for now'}>
+      onBack={onBack} onNext={() => { onChange({ photo: { uploaded, preview } }); onNext(); }} nextLabel={uploaded ? 'Save & Continue' : 'Skip for now'}>
       <div className="photo-upload-wrap">
         <div className="photo-preview">
           {preview
@@ -2174,7 +2187,7 @@ function ProfileBuilder() {
     if(step === 4) return <><ProgressRings sections={sections}/><StepSectors data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('sectors')}/></>;
     if(step === 5) return <><ProgressRings sections={sections}/><StepQualifications data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('qualifications')}/></>;
     if(step === 6) return <><ProgressRings sections={sections}/><StepBackground data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('background')}/></>;
-    if(step === 7) return <><ProgressRings sections={sections}/><StepPhoto data={profileData} onChange={update} onBack={back} onNext={next}/></>;
+    if(step === 7) return <><ProgressRings sections={sections}/><StepPhoto data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('photo')}/></>;
     if(step === 8) return <><ProgressRings sections={sections}/><StepInterview data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('interview')}/></>;
     if(step === 9) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('employment')}/></>;
     if(step === 10) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('addresses')}/></>;
