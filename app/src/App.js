@@ -1944,7 +1944,12 @@ function ProfileBuilder() {
         setCompletedSteps(completed);
 
         if (candidateRes.status === 'fulfilled') {
-          setStep(candidateRes.value.candidate?.profile_step || 0);
+          const c = candidateRes.value.candidate;
+          setStep(c?.profile_step || 0);
+          if (c?.interview_answers) {
+            setProfileData(prev => ({...prev, interview: c.interview_answers}));
+            if (c.interview_answers.whyHire) completed.add('interview');
+          }
         }
       } catch(err) {
         console.error('Failed to load profile:', err);
@@ -2075,8 +2080,8 @@ function ProfileBuilder() {
         // Mark step complete in profile_step only
       }
       if (d.interview) {
-        // Interview answers stored locally - no separate DB table yet
-        // Will be persisted when employer-facing profile is built
+        try { await apiRequest('/api/candidates/me/interview', 'PUT', d.interview, getToken);
+        } catch(e) { console.error('Failed to save interview answers:', e.message); }
       }
       if (d.employment) {
         await apiRequest('/api/profile/employment/clear', 'DELETE', null, getToken);

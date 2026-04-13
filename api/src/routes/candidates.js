@@ -199,4 +199,21 @@ router.put('/me/personal', async (req, res) => {
   }
 });
 
+// PUT /api/candidates/me/interview
+router.put('/me/interview', async (req, res) => {
+  try {
+    const { data: candidate, error } = await supabase
+      .from('candidates')
+      .update({ interview_answers: req.body })
+      .eq('clerk_user_id', req.userId)
+      .select().single();
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PUT /candidates/me/interview error:', err);
+    res.status(500).json({ error: 'Failed to save interview answers' });
+  }
+});
+
 module.exports = router;
