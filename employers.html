@@ -113,7 +113,8 @@ footer *{box-sizing:border-box;}
 .foot-brand p{font-size:0.8rem;color:#475569;line-height:1.75;margin-top:0.75rem;max-width:210px;}
 .foot-logo{font-size:1.1rem;font-weight:800;text-decoration:none;display:inline-block;}
 .foot-logo .uk{color:#1a52a8;}.foot-logo .sec{color:#fff;}.foot-logo .job{color:#1a52a8;}
-.foot-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;}
+.foot-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;align-items:start;}
+footer nav{background:transparent;border:none;height:auto;position:static;backdrop-filter:none;display:block;}
 .foot-col{}
 .foot-col h4{font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.16em;color:#334155;margin-bottom:0.875rem;display:block;}
 .foot-col a{display:block;font-size:0.82rem;color:#64748b;margin-bottom:0.5rem;text-decoration:none;transition:color 0.15s;}
@@ -301,11 +302,11 @@ footer *{box-sizing:border-box;}
     </div>
     <div class="foot-bottom">
       <p class="foot-copy">&copy; 2026 UKSecurityJobs.co.uk &mdash; Digital Software Group Ltd. All rights reserved.</p>
-      <nav class="foot-legal">
+      <div class="foot-legal">
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms</a>
         <a href="/cookies">Cookies</a>
-      </nav>
+      </div>
     </div>
   </div>
 </footer>
