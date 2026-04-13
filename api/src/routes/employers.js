@@ -21,9 +21,9 @@ router.get('/me', async (req, res) => {
 // POST /api/employers/me — register as employer
 router.post('/me', async (req, res) => {
   try {
-    const { company_name, email, phone, website, address, postcode } = req.body;
+    const { company_name, company_number, contact_name, contact_position, contact_email, contact_mobile, contact_office, contact_dd, website, address, postcode } = req.body;
     const { data, error } = await supabase.from('employers').upsert({
-      clerk_user_id: req.userId, company_name, email, phone, website, address, postcode
+      clerk_user_id: req.userId, company_name, company_number, contact_name, contact_position, contact_email, contact_mobile, contact_office, contact_dd, website, address, postcode
     }, { onConflict: 'clerk_user_id' }).select().single();
     if (error) throw error;
     res.json({ success: true, employer: data });
