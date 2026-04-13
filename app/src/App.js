@@ -2822,12 +2822,23 @@ function SignInPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const clerk = useClerk();
+  const { getToken } = useAuth();
   const handleSignIn = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
       const result = await clerk.client.signIn.create({ identifier: form.email, password: form.password });
       await clerk.setActive({ session: result.createdSessionId });
-      setTimeout(() => { window.location.href = '/dashboard'; }, 500);
+      // Check if employer — if so redirect to employer dashboard
+      setTimeout(async () => {
+        try {
+          const token = await getToken();
+          const res = await fetch('https://uksecurityjobs-api.onrender.com/api/employers/me', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json();
+          window.location.href = data.employer ? '/employer' : '/dashboard';
+        } catch { window.location.href = '/dashboard'; }
+      }, 500);
     } catch(err) { setError(err.errors?.[0]?.message || 'Invalid email or password.'); }
     setLoading(false);
   };
@@ -2847,6 +2858,78 @@ function SignInPage() {
             <button className="btn-full" type="submit" disabled={loading}>{loading?'Signing in...':'Sign In →'}</button>
           </form>
           <div className="auth-footer">Not registered? <a href="/sign-up">Create your profile</a></div>
+          <div style={{marginTop:'1rem',paddingTop:'1rem',borderTop:'1px solid #f1f5f9',textAlign:'center',fontSize:'0.82rem',color:'#64748b'}}>
+            Registering a security company? <a href="/employer/sign-up" style={{color:'#1a52a8',fontWeight:600}}>Employer sign-up →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── EMPLOYER SIGN-UP PAGE ──
+function EmployerSignUpPage() {
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({ email:'', password:'', firstName:'', lastName:'' });
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const clerk = useClerk();
+
+  const handleSignUp = async (e) => {
+    e.preventDefault(); setError(''); setLoading(true);
+    try {
+      await clerk.client.signUp.create({
+        firstName: form.firstName, lastName: form.lastName,
+        emailAddress: form.email, password: form.password
+      });
+      await clerk.client.signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      setStep(2);
+    } catch(err) { setError(err.errors?.[0]?.message || 'Something went wrong.'); }
+    setLoading(false);
+  };
+
+  const handleVerify = async (e) => {
+    e.preventDefault(); setError(''); setLoading(true);
+    try {
+      const result = await clerk.client.signUp.attemptEmailAddressVerification({ code });
+      await clerk.setActive({ session: result.createdSessionId });
+      window.location.href = '/employer';
+    } catch(err) { setError(err.errors?.[0]?.message || 'Invalid code.'); }
+    setLoading(false);
+  };
+
+  return (
+    <div className="page">
+      <Nav/>
+      <div className="auth-page">
+        <div className="auth-card">
+          <div className="auth-logo"><Logo/></div>
+          {step === 1 ? <>
+            <div className="auth-title">Register your company</div>
+            <div className="auth-sub">Post verified security jobs to SIA-licensed candidates</div>
+            <form className="auth-form" onSubmit={handleSignUp}>
+              {error && <div className="auth-error">{error}</div>}
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
+                <div className="field"><label className="field-label">First Name</label><input className="f-input" type="text" required value={form.firstName} onChange={e=>setForm({...form,firstName:e.target.value})} placeholder="Jane"/></div>
+                <div className="field"><label className="field-label">Last Name</label><input className="f-input" type="text" required value={form.lastName} onChange={e=>setForm({...form,lastName:e.target.value})} placeholder="Smith"/></div>
+              </div>
+              <div className="field"><label className="field-label">Work Email</label><input className="f-input" type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="you@company.com"/></div>
+              <div className="field"><label className="field-label">Password</label><input className="f-input" type="password" required value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Min. 8 characters"/></div>
+              <button className="btn-full" type="submit" disabled={loading}>{loading?'Creating account...':'Create Employer Account →'}</button>
+            </form>
+            <div className="auth-footer">Already registered? <a href="/sign-in">Sign in</a></div>
+          </> : <>
+            <div className="auth-title">Verify your email</div>
+            <div className="auth-sub">We sent a 6-digit code to {form.email}</div>
+            <form className="auth-form" onSubmit={handleVerify}>
+              {error && <div className="auth-error">{error}</div>}
+              <div className="field"><label className="field-label">Verification Code</label>
+                <input className="f-input" type="text" required value={code} onChange={e=>setCode(e.target.value)} placeholder="000000" style={{textAlign:'center',fontSize:'1.5rem',letterSpacing:'0.4em'}} maxLength={6}/>
+              </div>
+              <button className="btn-full" type="submit" disabled={loading}>{loading?'Verifying...':'Verify & Continue →'}</button>
+            </form>
+          </>}
         </div>
       </div>
     </div>
@@ -3530,6 +3613,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace/>}/>
           <Route path="/sign-up" element={<SignUpPage/>}/>
           <Route path="/sign-in" element={<SignInPage/>}/>
+          <Route path="/employer/sign-up" element={<EmployerSignUpPage/>}/>
           <Route path="/forgot-password" element={<ForgotPasswordPage/>}/>
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard/></ProtectedRoute>}/>
           <Route path="/employer" element={<ProtectedRoute><EmployerDashboard/></ProtectedRoute>}/>
