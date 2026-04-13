@@ -20,6 +20,15 @@ function Logo() {
 // ── NAV ──
 function Nav() {
   const { signOut } = useClerk();
+  const { getToken } = useAuth();
+  const [isEmployer, setIsEmployer] = React.useState(false);
+
+  React.useEffect(() => {
+    apiRequest('/api/employers/me', 'GET', null, getToken)
+      .then(r => { if (r.employer) setIsEmployer(true); })
+      .catch(() => {});
+  }, []);
+
   return (
     <nav className="nav">
       <div className="nav-inner">
@@ -31,6 +40,7 @@ function Nav() {
             Help
           </a>
           <SignedIn>
+            {isEmployer && <a className="nav-link" href="/employer" style={{color:'#1a52a8',fontWeight:700}}>Employer Dashboard</a>}
             <a className="nav-link" href="/dashboard">My Profile</a>
             <button className="nav-btn" onClick={() => signOut({ redirectUrl: '/' })}>Sign out</button>
           </SignedIn>
