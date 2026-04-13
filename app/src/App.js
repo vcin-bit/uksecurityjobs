@@ -2225,7 +2225,7 @@ function CVPanel({ profileData, userName, mobileOpen, onMobileClose }) {
         <button className={'cv-tab'+(activeTab==='vetting'?' active':'')} onClick={()=>setActiveTab('vetting')}>Vetting</button>
       </div>
       <div className="cv-panel-body">
-        {activeTab === 'cv' ? <CandidateCV/> : <VettingProfile/>
+        {activeTab === 'cv' ? <CandidateCV/> : <VettingProfile/>}
       </div>
       <div className="cv-actions">
         <button className="cv-dl-btn primary" onClick={()=>window.print()}>Download CV</button>
