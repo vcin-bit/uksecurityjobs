@@ -3182,7 +3182,11 @@ function EmployerDashboard() {
 
 // ── EMPLOYER REGISTER FORM ──
 function EmployerRegisterForm({ onSaved, getToken }) {
-  const [form, setForm] = React.useState({ company_name:'', company_number:'', contact_name:'', contact_position:'', contact_email:'', contact_mobile:'', contact_office:'', contact_dd:'', website:'', address:'', postcode:'', sia_acs:'' });
+  const [form, setForm] = React.useState({
+    company_name:'', company_number:'', contact_name:'', contact_position:'',
+    contact_email:'', contact_mobile:'', contact_office:'', contact_dd:'',
+    website:'', address_line1:'', address_line2:'', city:'', county:'', postcode:'', sia_acs:''
+  });
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState('');
   const u = (f,v) => setForm(prev=>({...prev,[f]:v}));
@@ -3190,19 +3194,27 @@ function EmployerRegisterForm({ onSaved, getToken }) {
   const save = async (e) => {
     e.preventDefault();
     if (!form.company_name?.trim()) { setError('Company name is required'); return; }
+    if (!form.company_number?.trim()) { setError('Companies House number is required'); return; }
     if (!form.contact_name?.trim()) { setError('Contact name is required'); return; }
     if (!form.contact_position?.trim()) { setError('Contact position is required'); return; }
     if (!form.contact_email?.trim()) { setError('Contact email is required'); return; }
-    if (!form.contact_mobile?.trim()) { setError('Contact mobile is required'); return; }
+    if (!form.contact_mobile?.trim()) { setError('Mobile number is required'); return; }
+    if (!form.contact_office?.trim()) { setError('Office number is required'); return; }
+    if (!form.contact_dd?.trim()) { setError('Direct dial number is required'); return; }
+    if (!form.website?.trim()) { setError('Company website is required'); return; }
+    if (!form.address_line1?.trim()) { setError('Address line 1 is required'); return; }
+    if (!form.city?.trim()) { setError('City is required'); return; }
     if (!form.postcode?.trim()) { setError('Postcode is required'); return; }
-    if (!form.address?.trim()) { setError('Company address is required'); return; }
     setSaving(true);
     try {
-      const res = await apiRequest('/api/employers/me', 'POST', form, getToken);
+      const payload = { ...form, address: [form.address_line1, form.address_line2, form.city, form.county, form.postcode].filter(Boolean).join(', ') };
+      const res = await apiRequest('/api/employers/me', 'POST', payload, getToken);
       onSaved(res.employer);
     } catch(err) { setError('Failed to save. Please try again.'); }
     setSaving(false);
   };
+
+  const rowStyle = {display:'grid', gap:'1rem', alignItems:'start'};
 
   return (
     <div className="dash-card">
@@ -3210,32 +3222,38 @@ function EmployerRegisterForm({ onSaved, getToken }) {
       {error && <div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'0.75rem',marginBottom:'1rem',fontSize:'0.82rem',color:'#dc2626'}}>{error}</div>}
       <form onSubmit={save}>
         <div style={{display:'grid',gap:'1rem'}}>
-          <div className="field-row">
+
+          <div style={{...rowStyle, gridTemplateColumns:'1fr 1fr'}}>
             <Field label="Company Name *"><Input type="text" placeholder="e.g. Securitas UK Ltd" value={form.company_name} onChange={v=>u('company_name',v)}/></Field>
-            <Field label="Companies House Number" hint="8-digit registration number"><Input type="text" placeholder="e.g. 12345678" value={form.company_number} onChange={v=>u('company_number',v)}/></Field>
+            <Field label="Companies House Number *" hint="8-digit registration number"><Input type="text" placeholder="e.g. 12345678" value={form.company_number} onChange={v=>u('company_number',v)}/></Field>
           </div>
 
           <div className="divider"></div>
           <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.25rem'}}>Primary Contact</div>
           <div style={{fontSize:'0.78rem',color:'#64748b',marginBottom:'0.5rem'}}>The person responsible for this account and who candidates will be directed to.</div>
 
-          <div className="field-row">
+          <div style={{...rowStyle, gridTemplateColumns:'1fr 1fr'}}>
             <Field label="Contact Name *"><Input type="text" placeholder="Full name" value={form.contact_name} onChange={v=>u('contact_name',v)}/></Field>
             <Field label="Position / Job Title *"><Input type="text" placeholder="e.g. HR Manager, Operations Director" value={form.contact_position} onChange={v=>u('contact_position',v)}/></Field>
           </div>
           <Field label="Contact Email *"><Input type="email" placeholder="name@company.com" value={form.contact_email} onChange={v=>u('contact_email',v)}/></Field>
-          <div className="field-row">
+          <div style={{...rowStyle, gridTemplateColumns:'1fr 1fr 1fr'}}>
             <Field label="Mobile Number *"><Input type="tel" placeholder="07700 000000" value={form.contact_mobile} onChange={v=>u('contact_mobile',v)}/></Field>
-            <Field label="Office Number"><Input type="tel" placeholder="01234 567890" value={form.contact_office} onChange={v=>u('contact_office',v)}/></Field>
-            <Field label="Direct Dial (DD)"><Input type="tel" placeholder="Direct line" value={form.contact_dd} onChange={v=>u('contact_dd',v)}/></Field>
+            <Field label="Office Number *"><Input type="tel" placeholder="01234 567890" value={form.contact_office} onChange={v=>u('contact_office',v)}/></Field>
+            <Field label="Direct Dial (DD) *"><Input type="tel" placeholder="Direct line" value={form.contact_dd} onChange={v=>u('contact_dd',v)}/></Field>
           </div>
 
           <div className="divider"></div>
-          <div className="field-row">
-            <Field label="Company Website"><Input type="text" placeholder="www.company.com" value={form.website} onChange={v=>u('website',v)}/></Field>
+          <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.5rem'}}>Company Address</div>
+
+          <Field label="Address Line 1 *"><Input type="text" placeholder="Building number and street" value={form.address_line1} onChange={v=>u('address_line1',v)}/></Field>
+          <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={form.address_line2} onChange={v=>u('address_line2',v)}/></Field>
+          <div style={{...rowStyle, gridTemplateColumns:'1fr 1fr 1fr'}}>
+            <Field label="City *"><Input type="text" placeholder="e.g. London" value={form.city} onChange={v=>u('city',v)}/></Field>
+            <Field label="County"><Input type="text" placeholder="e.g. Greater London" value={form.county} onChange={v=>u('county',v)}/></Field>
             <Field label="Postcode *"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={v=>u('postcode',v)}/></Field>
           </div>
-          <Field label="Company Address *"><Input type="text" placeholder="Full registered address" value={form.address} onChange={v=>u('address',v)}/></Field>
+          <Field label="Company Website *"><Input type="text" placeholder="www.company.com" value={form.website} onChange={v=>u('website',v)}/></Field>
 
           <div className="divider"></div>
           <Field label="Does your company hold SIA Approved Contractor Scheme (ACS) status?" hint="SIA ACS is the quality standard for the private security industry">
