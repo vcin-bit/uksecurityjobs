@@ -2758,24 +2758,41 @@ function ForgotPasswordPage() {
   const [password, setPassword] = React.useState('');
   const [error, setError] = React.useState('');
   const [loading, setLoading] = React.useState(false);
+  const { signIn, setActive } = window.Clerk ? 
+    { signIn: window.Clerk.client?.signIn, setActive: (s) => window.Clerk.setActive(s) } :
+    { signIn: null, setActive: null };
   const clerk = useClerk();
 
   const sendCode = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      await clerk.client.signIn.create({ strategy: 'reset_password_email_code', identifier: email });
-      setStep(2);
-    } catch(err) { setError(err.errors?.[0]?.message || 'Could not find that email address.'); }
+      const si = await clerk.client.signIn.create({
+        strategy: 'reset_password_email_code',
+        identifier: email,
+      });
+      if (si.status === 'needs_first_factor') setStep(2);
+      else setStep(2);
+    } catch(err) {
+      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Could not send reset code. Check your email address.');
+    }
     setLoading(false);
   };
 
   const resetPassword = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      const result = await clerk.client.signIn.attemptFirstFactor({ strategy: 'reset_password_email_code', code, password });
-      await clerk.setActive({ session: result.createdSessionId });
-      window.location.href = '/dashboard';
-    } catch(err) { setError(err.errors?.[0]?.message || 'Invalid code or password too weak.'); }
+      const result = await clerk.client.signIn.attemptFirstFactor({
+        strategy: 'reset_password_email_code',
+        code,
+        password,
+      });
+      if (result.status === 'complete') {
+        await clerk.setActive({ session: result.createdSessionId });
+        window.location.href = '/dashboard';
+      }
+    } catch(err) {
+      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Invalid code or password too weak. Password must be at least 8 characters.');
+    }
     setLoading(false);
   };
 
