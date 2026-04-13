@@ -26,6 +26,10 @@ function Nav() {
         <Logo />
         <div className="nav-links">
           <a className="nav-link" href="/jobs">Jobs</a>
+          <a className="nav-link" href="mailto:support@uksecurityjobs.co.uk" style={{display:'flex',alignItems:'center',gap:'0.35rem'}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Help
+          </a>
           <SignedIn>
             <a className="nav-link" href="/dashboard">My Profile</a>
             <button className="nav-btn" onClick={() => signOut({ redirectUrl: '/' })}>Sign out</button>
@@ -3137,7 +3141,7 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
       </div>
       <div style={{background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'8px',padding:'1rem 1.25rem',marginBottom:'1.25rem',fontSize:'0.8rem',color:'#1e40af',lineHeight:'1.65'}}>
         <div style={{fontWeight:700,marginBottom:'0.35rem'}}>A note on detail</div>
-        <p style={{margin:'0 0 0.4rem'}}>We ask for more information than a standard job board. This is deliberate. Every candidate on this platform holds a valid SIA licence and is BS7858 ready — profile complete and easy to vet and they expect to be treated as such.</p>
+        <p style={{margin:'0 0 0.4rem'}}>We ask for more information than a standard job board. This is deliberate. Every candidate on this platform holds a valid SIA licence and has a complete, vetting-ready profile. They are security professionals — they expect to be taken seriously.</p>
         <p style={{margin:'0 0 0.4rem'}}>The more detail you provide, the fewer questions land in your inbox. Shift times, parking, start dates, duties — candidates read this before applying. A well-written posting attracts the right people and filters out the wrong ones before you ever speak to them.</p>
         <p style={{margin:0}}>We pre-screen candidates so you don't have to. Your job is to describe the role accurately. Ours is to make sure only qualified, verified people see it.</p>
       </div>
