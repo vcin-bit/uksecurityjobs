@@ -1325,27 +1325,7 @@ function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
           </Field>
           <Field label="Outline of duties *" hint="Be specific — this builds your CV. Include responsibilities, equipment used, team size, site type.">
             <textarea className="f-textarea" rows={3} placeholder="e.g. Manned guarding of 3 distribution warehouses across shift patterns. Responsibilities included access control, CCTV monitoring (16 camera system), lone working protocols, daily incident logging and emergency response. Worked within a 4-person team." value={job.duties||''} onChange={e=>update(i,'duties',e.target.value)}/>
-            {job.duties?.trim().length > 20 && (
-              <button type="button"
-                onClick={async () => {
-                  update(i,'dutiesLoading',true);
-                  try {
-                    const token = await getToken();
-                    const res = await fetch('https://uksecurityjobs-api.onrender.com/api/ai/improve', {
-                      method:'POST',
-                      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-                      body: JSON.stringify({ text: job.duties, type: 'duties' })
-                    });
-                    const d = await res.json();
-                    if (d.result) update(i,'duties',d.result.trim());
-                  } catch(e) { console.error(e); }
-                  update(i,'dutiesLoading',false);
-                }}
-                style={{marginTop:'0.5rem',background:'#f0f4ff',color:'#1a52a8',border:'1px solid #bfdbfe',borderRadius:'6px',padding:'0.4rem 0.875rem',fontSize:'0.78rem',fontWeight:600,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:'0.4rem'}}
-              >
-                {job.dutiesLoading ? 'Improving...' : '✦ Fix spelling & grammar'}
-              </button>
-            )}
+
           </Field>
 
           <div className="divider" style={{margin:'1rem 0 0.75rem'}}></div>
@@ -2243,12 +2223,9 @@ function CVPanel({ profileData, userName, mobileOpen, onMobileClose }) {
       <div className="cv-panel-tabs">
         <button className={'cv-tab'+(activeTab==='cv'?' active':'')} onClick={()=>setActiveTab('cv')}>CV</button>
         <button className={'cv-tab'+(activeTab==='vetting'?' active':'')} onClick={()=>setActiveTab('vetting')}>Vetting</button>
-        <button className={'cv-tab'+(activeTab==='letter'?' active':'')} onClick={()=>setActiveTab('letter')}>Cover Letter</button>
       </div>
       <div className="cv-panel-body">
-        {activeTab === 'cv' ? <CandidateCV/> : activeTab === 'vetting' ? <VettingProfile/> : (
-          <CoverLetterBuilder profileData={profileData} userName={userName}/>
-        )}
+        {activeTab === 'cv' ? <CandidateCV/> : <VettingProfile/>
       </div>
       <div className="cv-actions">
         <button className="cv-dl-btn primary" onClick={()=>window.print()}>Download CV</button>
