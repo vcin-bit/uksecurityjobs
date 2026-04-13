@@ -270,6 +270,8 @@ function StepWelcome({ onNext, name }) {
 // ── STEP 2: SIA LICENCES ──
 function StepSIA({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
+  React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
+  React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
   const normaliseLicence = (l) => ({
     type: l.type || l.licence_type || '',
     number: l.number || l.licence_number || '',
@@ -364,13 +366,16 @@ function StepSIA({ data, onChange, onBack, onNext, isComplete }) {
 // ── STEP 3: PERSONAL DETAILS ──
 function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
+  React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
   const raw = data.personal;
   const existingMovedIn = raw?.move_in_date || raw?.movedIn || '';
   const [form, setForm] = useState({
+    firstName: raw?.first_name || raw?.firstName || '',
+    lastName: raw?.last_name || raw?.lastName || '',
     phone: raw?.phone || '',
-    dobDay: raw?.dob ? raw.dob.split('-')[2] : '',
-    dobMonth: raw?.dob ? raw.dob.split('-')[1] : '',
-    dobYear: raw?.dob ? raw.dob.split('-')[0] : '',
+    dobDay: raw?.date_of_birth ? raw.date_of_birth.split('-')[2] : raw?.dob ? raw.dob.split('-')[2] : '',
+    dobMonth: raw?.date_of_birth ? raw.date_of_birth.split('-')[1] : raw?.dob ? raw.dob.split('-')[1] : '',
+    dobYear: raw?.date_of_birth ? raw.date_of_birth.split('-')[0] : raw?.dob ? raw.dob.split('-')[0] : '',
     gender: raw?.gender || '',
     ni: raw?.ni_number || raw?.ni || '',
     address1: raw?.address_line1 || raw?.address1 || '',
@@ -503,6 +508,8 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
 
   // Mandatory field validation
   const missingFields = [];
+  if (!form.firstName?.trim()) missingFields.push('First name');
+  if (!form.lastName?.trim()) missingFields.push('Last name');
   if (!form.phone?.trim()) missingFields.push('Phone number');
   if (!form.dobDay || !form.dobMonth || !form.dobYear) missingFields.push('Date of birth');
   if (!form.ni?.trim()) missingFields.push('National Insurance number');
@@ -526,12 +533,12 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
       <CompletedStep
         title="Personal Details"
         summary={[
+          { label:'Name', value: [d.first_name, d.last_name].filter(Boolean).join(' ') },
           { label:'Phone', value: d.phone || '' },
-          { label:'Date of Birth', value: d.date_of_birth || d.dob || '' },
-          { label:'NI Number', value: d.ni_number || d.ni ? '••••••••' : '' },
-          { label:'Address', value: [d.address_line1||d.address1, d.city||d.town, d.postcode].filter(Boolean).join(', ') },
-          { label:'Moved In', value: d.move_in_date || d.movedIn || '' },
-          { label:'SIA Address Match', value: d.sia_address_match === true ? 'Yes' : d.sia_address_match === false ? 'No — update needed' : d.siaAddress === 'yes' ? 'Yes' : d.siaAddress === 'no' ? 'No' : '' },
+          { label:'Date of Birth', value: d.date_of_birth || '' },
+          { label:'NI Number', value: d.ni_number ? '••••••••' : '' },
+          { label:'Address', value: [d.address_line1, d.city, d.postcode].filter(Boolean).join(', ') },
+          { label:'SIA Address Match', value: d.sia_address_match === true ? 'Yes' : d.sia_address_match === false ? 'No — update needed' : '' },
         ]}
         onEdit={() => setEditing(true)}
         onBack={onBack}
@@ -552,6 +559,10 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
         </div>
       )}
 
+      <div className="field-row">
+        <Field label="First Name *"><Input type="text" placeholder="John" value={form.firstName} onChange={v=>u('firstName',v)}/></Field>
+        <Field label="Last Name *"><Input type="text" placeholder="Smith" value={form.lastName} onChange={v=>u('lastName',v)}/></Field>
+      </div>
       <div className="field-row">
         <Field label="Phone Number *"><Input type="tel" placeholder="07700 000000" value={form.phone} onChange={v=>u('phone',v)}/></Field>
         <Field label="Date of Birth *">
@@ -761,6 +772,7 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
 // ── STEP 4: DRIVING LICENCE & TRANSPORT ──
 function StepDriving({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
+  React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
   const [form, setForm] = useState(data.driving || {
     hasLicence: '', licenceType:'', licenceNumber:'', yearsHeld:'', points:'', endorsements:[], hasBan:'', banDate:'', banDuration:'', banReason:'',
     hasTransport:'', vehicleType:'', taxed:'', moted:'', insured:'', travelRadius:'',
@@ -896,6 +908,7 @@ function StepDriving({ data, onChange, onBack, onNext, isComplete }) {
 // ── STEP 5: PREFERRED SECTORS & AVAILABILITY ──
 function StepSectors({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
+  React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
   const raw = data.sectors;
   const [form, setForm] = useState({
     sectors: Array.isArray(raw?.sectors) ? raw.sectors : [],
@@ -979,6 +992,7 @@ function StepSectors({ data, onChange, onBack, onNext, isComplete }) {
 // ── STEP 6: QUALIFICATIONS & FIRST AID ──
 function StepQualifications({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
+  React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
   const [form, setForm] = useState(data.qualifications || {
     hasFirstAid:'', certType:'', issuingBody:'', certNumber:'', dateAchieved:'', expiry:'',
     hasUniform:'', hasPPE:'', languages:[], isSIATrainer:'', trainerDetails:'',
@@ -1071,6 +1085,7 @@ function StepQualifications({ data, onChange, onBack, onNext, isComplete }) {
 // ── STEP 7: BACKGROUND ──
 function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
+  React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
   const [form, setForm] = useState(data.background || {
     hasForces:'', forcesBranch:'', forcesRank:'', forcesYears:'', forcesDischarge:'',
     hasBID:'', bidSchemes:'', hasCriminal:'', criminalDetails:''
@@ -1125,6 +1140,7 @@ function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
 // ── STEP 8: EMPLOYMENT HISTORY ──
 function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
+  React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
   const emptyJob = () => ({
     employer:'', role:'', sector:'', duties:'',
     address1:'', address2:'', town:'', county:'', postcode:'', website:'',
@@ -1385,6 +1401,7 @@ function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
 // ── STEP 9: ADDRESS HISTORY ──
 function StepAddress({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
+  React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
   const [addresses, setAddresses] = useState(data.addresses || [{ line1:'', line2:'', town:'', postcode:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false }]);
   const add = () => setAddresses([...addresses,{ line1:'', line2:'', town:'', postcode:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false }]);
   const update = (i,f,v) => setAddresses(addresses.map((a,idx)=>idx===i?{...a,[f]:v}:a));
@@ -1749,7 +1766,26 @@ function ProfileBuilder() {
     setSaving(true);
     let saveOk = false;
     try {
-      if (d.personal) await apiRequest('/api/candidates/me/personal', 'PUT', d.personal, getToken);
+      if (d.personal) {
+        const p = d.personal;
+        const dob = p.dobYear && p.dobMonth && p.dobDay ? `${p.dobYear}-${p.dobMonth}-${p.dobDay}` : p.date_of_birth || '';
+        const movedIn = p.movedInYear && p.movedInMonth ? `${p.movedInYear}-${p.movedInMonth}-01` : p.move_in_date || '';
+        await apiRequest('/api/candidates/me/personal', 'PUT', {
+          first_name: p.firstName || p.first_name || user?.firstName || '',
+          last_name: p.lastName || p.last_name || user?.lastName || '',
+          date_of_birth: dob,
+          phone: p.phone || '',
+          address_line1: p.address_line1 || p.address1 || '',
+          address_line2: p.address_line2 || p.address2 || '',
+          city: p.city || p.town || '',
+          county: p.county || '',
+          postcode: p.postcode || '',
+          move_in_date: movedIn,
+          ni_number: p.ni_number || p.ni || '',
+          sia_address_match: p.siaAddress === 'yes' || p.sia_address_match === true,
+          dvla_address_match: p.dvlaAddress === 'yes' || p.dvla_address_match === true,
+        }, getToken);
+      }
       if (d.licences) {
         for (const lic of d.licences) {
           if (lic.number) await apiRequest('/api/sia', 'POST', { licence_number: lic.number, licence_type: lic.type, expiry_date: lic.expiry }, getToken);
