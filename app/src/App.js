@@ -2279,6 +2279,65 @@ function SignInPage() {
   );
 }
 
+function ForgotPasswordPage() {
+  const [step, setStep] = React.useState(1);
+  const [email, setEmail] = React.useState('');
+  const [code, setCode] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const clerk = useClerk();
+
+  const sendCode = async (e) => {
+    e.preventDefault(); setError(''); setLoading(true);
+    try {
+      await clerk.client.signIn.create({ strategy: 'reset_password_email_code', identifier: email });
+      setStep(2);
+    } catch(err) { setError(err.errors?.[0]?.message || 'Could not find that email address.'); }
+    setLoading(false);
+  };
+
+  const resetPassword = async (e) => {
+    e.preventDefault(); setError(''); setLoading(true);
+    try {
+      const result = await clerk.client.signIn.attemptFirstFactor({ strategy: 'reset_password_email_code', code, password });
+      await clerk.setActive({ session: result.createdSessionId });
+      window.location.href = '/dashboard';
+    } catch(err) { setError(err.errors?.[0]?.message || 'Invalid code or password too weak.'); }
+    setLoading(false);
+  };
+
+  return (
+    <div className="page">
+      <Nav/>
+      <div className="auth-page">
+        <div className="auth-card">
+          <div className="auth-logo"><Logo/></div>
+          {step === 1 ? <>
+            <div className="auth-title">Reset your password</div>
+            <div className="auth-sub">Enter your email and we'll send you a reset code.</div>
+            <form className="auth-form" onSubmit={sendCode}>
+              {error && <div className="auth-error">{error}</div>}
+              <div className="field"><label className="field-label">Email Address</label><input className="f-input" type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com"/></div>
+              <button className="btn-full" type="submit" disabled={loading}>{loading?'Sending...':'Send Reset Code'}</button>
+            </form>
+            <div className="auth-footer"><a href="/sign-in">Back to sign in</a></div>
+          </> : <>
+            <div className="auth-title">Set new password</div>
+            <div className="auth-sub">Enter the code we sent to {email} and choose a new password.</div>
+            <form className="auth-form" onSubmit={resetPassword}>
+              {error && <div className="auth-error">{error}</div>}
+              <div className="field"><label className="field-label">Reset Code</label><input className="f-input" type="text" required value={code} onChange={e=>setCode(e.target.value)} placeholder="000000" style={{textAlign:'center',fontSize:'1.5rem',letterSpacing:'0.4em'}} maxLength={6}/></div>
+              <div className="field"><label className="field-label">New Password</label><input className="f-input" type="password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Min. 8 characters"/></div>
+              <button className="btn-full" type="submit" disabled={loading}>{loading?'Resetting...':'Reset Password →'}</button>
+            </form>
+          </>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }) {
   return <><SignedIn>{children}</SignedIn><SignedOut><Navigate to="/sign-in" replace/></SignedOut></>;
 }
@@ -2291,6 +2350,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace/>}/>
           <Route path="/sign-up" element={<SignUpPage/>}/>
           <Route path="/sign-in" element={<SignInPage/>}/>
+          <Route path="/forgot-password" element={<ForgotPasswordPage/>}/>
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard/></ProtectedRoute>}/>
           <Route path="/profile" element={<ProtectedRoute><div className="page" style={{background:'var(--off)'}}><Nav/><ProfileBuilder/></div></ProtectedRoute>}/>
           <Route path="*" element={<Navigate to="/dashboard" replace/>}/>
