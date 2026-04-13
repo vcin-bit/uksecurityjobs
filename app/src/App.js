@@ -3095,9 +3095,10 @@ function EmployerRegisterForm({ onSaved, getToken }) {
 function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
   const [form, setForm] = React.useState({
     title:'', company_name: employerName, location:'', postcode:'',
-    sector:'', description:'',
+    sector:'', description:'', duties:'',
     rate_from:'', rate_to:'', rate_type:'hourly',
-    employment_type:'Full Time', shift_pattern:[],
+    contract_type:'', employment_type:'', min_hours:'',
+    shift_pattern:[], benefits:'',
     licences_required:[], driving_licence_required:'Not Required',
     own_transport_required:'Not Required',
   });
@@ -3138,8 +3139,8 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
         <div style={{display:'grid',gap:'1rem'}}>
           <div className="field-row">
             <Field label="Job Title *"><Input type="text" placeholder="e.g. Door Supervisor" value={form.title} onChange={v=>u('title',v)}/></Field>
-            <Field label="Location *"><Input type="text" placeholder="e.g. Central London" value={form.location} onChange={v=>u('location',v)}/></Field>
-            <Field label="Postcode"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={v=>u('postcode',v)}/></Field>
+            <Field label="Location *" hint="Town or city"><Input type="text" placeholder="e.g. Central London" value={form.location} onChange={v=>u('location',v)}/></Field>
+            <Field label="Postcode Area *" hint="e.g. SW1, B1, M1"><Input type="text" placeholder="e.g. SW1" value={form.postcode} onChange={v=>u('postcode',v)}/></Field>
           </div>
 
           <Field label="Sector">
@@ -3149,12 +3150,50 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
             </Select>
           </Field>
 
-          <Field label="Job Description">
-            <textarea className="f-textarea" rows={3} placeholder="Describe the role, site, duties and any specific requirements..." value={form.description} onChange={e=>u('description',e.target.value)}/>
+          <Field label="Job Description" hint="Overview of the role and site">
+            <textarea className="f-textarea" rows={3} placeholder="Describe the role, site and any specific requirements..." value={form.description} onChange={e=>u('description',e.target.value)}/>
+          </Field>
+
+          <Field label="Key Duties" hint="Day to day responsibilities — this appears on the candidate's application">
+            <textarea className="f-textarea" rows={4} placeholder="e.g. Access control at main entrance, CCTV monitoring, foot patrols every 2 hours, incident reporting, first point of contact for visitors..." value={form.duties} onChange={e=>u('duties',e.target.value)}/>
           </Field>
 
           <div className="divider"></div>
-          <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.25rem'}}>SIA Licence Required *</div>
+          <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.75rem'}}>Contract & Hours</div>
+          <div className="field-row">
+            <Field label="Contract Type *">
+              <Select value={form.contract_type} onChange={v=>u('contract_type',v)}>
+                <option value="">Select</option>
+                <option>Permanent</option>
+                <option>Temporary</option>
+                <option>Zero Hours</option>
+                <option>Fixed Term</option>
+              </Select>
+            </Field>
+            <Field label="Employment Type *">
+              <Select value={form.employment_type} onChange={v=>u('employment_type',v)}>
+                <option value="">Select</option>
+                <option>Full Time</option>
+                <option>Part Time</option>
+                <option>Either</option>
+              </Select>
+            </Field>
+            <Field label="Minimum Weekly Hours" hint="Leave blank for zero hours">
+              <Input type="number" placeholder="e.g. 40" value={form.min_hours} onChange={v=>u('min_hours',v)}/>
+            </Field>
+          </div>
+
+          <div className="divider"></div>
+          <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.5rem'}}>Shift Pattern</div>
+          <div className="check-grid">
+            {['Days','Nights','Weekends','Bank Holidays','Rotating','Flexible'].map(s=>(
+              <Checkbox key={s} label={s} checked={(form.shift_pattern||[]).includes(s)}
+                onChange={()=>{ const list=(form.shift_pattern||[]).includes(s)?(form.shift_pattern||[]).filter(x=>x!==s):[...(form.shift_pattern||[]),s]; u('shift_pattern',list); }}/>
+            ))}
+          </div>
+
+          <div className="divider"></div>
+          <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.75rem'}}>SIA Licence Required *</div>
           <div style={{fontSize:'0.78rem',color:'#64748b',marginBottom:'0.75rem'}}>Select all licence types you will accept for this role</div>
           <div className="check-grid">
             {licenceTypes.map(l=><Checkbox key={l} label={l} checked={form.licences_required.includes(l)} onChange={()=>toggleLicence(l)}/>)}
@@ -3164,12 +3203,11 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
           <div className="field-row">
             <Field label="Rate From (£/hr)"><Input type="number" placeholder="13.50" value={form.rate_from} onChange={v=>u('rate_from',v)}/></Field>
             <Field label="Rate To (£/hr)"><Input type="number" placeholder="15.00" value={form.rate_to} onChange={v=>u('rate_to',v)}/></Field>
-            <Field label="Employment Type">
-              <Select value={form.employment_type} onChange={v=>u('employment_type',v)}>
-                {['Full Time','Part Time','Contract','Either'].map(t=><option key={t}>{t}</option>)}
-              </Select>
-            </Field>
           </div>
+
+          <Field label="Benefits" hint="e.g. pension, uniform, on-site parking, progression opportunities">
+            <textarea className="f-textarea" rows={2} placeholder="e.g. Company pension, 28 days holiday, uniform provided, progression to supervisory roles" value={form.benefits} onChange={e=>u('benefits',e.target.value)}/>
+          </Field>
 
           <div className="field-row">
             <Field label="Driving Licence">
