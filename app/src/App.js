@@ -1862,8 +1862,11 @@ function ProfileBuilder() {
     const merged = { ...profileData, ...d };
     setProfileData(merged);
     const stepKey = Object.keys(d)[0];
+
+    // Mark complete and advance immediately — don't wait for API
+    if (stepKey) setCompletedSteps(prev => new Set([...prev, stepKey]));
+
     setSaving(true);
-    let saveOk = false;
     try {
       if (d.personal) {
         const p = d.personal;
@@ -1967,14 +1970,11 @@ function ProfileBuilder() {
         }
       }
       await apiRequest('/api/candidates/me/step', 'PATCH', { profile_step: step + 1 }, getToken);
-      saveOk = true;
-      if (stepKey) setCompletedSteps(prev => new Set([...prev, stepKey]));
     } catch(err) {
       console.error('Save error:', err);
-      alert('Save failed: ' + err.message + '\n\nPlease try again. If this keeps happening, contact support.');
+      alert('Some data could not be saved: ' + err.message + '\n\nYour progress has been recorded. Please try again or contact support.');
     }
     setSaving(false);
-    return saveOk;
   };
 
   if (loading) return <div style={{textAlign:'center',padding:'4rem',color:'#64748b'}}>Loading your profile...</div>;
