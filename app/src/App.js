@@ -3099,6 +3099,7 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
     rate_from:'', rate_to:'', rate_type:'hourly',
     contract_type:'', employment_type:'', min_hours:'',
     shift_pattern:[], benefits:'',
+    parking:'', start_date:'',
     licences_required:[], driving_licence_required:'Not Required',
     own_transport_required:'Not Required',
   });
@@ -3208,6 +3209,30 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
           <Field label="Benefits" hint="e.g. pension, uniform, on-site parking, progression opportunities">
             <textarea className="f-textarea" rows={2} placeholder="e.g. Company pension, 28 days holiday, uniform provided, progression to supervisory roles" value={form.benefits} onChange={e=>u('benefits',e.target.value)}/>
           </Field>
+
+          <div className="field-row">
+            <Field label="On-site Parking">
+              <Select value={form.parking} onChange={v=>u('parking',v)}>
+                <option value="">Select</option>
+                <option>No parking available</option>
+                <option>Free on-site parking</option>
+                <option>Paid on-site parking</option>
+                <option>Nearby public parking</option>
+                <option>Street parking available</option>
+              </Select>
+            </Field>
+            <Field label="Start Date">
+              <Select value={form.start_date} onChange={v=>u('start_date',v)}>
+                <option value="">Select</option>
+                <option>Immediately</option>
+                <option>Within 1 week</option>
+                <option>Within 2 weeks</option>
+                <option>Within 1 month</option>
+                <option>Flexible start date</option>
+                <option>To be confirmed</option>
+              </Select>
+            </Field>
+          </div>
 
           <div className="field-row">
             <Field label="Driving Licence">
@@ -3332,14 +3357,33 @@ function JobListingsPage() {
                     <div style={{fontWeight:800,fontSize:'1.05rem',color:'#0b1222',marginBottom:'0.2rem'}}>{job.title}</div>
                     <div style={{fontWeight:600,fontSize:'0.85rem',color:'#1a52a8',marginBottom:'0.4rem'}}>{job.company_name}</div>
                     <div style={{fontSize:'0.8rem',color:'#64748b',display:'flex',flexWrap:'wrap',gap:'0.75rem',marginBottom:'0.75rem'}}>
-                      <span>📍 {job.location}</span>
+                      <span>📍 {job.location}{job.postcode?' · '+job.postcode:''}</span>
                       {job.rate_from && <span>💷 £{job.rate_from}{job.rate_to?'–£'+job.rate_to:''}/hr</span>}
-                      <span>🕐 {job.employment_type}</span>
+                      {job.employment_type && <span>🕐 {job.employment_type}</span>}
+                      {job.contract_type && <span>📋 {job.contract_type}</span>}
+                      {job.min_hours && <span>⏱ Min {job.min_hours}hrs/wk</span>}
                       {job.sector && <span>🏢 {job.sector}</span>}
+                      {job.start_date && <span>🗓 {job.start_date}</span>}
+                      {job.parking && job.parking !== 'No parking available' && <span>🅿 {job.parking}</span>}
                     </div>
                     {job.description && (
-                      <div style={{fontSize:'0.78rem',color:'#374151',lineHeight:'1.6',marginBottom:'0.75rem',maxHeight:'60px',overflow:'hidden'}}>
+                      <div style={{fontSize:'0.78rem',color:'#374151',lineHeight:'1.6',marginBottom:'0.5rem'}}>
                         {job.description}
+                      </div>
+                    )}
+                    {job.duties && (
+                      <div style={{fontSize:'0.75rem',color:'#475569',lineHeight:'1.6',marginBottom:'0.5rem',background:'#f8fafc',borderRadius:'6px',padding:'0.5rem 0.75rem'}}>
+                        <span style={{fontWeight:700,color:'#0b1222'}}>Key duties: </span>{job.duties}
+                      </div>
+                    )}
+                    {job.benefits && (
+                      <div style={{fontSize:'0.75rem',color:'#475569',lineHeight:'1.6',marginBottom:'0.75rem'}}>
+                        <span style={{fontWeight:700,color:'#0b1222'}}>Benefits: </span>{job.benefits}
+                      </div>
+                    )}
+                    {(job.shift_pattern||[]).length > 0 && (
+                      <div style={{fontSize:'0.72rem',color:'#64748b',marginBottom:'0.75rem'}}>
+                        <span style={{fontWeight:600}}>Shifts: </span>{(job.shift_pattern||[]).join(', ')}
                       </div>
                     )}
                     <div style={{display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
