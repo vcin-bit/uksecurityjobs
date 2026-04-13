@@ -6,9 +6,6 @@ import './styles.css';
 
 startApiKeepAlive();
 
-// Wake the API as soon as the app loads to minimise cold start delays
-wakeApi();
-
 const CLERK_KEY = 'pk_test_ZXhjaXRpbmctdXJjaGluLTQxLmNsZXJrLmFjY291bnRzLmRldiQ';
 
 // ── LOGO ──
