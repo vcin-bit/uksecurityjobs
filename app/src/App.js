@@ -831,7 +831,7 @@ function StepDriving({ data, onChange, onBack, onNext, isComplete }) {
         <div className="field-row">
           <Field label="Licence Type">
             <Select value={form.licenceType} onChange={v=>u('licenceType',v)}>
-              <option value="">Select</option><option>Full</option><option>Provisional</option>
+              <option value="">Select</option><option>Full UK</option><option>Provisional</option><option>EU</option><option>International</option><option>None</option>
             </Select>
           </Field>
           <Field label="Licence Number"><Input type="text" placeholder="SMITH701234AB9CD" value={form.licenceNumber} onChange={v=>u('licenceNumber',v)}/></Field>
