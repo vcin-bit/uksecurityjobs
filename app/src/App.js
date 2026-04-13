@@ -3506,119 +3506,194 @@ function JobListingsPage() {
   return (
     <div className="page" style={{background:'var(--off)'}}>
       <Nav/>
-      <div style={{maxWidth:'900px',margin:'0 auto',padding:'2rem 1.5rem'}}>
-        <div style={{marginBottom:'2rem'}}>
-          <h1 style={{fontSize:'1.75rem',fontWeight:900,color:'#0b1222',marginBottom:'0.5rem'}}>Security Jobs UK</h1>
-          <p style={{color:'#64748b',fontSize:'0.9rem'}}>Every role on this platform requires a valid SIA licence. All candidates are SIA verified and BS7858 ready — profile complete, easy to vet.</p>
-        </div>
 
-        {/* Filters */}
-        <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap',marginBottom:'1.5rem'}}>
-          <select className="f-select" style={{flex:'1',minWidth:'150px'}} value={filters.licence} onChange={e=>setFilters({...filters,licence:e.target.value})}>
-            <option value="">All licences</option>
-            <option>Door Supervisor</option>
-            <option>Security Guard</option>
-            <option>CCTV Operator</option>
-            <option>Close Protection</option>
-            <option>Cash & Valuables in Transit</option>
-            <option>Key Holding</option>
-          </select>
-          <input className="f-input" style={{flex:'2',minWidth:'150px'}} placeholder="Location or postcode" value={filters.location} onChange={e=>setFilters({...filters,location:e.target.value})}/>
-          <select className="f-select" style={{flex:'1',minWidth:'120px'}} value={filters.type} onChange={e=>setFilters({...filters,type:e.target.value})}>
-            <option value="">All types</option>
-            <option>Full Time</option>
-            <option>Part Time</option>
-            <option>Contract</option>
-          </select>
-        </div>
-
-        {loading ? (
-          <div style={{textAlign:'center',padding:'3rem',color:'#94a3b8'}}>Loading jobs...</div>
-        ) : filtered.length === 0 ? (
-          <div style={{textAlign:'center',padding:'3rem',color:'#94a3b8'}}>
-            <div style={{fontSize:'2rem',marginBottom:'0.5rem'}}>🔍</div>
-            <div style={{fontWeight:600,color:'#64748b'}}>No jobs match your filters</div>
-            <div style={{fontSize:'0.82rem',marginTop:'0.25rem'}}>Try broadening your search or check back soon</div>
+      {/* SEO Hero */}
+      <div style={{background:'#0b1222',padding:'2.5rem 1.5rem 2rem'}}>
+        <div style={{maxWidth:'1100px',margin:'0 auto'}}>
+          <div style={{fontSize:'0.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.15em',color:'#1a52a8',marginBottom:'0.5rem'}}>UK Security Jobs</div>
+          <h1 style={{fontSize:'2rem',fontWeight:900,color:'#fff',marginBottom:'0.5rem',lineHeight:1.2}}>Security Jobs — SIA Licensed Candidates Only</h1>
+          <p style={{color:'#94a3b8',fontSize:'0.9rem',maxWidth:'600px',lineHeight:1.7}}>Every role on this platform requires a valid SIA licence. Candidates are BS7858 ready — profile complete, address history verified, employment history checked. No unsuitable applications.</p>
+          <div style={{display:'flex',flexWrap:'wrap',gap:'0.5rem',marginTop:'1.25rem'}}>
+            {['SIA Licence Verified','BS7858 Ready','5-Year History Checked','Reference Contacts Provided','Right to Work Confirmed'].map(t=>(
+              <span key={t} style={{fontSize:'0.72rem',fontWeight:600,padding:'0.3rem 0.75rem',borderRadius:'999px',background:'rgba(26,82,168,0.3)',color:'#93c5fd',border:'1px solid rgba(26,82,168,0.5)'}}>{t}</span>
+            ))}
           </div>
-        ) : (
-          <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
-            <div style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'0.25rem'}}>{filtered.length} job{filtered.length!==1?'s':''} found</div>
-            {filtered.map(job => (
-              <div key={job.id} style={{background:'#fff',borderRadius:'12px',padding:'1.5rem',border:'1px solid #e2e8f0',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
-                <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
-                  <div style={{flex:1}}>
-                    <div style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',marginBottom:'0.5rem'}}>
-                      {job.logo_url && <img src={job.logo_url} alt={job.company_name} style={{width:'44px',height:'44px',borderRadius:'8px',objectFit:'contain',border:'1px solid #e2e8f0',background:'#f8fafc',padding:'3px',flexShrink:0}}/>}
-                      <div>
-                        <div style={{fontWeight:800,fontSize:'1.05rem',color:'#0b1222',marginBottom:'0.1rem'}}>{job.title}</div>
-                        <div style={{fontWeight:600,fontSize:'0.85rem',color:'#1a52a8'}}>{job.company_name}</div>
+        </div>
+      </div>
+
+      <div style={{maxWidth:'1100px',margin:'0 auto',padding:'2rem 1.5rem',display:'grid',gridTemplateColumns:'1fr 300px',gap:'2rem',alignItems:'start'}}>
+
+        {/* Main column */}
+        <div>
+          {/* Filters */}
+          <div style={{background:'#fff',borderRadius:'12px',padding:'1rem 1.25rem',border:'1px solid #e2e8f0',marginBottom:'1.5rem',display:'flex',gap:'0.75rem',flexWrap:'wrap'}}>
+            <select className="f-select" style={{flex:'1',minWidth:'150px'}} value={filters.licence} onChange={e=>setFilters({...filters,licence:e.target.value})}>
+              <option value="">All licences</option>
+              <option>Door Supervisor</option>
+              <option>Security Guard</option>
+              <option>CCTV Operator</option>
+              <option>Close Protection</option>
+              <option>Cash &amp; Valuables in Transit</option>
+              <option>Key Holding</option>
+            </select>
+            <input className="f-input" style={{flex:'2',minWidth:'150px'}} placeholder="Location or postcode" value={filters.location} onChange={e=>setFilters({...filters,location:e.target.value})}/>
+            <select className="f-select" style={{flex:'1',minWidth:'120px'}} value={filters.type} onChange={e=>setFilters({...filters,type:e.target.value})}>
+              <option value="">All types</option>
+              <option>Full Time</option>
+              <option>Part Time</option>
+              <option>Contract</option>
+            </select>
+          </div>
+
+          {loading ? (
+            <div style={{textAlign:'center',padding:'3rem',color:'#94a3b8'}}>Loading jobs...</div>
+          ) : filtered.length === 0 ? (
+            <div style={{textAlign:'center',padding:'3rem',color:'#94a3b8',background:'#fff',borderRadius:'12px',border:'1px solid #e2e8f0'}}>
+              <div style={{fontSize:'2rem',marginBottom:'0.5rem'}}>🔍</div>
+              <div style={{fontWeight:600,color:'#64748b'}}>No jobs match your filters</div>
+              <div style={{fontSize:'0.82rem',marginTop:'0.25rem'}}>Try broadening your search or check back soon</div>
+            </div>
+          ) : (
+            <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
+              <div style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'0.25rem'}}>{filtered.length} job{filtered.length!==1?'s':''} found</div>
+              {filtered.map(job => (
+                <div key={job.id} style={{background:'#fff',borderRadius:'12px',padding:'1.5rem',border:'1px solid #e2e8f0',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
+                  <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
+                    <div style={{flex:1}}>
+                      <div style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',marginBottom:'0.5rem'}}>
+                        {job.logo_url && <img src={job.logo_url} alt={job.company_name} style={{width:'44px',height:'44px',borderRadius:'8px',objectFit:'contain',border:'1px solid #e2e8f0',background:'#f8fafc',padding:'3px',flexShrink:0}}/>}
+                        <div>
+                          <div style={{fontWeight:800,fontSize:'1.05rem',color:'#0b1222',marginBottom:'0.1rem'}}>{job.title}</div>
+                          <div style={{fontWeight:600,fontSize:'0.85rem',color:'#1a52a8'}}>{job.company_name}</div>
+                        </div>
+                      </div>
+                      <div style={{fontSize:'0.8rem',color:'#64748b',display:'flex',flexWrap:'wrap',gap:'0.75rem',marginBottom:'0.75rem'}}>
+                        <span>📍 {job.location}{job.postcode?' · '+job.postcode:''}</span>
+                        {job.rate_from && <span>💷 £{job.rate_from}{job.rate_to?'–£'+job.rate_to:''}/hr</span>}
+                        {job.employment_type && <span>🕐 {job.employment_type}</span>}
+                        {job.contract_type && <span>📋 {job.contract_type}</span>}
+                        {job.min_hours && <span>⏱ Min {job.min_hours}hrs/wk</span>}
+                        {job.sector && <span>🏢 {job.sector}</span>}
+                        {job.start_date && <span>🗓 {job.start_date}</span>}
+                        {job.parking && job.parking!=='No parking available' && <span>🅿 {job.parking}</span>}
+                      </div>
+                      {job.description && <div style={{fontSize:'0.78rem',color:'#374151',lineHeight:'1.6',marginBottom:'0.5rem'}}>{job.description}</div>}
+                      {job.duties && <div style={{fontSize:'0.75rem',color:'#475569',lineHeight:'1.6',marginBottom:'0.5rem',background:'#f8fafc',borderRadius:'6px',padding:'0.5rem 0.75rem'}}><span style={{fontWeight:700,color:'#0b1222'}}>Key duties: </span>{job.duties}</div>}
+                      {job.benefits && <div style={{fontSize:'0.75rem',color:'#475569',lineHeight:'1.6',marginBottom:'0.75rem'}}><span style={{fontWeight:700,color:'#0b1222'}}>Benefits: </span>{job.benefits}</div>}
+                      {(job.shift_pattern||[]).length>0 && <div style={{fontSize:'0.72rem',color:'#64748b',marginBottom:'0.75rem'}}><span style={{fontWeight:600}}>Shifts: </span>{(job.shift_pattern||[]).join(', ')}</div>}
+                      <div style={{display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
+                        {(job.licences_required||[]).map(l=><span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8',border:'1px solid #bfdbfe'}}>{l}</span>)}
+                        {job.driving_licence_required!=='Not Required' && <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#f0fdf4',color:'#15803d',border:'1px solid #bbf7d0'}}>Driving {job.driving_licence_required}</span>}
+                        {job.own_transport_required!=='Not Required' && <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#f0fdf4',color:'#15803d',border:'1px solid #bbf7d0'}}>Own Transport {job.own_transport_required}</span>}
                       </div>
                     </div>
-                    <div style={{fontSize:'0.8rem',color:'#64748b',display:'flex',flexWrap:'wrap',gap:'0.75rem',marginBottom:'0.75rem'}}>
-                      <span>📍 {job.location}{job.postcode?' · '+job.postcode:''}</span>
-                      {job.rate_from && <span>💷 £{job.rate_from}{job.rate_to?'–£'+job.rate_to:''}/hr</span>}
-                      {job.employment_type && <span>🕐 {job.employment_type}</span>}
-                      {job.contract_type && <span>📋 {job.contract_type}</span>}
-                      {job.min_hours && <span>⏱ Min {job.min_hours}hrs/wk</span>}
-                      {job.sector && <span>🏢 {job.sector}</span>}
-                      {job.start_date && <span>🗓 {job.start_date}</span>}
-                      {job.parking && job.parking !== 'No parking available' && <span>🅿 {job.parking}</span>}
+                    <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.5rem',flexShrink:0}}>
+                      <div style={{fontSize:'0.68rem',color:'#94a3b8'}}>{new Date(job.created_at).toLocaleDateString('en-GB')}</div>
+                      {applied.has(job.id)
+                        ? <div style={{background:'#dcfce7',color:'#15803d',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.85rem',fontWeight:700}}>✓ Applied</div>
+                        : <button onClick={()=>applyForJob(job.id)} disabled={applying===job.id} style={{background:'#1a52a8',color:'#fff',border:'none',borderRadius:'8px',padding:'0.65rem 1.5rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
+                            {applying===job.id?'Applying...':isSignedIn?'Apply Now':'Sign in to Apply'}
+                          </button>
+                      }
                     </div>
-                    {job.description && (
-                      <div style={{fontSize:'0.78rem',color:'#374151',lineHeight:'1.6',marginBottom:'0.5rem'}}>
-                        {job.description}
-                      </div>
-                    )}
-                    {job.duties && (
-                      <div style={{fontSize:'0.75rem',color:'#475569',lineHeight:'1.6',marginBottom:'0.5rem',background:'#f8fafc',borderRadius:'6px',padding:'0.5rem 0.75rem'}}>
-                        <span style={{fontWeight:700,color:'#0b1222'}}>Key duties: </span>{job.duties}
-                      </div>
-                    )}
-                    {job.benefits && (
-                      <div style={{fontSize:'0.75rem',color:'#475569',lineHeight:'1.6',marginBottom:'0.75rem'}}>
-                        <span style={{fontWeight:700,color:'#0b1222'}}>Benefits: </span>{job.benefits}
-                      </div>
-                    )}
-                    {(job.shift_pattern||[]).length > 0 && (
-                      <div style={{fontSize:'0.72rem',color:'#64748b',marginBottom:'0.75rem'}}>
-                        <span style={{fontWeight:600}}>Shifts: </span>{(job.shift_pattern||[]).join(', ')}
-                      </div>
-                    )}
-                    <div style={{display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
-                      {(job.licences_required||[]).map(l => (
-                        <span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8',border:'1px solid #bfdbfe'}}>{l}</span>
-                      ))}
-                      {job.driving_licence_required !== 'Not Required' && (
-                        <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#f0fdf4',color:'#15803d',border:'1px solid #bbf7d0'}}>
-                          Driving {job.driving_licence_required}
-                        </span>
-                      )}
-                      {job.own_transport_required !== 'Not Required' && (
-                        <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#f0fdf4',color:'#15803d',border:'1px solid #bbf7d0'}}>
-                          Own Transport {job.own_transport_required}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.5rem',flexShrink:0}}>
-                    <div style={{fontSize:'0.68rem',color:'#94a3b8'}}>{new Date(job.created_at).toLocaleDateString('en-GB')}</div>
-                    {applied.has(job.id) ? (
-                      <div style={{background:'#dcfce7',color:'#15803d',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.85rem',fontWeight:700}}>✓ Applied</div>
-                    ) : (
-                      <button
-                        onClick={() => applyForJob(job.id)}
-                        disabled={applying === job.id}
-                        style={{background:'#1a52a8',color:'#fff',border:'none',borderRadius:'8px',padding:'0.65rem 1.5rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}
-                      >
-                        {applying === job.id ? 'Applying...' : isSignedIn ? 'Apply Now' : 'Sign in to Apply'}
-                      </button>
-                    )}
                   </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <div style={{display:'flex',flexDirection:'column',gap:'1.25rem'}}>
+
+          {/* CTA - not signed in */}
+          {!isSignedIn && (
+            <div style={{background:'#0b1222',borderRadius:'12px',padding:'1.25rem',color:'#fff'}}>
+              <div style={{fontWeight:800,fontSize:'0.95rem',marginBottom:'0.4rem'}}>Ready to apply?</div>
+              <div style={{fontSize:'0.78rem',color:'#94a3b8',marginBottom:'1rem',lineHeight:1.6}}>Create your free verified profile. SIA-licensed candidates only.</div>
+              <a href="/sign-up" style={{display:'block',textAlign:'center',background:'#1a52a8',color:'#fff',borderRadius:'8px',padding:'0.65rem',fontSize:'0.85rem',fontWeight:700,textDecoration:'none'}}>Create Free Profile →</a>
+            </div>
+          )}
+
+          {/* What is BS7858 */}
+          <div style={{background:'#fff',borderRadius:'12px',padding:'1.25rem',border:'1px solid #e2e8f0'}}>
+            <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222',marginBottom:'0.75rem',display:'flex',alignItems:'center',gap:'0.4rem'}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" strokeWidth="2.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              What is BS7858 Vetting?
+            </div>
+            <p style={{fontSize:'0.78rem',color:'#64748b',lineHeight:1.65,margin:'0 0 0.5rem'}}>BS7858 is the British Standard for screening individuals in security environments. It requires a verified 5-year employment history, full address history, identity checks and criminal record disclosure.</p>
+            <p style={{fontSize:'0.78rem',color:'#64748b',lineHeight:1.65,margin:0}}>Every candidate on this platform has completed their BS7858-ready profile — making the vetting process faster for employers.</p>
+            <a href="/blog/what-is-bs7858-vetting" style={{display:'inline-block',marginTop:'0.75rem',fontSize:'0.75rem',color:'#1a52a8',fontWeight:600}}>Read more about BS7858 →</a>
+          </div>
+
+          {/* SIA Licence types */}
+          <div style={{background:'#fff',borderRadius:'12px',padding:'1.25rem',border:'1px solid #e2e8f0'}}>
+            <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222',marginBottom:'0.75rem'}}>Browse by Licence Type</div>
+            {[
+              {title:'Door Supervisor Jobs',desc:'Working doors, events and retail security.',href:'https://www.uksecurityjobs.co.uk/door-supervisor-jobs'},
+              {title:'Security Guard Jobs',desc:'Static guarding — warehouses, construction, corporate.',href:'https://www.uksecurityjobs.co.uk/security-guard-jobs'},
+              {title:'CCTV Operator Jobs',desc:'Public space surveillance and control room roles.',href:'https://www.uksecurityjobs.co.uk/cctv-jobs'},
+              {title:'Close Protection Jobs',desc:'CP officer licence — personal protection roles.',href:'https://www.uksecurityjobs.co.uk/close-protection-jobs'},
+              {title:'Key Holding Jobs',desc:'Mobile patrol and key holding response roles.',href:null},
+            ].map(({title,desc,href})=>(
+              <div key={title} style={{marginBottom:'0.75rem',paddingBottom:'0.75rem',borderBottom:'1px solid #f1f5f9'}}>
+                {href
+                  ? <a href={href} style={{fontWeight:600,fontSize:'0.78rem',color:'#1a52a8',marginBottom:'0.2rem',display:'block',textDecoration:'none'}}>{title} →</a>
+                  : <div style={{fontWeight:600,fontSize:'0.78rem',color:'#0b1222',marginBottom:'0.2rem'}}>{title}</div>
+                }
+                <div style={{fontSize:'0.72rem',color:'#64748b',lineHeight:1.5}}>{desc}</div>
               </div>
             ))}
           </div>
-        )}
+
+          {/* Quick links */}
+          <div style={{background:'#fff',borderRadius:'12px',padding:'1.25rem',border:'1px solid #e2e8f0'}}>
+            <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222',marginBottom:'0.75rem'}}>Useful Links</div>
+            {[
+              {label:'What is BS7858 Vetting?',href:'https://www.uksecurityjobs.co.uk/blog/what-is-bs7858-vetting'},
+              {label:'Register as a Security Officer',href:'/sign-up'},
+              {label:'For Security Companies',href:'https://www.uksecurityjobs.co.uk/employers'},
+              {label:'SIA Licence Information',href:'https://www.sia.homeoffice.gov.uk/'},
+              {label:'Security Officer Blog',href:'https://www.uksecurityjobs.co.uk/blog'},
+            ].map(({label,href})=>(
+              <a key={label} href={href} style={{display:'flex',alignItems:'center',gap:'0.4rem',fontSize:'0.78rem',color:'#1a52a8',marginBottom:'0.55rem',textDecoration:'none',fontWeight:500}}>
+                <span style={{color:'#94a3b8'}}>›</span>{label}
+              </a>
+            ))}
+          </div>
+
+          {/* Employer CTA */}
+          <div style={{background:'#f0f9ff',borderRadius:'12px',padding:'1.25rem',border:'1px solid #bae6fd'}}>
+            <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222',marginBottom:'0.4rem'}}>Hiring security staff?</div>
+            <div style={{fontSize:'0.75rem',color:'#0369a1',marginBottom:'0.875rem',lineHeight:1.6}}>Post your vacancy to our verified pool of SIA-licensed candidates. No unsuitable applicants.</div>
+            <a href="/employer/sign-up" style={{display:'block',textAlign:'center',background:'#0b1222',color:'#fff',borderRadius:'8px',padding:'0.6rem',fontSize:'0.8rem',fontWeight:700,textDecoration:'none'}}>Post a Job →</a>
+          </div>
+
+        </div>
+      </div>
+
+      {/* SEO footer content */}
+      <div style={{background:'#fff',borderTop:'1px solid #e2e8f0',padding:'2.5rem 1.5rem'}}>
+        <div style={{maxWidth:'1100px',margin:'0 auto'}}>
+          <h2 style={{fontSize:'1.1rem',fontWeight:800,color:'#0b1222',marginBottom:'0.5rem'}}>Security Jobs in the UK — Verified Candidates Only</h2>
+          <p style={{fontSize:'0.82rem',color:'#64748b',lineHeight:1.75,maxWidth:'800px',margin:'0 0 1rem'}}>UKSecurityJobs.co.uk is the only UK job platform built exclusively for the licensed security industry. Every candidate holds a valid SIA licence and has a complete, BS7858-ready profile — including 5-year address history, full employment history with reference contacts, and identity verification. Security companies can post jobs and receive applications from qualified, easy-to-vet candidates only. No generic job board noise.</p>
+          <div style={{display:'flex',flexWrap:'wrap',gap:'0.5rem'}}>
+            {[
+              {t:'Door Supervisor Jobs UK', href:'https://www.uksecurityjobs.co.uk/door-supervisor-jobs'},
+              {t:'Security Guard Jobs', href:'https://www.uksecurityjobs.co.uk/security-guard-jobs'},
+              {t:'CCTV Operator Jobs', href:'https://www.uksecurityjobs.co.uk/cctv-jobs'},
+              {t:'Close Protection Jobs', href:'https://www.uksecurityjobs.co.uk/close-protection-jobs'},
+              {t:'Security Jobs London', href:'/jobs'},
+              {t:'Security Jobs Manchester', href:'/jobs'},
+              {t:'Security Jobs Birmingham', href:'/jobs'},
+              {t:'SIA Licensed Jobs', href:'/jobs'},
+              {t:'BS7858 Security Jobs', href:'https://www.uksecurityjobs.co.uk/blog/what-is-bs7858-vetting'},
+              {t:'Manned Guarding Jobs UK', href:'/jobs'},
+            ].map(({t,href})=>(
+              <a key={t} href={href} style={{fontSize:'0.72rem',color:'#1a52a8',background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'999px',padding:'0.2rem 0.6rem',textDecoration:'none'}}>{t}</a>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
