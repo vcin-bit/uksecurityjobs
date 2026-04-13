@@ -1908,28 +1908,39 @@ function ProfileBuilder() {
       }
       if (d.sectors) {
         const s = d.sectors;
+        // preferred_shift only allows 'Days', 'Nights', 'Either' - map array to single value
+        const avail = Array.isArray(s.availability) ? s.availability : [];
+        let preferredShift = null;
+        if (avail.includes('Days') && avail.includes('Nights')) preferredShift = 'Either';
+        else if (avail.includes('Days')) preferredShift = 'Days';
+        else if (avail.includes('Nights')) preferredShift = 'Nights';
+        else if (avail.length > 0) preferredShift = 'Either';
         await apiRequest('/api/profile/sectors', 'PUT', {
           sectors: s.sectors || [],
           available_from: null,
-          preferred_shift: Array.isArray(s.availability) ? s.availability.join(',') : s.availability || null,
+          preferred_shift: preferredShift,
           min_hourly_rate: null,
           employmentType: s.employmentType || '',
-          availability: s.availability || [],
+          availability: avail,
           shiftType: s.shiftType || [],
         }, getToken);
       }
       if (d.qualifications) {
         const q = d.qualifications;
+        // frec_level only allows 'None', 'FREC 3', 'FREC 4'
+        const frecLevel = ['FREC 3','FREC 4'].includes(q.frec_level||q.certType) ? (q.frec_level||q.certType) : 'None';
+        // security_clearance only allows 'None','BPSS','SC','DV','CTC','Other'
+        const validClearance = ['None','BPSS','SC','DV','CTC','Other'];
+        const clearance = validClearance.includes(q.clearanceLevel||q.security_clearance) ? (q.clearanceLevel||q.security_clearance) : 'None';
         await apiRequest('/api/profile/qualifications', 'PUT', {
-          frec_level: q.certType || q.frec_level || 'None',
-          has_efaw: q.certType === 'Emergency First Aid at Work (EFAW)' || q.has_efaw || false,
-          has_faw: q.certType === 'First Aid at Work (FAW)' || q.has_faw || false,
-          first_aid_expiry: q.expiry || q.first_aid_expiry || null,
+          frec_level: frecLevel,
+          has_efaw: !!(q.hasFirstAid === 'yes' && q.certType === 'EFAW') || q.has_efaw || false,
+          has_faw: !!(q.hasFirstAid === 'yes' && q.certType === 'FAW') || q.has_faw || false,
+          first_aid_expiry: q.expiryYear && q.expiryMonth ? `${q.expiryYear}-${q.expiryMonth}-01` : q.first_aid_expiry || null,
           languages: q.languages || [],
           is_sia_trainer: q.isSIATrainer === 'yes' || q.is_sia_trainer || false,
-          security_clearance: q.clearanceLevel || q.security_clearance || 'None',
-          security_clearance_ref: q.trainerDetails || null,
-          other_qualifications: q.issuingBody || null,
+          security_clearance: clearance,
+          other_qualifications: q.otherQuals || q.other_qualifications || null,
         }, getToken);
       }
       if (d.background) {
@@ -1938,34 +1949,51 @@ function ProfileBuilder() {
           served_in_forces: b.hasForces === 'yes' || b.served_in_forces || false,
           forces_branch: b.forcesBranch || b.forces_branch || null,
           forces_rank: b.forcesRank || b.forces_rank || null,
-          forces_years: parseInt(b.forcesYears || b.forces_years || 0) || null,
-          forces_discharge_type: b.forcesDischarge || b.forces_discharge_type || null,
-          served_in_police: false,
+          years_served: parseInt(b.yearsServed || b.years_served || 0) || null,
+          discharge_type: b.dischargeType || b.discharge_type || null,
           has_criminal_record: b.hasCriminal === 'yes' || b.has_criminal_record || false,
           criminal_record: b.criminalDetails || b.criminal_record || null,
-          has_dbs_certificate: false,
         }, getToken);
       }
       if (d.employment) {
+        // Delete existing and reinsert to avoid duplicates
+        const cRes = await apiRequest('/api/candidates/me', 'GET', null, getToken);
+        if (cRes?.candidate?.id) {
+          await apiRequest('/api/profile/employment/clear', 'DELETE', null, getToken);
+        }
         for (const job of d.employment) {
+          if (!job.employer && !job.role) continue;
           await apiRequest('/api/profile/employment', 'POST', {
-            employer_name: job.employer, job_title: job.role,
-            employer_address: [job.address1, job.address2, job.town, job.county, job.postcode].filter(Boolean).join(', '),
-            employer_postcode: job.postcode,
-            reference_name: job.contactName, reference_job_title: job.contactTitle,
-            reference_email: job.contactEmail, reference_phone: job.contactPhone,
-            start_date: job.from, end_date: job.to || null,
-            is_current: job.current, reason_for_leaving: job.reason
+            employer_name: job.employer || '',
+            job_title: job.role || '',
+            sector: job.sector || null,
+            duties: job.duties || null,
+            employer_address: [job.address1, job.address2, job.town, job.county, job.postcode].filter(Boolean).join(', ') || null,
+            employer_postcode: job.postcode || null,
+            employer_website: job.website || null,
+            reference_name: job.contactName || null,
+            reference_job_title: job.contactTitle || null,
+            reference_email: job.contactEmail || null,
+            reference_phone: job.contactPhone || null,
+            start_date: job.from || null,
+            end_date: job.to || null,
+            is_current: job.current || false,
+            reason_for_leaving: job.reason || null,
           }, getToken);
         }
       }
       if (d.addresses) {
+        await apiRequest('/api/profile/addresses/clear', 'DELETE', null, getToken);
         for (const addr of d.addresses) {
+          if (!addr.line1 && !addr.town) continue;
           await apiRequest('/api/profile/addresses', 'POST', {
-            address_line1: addr.line1, address_line2: addr.line2,
-            city: addr.town, postcode: addr.postcode,
-            moved_in_date: addr.from, moved_out_date: addr.to || null,
-            is_current: addr.current
+            address_line1: addr.line1 || addr.address_line1 || '',
+            address_line2: addr.line2 || addr.address_line2 || null,
+            city: addr.town || addr.city || '',
+            postcode: addr.postcode || '',
+            moved_in_date: addr.from || addr.moved_in_date || null,
+            moved_out_date: addr.to || addr.moved_out_date || null,
+            is_current: addr.current || addr.is_current || false,
           }, getToken);
         }
       }

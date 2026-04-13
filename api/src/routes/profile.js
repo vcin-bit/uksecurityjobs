@@ -233,6 +233,16 @@ router.put('/background', async (req, res) => {
 });
 
 // --- ADDRESS HISTORY ---
+router.delete('/addresses/clear', async (req, res) => {
+  try {
+    const candidateId = await getCandidateId(req.userId);
+    if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
+    await supabase.from('address_history').delete().eq('candidate_id', candidateId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to clear addresses' });
+  }
+});
 router.get('/addresses', async (req, res) => {
   try {
     const candidateId = await getCandidateId(req.userId);
@@ -270,6 +280,16 @@ router.post('/addresses', async (req, res) => {
 });
 
 // --- EMPLOYMENT HISTORY ---
+router.delete('/employment/clear', async (req, res) => {
+  try {
+    const candidateId = await getCandidateId(req.userId);
+    if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
+    await supabase.from('employment_history').delete().eq('candidate_id', candidateId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to clear employment' });
+  }
+});
 router.get('/employment', async (req, res) => {
   try {
     const candidateId = await getCandidateId(req.userId);
