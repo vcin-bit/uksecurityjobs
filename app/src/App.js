@@ -2938,18 +2938,20 @@ function LogoUpload({ currentUrl, getToken, onUploaded }) {
     }
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const base64 = ev.target.result.split(',')[1];
-        const res = await apiRequest('/api/employers/logo', 'POST', {
-          base64, mimeType: file.type, fileName: file.name
-        }, getToken);
-        setPreview(res.logo_url);
-        onUploaded && onUploaded(res.logo_url);
-      };
-      reader.readAsDataURL(file);
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const res = await apiRequest('/api/employers/logo', 'POST', {
+        base64, mimeType: file.type, fileName: file.name
+      }, getToken);
+      setPreview(res.logo_url);
+      onUploaded && onUploaded(res.logo_url);
     } catch(err) {
-      alert('Upload failed. Please try again.');
+      console.error('Logo upload error:', err);
+      alert('Upload failed: ' + (err.message || 'Please try again.'));
     }
     setUploading(false);
   };
