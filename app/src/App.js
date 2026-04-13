@@ -1959,8 +1959,8 @@ function ProfileBuilder() {
             address_line2: addr.line2 || addr.address_line2 || null,
             city: addr.town || addr.city || '',
             postcode: addr.postcode || '',
-            moved_in_date: addr.from || addr.moved_in_date || null,
-            moved_out_date: addr.to || addr.moved_out_date || null,
+            moved_in_date: addr.from ? addr.from + '-01' : addr.moved_in_date || null,
+            moved_out_date: addr.to ? addr.to + '-01' : addr.moved_out_date || null,
             is_current: addr.current || addr.is_current || false,
           }, getToken);
         }
