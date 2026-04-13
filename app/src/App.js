@@ -2919,6 +2919,61 @@ function ForgotPasswordPage() {
   );
 }
 
+
+// ── LOGO UPLOAD ──
+function LogoUpload({ currentUrl, getToken, onUploaded }) {
+  const [uploading, setUploading] = React.useState(false);
+  const [preview, setPreview] = React.useState(currentUrl || null);
+
+  const handleFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) {
+      alert('Please upload a JPG, PNG or WebP file.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert('File must be under 2MB.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const base64 = ev.target.result.split(',')[1];
+        const res = await apiRequest('/api/employers/logo', 'POST', {
+          base64, mimeType: file.type, fileName: file.name
+        }, getToken);
+        setPreview(res.logo_url);
+        onUploaded && onUploaded(res.logo_url);
+      };
+      reader.readAsDataURL(file);
+    } catch(err) {
+      alert('Upload failed. Please try again.');
+    }
+    setUploading(false);
+  };
+
+  return (
+    <div style={{display:'flex',alignItems:'center',gap:'1.25rem',marginBottom:'1rem'}}>
+      <div style={{width:'80px',height:'80px',borderRadius:'12px',border:'2px dashed #e2e8f0',background:'#f8fafc',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',flexShrink:0}}>
+        {preview
+          ? <img src={preview} alt="Company logo" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+          : <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+        }
+      </div>
+      <div>
+        <div style={{fontWeight:600,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.25rem'}}>Company Logo</div>
+        <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.5rem'}}>JPG, PNG or WebP · Max 2MB · Shown on job listings</div>
+        <label style={{display:'inline-flex',alignItems:'center',gap:'0.4rem',background:'#f1f5f9',border:'1px solid #e2e8f0',borderRadius:'7px',padding:'0.4rem 0.875rem',fontSize:'0.8rem',fontWeight:600,cursor:'pointer',color:'#0b1222'}}>
+          {uploading ? 'Uploading...' : preview ? 'Change Logo' : 'Upload Logo'}
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} style={{display:'none'}} disabled={uploading}/>
+        </label>
+      </div>
+    </div>
+  );
+}
+
 // ── EMPLOYER DASHBOARD ──
 function EmployerDashboard() {
   const { user } = useUser();
@@ -2965,11 +3020,19 @@ function EmployerDashboard() {
       <div className="dashboard">
         <div className="dash-header">
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'1rem'}}>
-            <div>
-              <div className="dash-greeting">{employer.company_name}</div>
-              <div className="dash-sub">Employer Dashboard · {jobs.filter(j=>j.status==='active').length} active job{jobs.filter(j=>j.status==='active').length!==1?'s':''}</div>
+            <div style={{display:'flex',alignItems:'center',gap:'1rem'}}>
+              {employer.logo_url && (
+                <img src={employer.logo_url} alt={employer.company_name} style={{width:'52px',height:'52px',borderRadius:'10px',objectFit:'contain',border:'1px solid #e2e8f0',background:'#f8fafc',padding:'4px'}}/>
+              )}
+              <div>
+                <div className="dash-greeting">{employer.company_name}</div>
+                <div className="dash-sub">Employer Dashboard · {jobs.filter(j=>j.status==='active').length} active job{jobs.filter(j=>j.status==='active').length!==1?'s':''}</div>
+              </div>
             </div>
-            <button className="btn-next" onClick={() => setShowPostJob(true)}>+ Post a Job</button>
+            <div style={{display:'flex',gap:'0.75rem',alignItems:'center'}}>
+              <LogoUpload currentUrl={employer.logo_url} getToken={getToken} onUploaded={url=>setEmployer({...employer,logo_url:url})}/>
+              <button className="btn-next" onClick={() => setShowPostJob(true)}>+ Post a Job</button>
+            </div>
           </div>
         </div>
 
@@ -3091,6 +3154,7 @@ function EmployerRegisterForm({ onSaved, getToken }) {
           <button className="btn-next" type="submit" disabled={saving} style={{width:'100%'}}>{saving?'Saving...':'Register Company →'}</button>
         </div>
       </form>
+      {onSaved && <div style={{marginTop:'1rem',fontSize:'0.78rem',color:'#64748b',textAlign:'center'}}>You can upload your company logo after registering.</div>}
     </div>
   );
 }
@@ -3365,8 +3429,13 @@ function JobListingsPage() {
               <div key={job.id} style={{background:'#fff',borderRadius:'12px',padding:'1.5rem',border:'1px solid #e2e8f0',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
                 <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
                   <div style={{flex:1}}>
-                    <div style={{fontWeight:800,fontSize:'1.05rem',color:'#0b1222',marginBottom:'0.2rem'}}>{job.title}</div>
-                    <div style={{fontWeight:600,fontSize:'0.85rem',color:'#1a52a8',marginBottom:'0.4rem'}}>{job.company_name}</div>
+                    <div style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',marginBottom:'0.5rem'}}>
+                      {job.logo_url && <img src={job.logo_url} alt={job.company_name} style={{width:'44px',height:'44px',borderRadius:'8px',objectFit:'contain',border:'1px solid #e2e8f0',background:'#f8fafc',padding:'3px',flexShrink:0}}/>}
+                      <div>
+                        <div style={{fontWeight:800,fontSize:'1.05rem',color:'#0b1222',marginBottom:'0.1rem'}}>{job.title}</div>
+                        <div style={{fontWeight:600,fontSize:'0.85rem',color:'#1a52a8'}}>{job.company_name}</div>
+                      </div>
+                    </div>
                     <div style={{fontSize:'0.8rem',color:'#64748b',display:'flex',flexWrap:'wrap',gap:'0.75rem',marginBottom:'0.75rem'}}>
                       <span>📍 {job.location}{job.postcode?' · '+job.postcode:''}</span>
                       {job.rate_from && <span>💷 £{job.rate_from}{job.rate_to?'–£'+job.rate_to:''}/hr</span>}

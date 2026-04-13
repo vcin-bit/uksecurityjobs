@@ -67,9 +67,10 @@ router.put('/jobs/:id', async (req, res) => {
 // GET /api/jobs/public — public job listings
 router.get('/public', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('jobs').select('*').eq('status', 'active').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('jobs').select('*, employers(logo_url)').eq('status', 'active').order('created_at', { ascending: false });
     if (error) throw error;
-    res.json({ jobs: data || [] });
+    const jobs = (data || []).map(j => ({ ...j, logo_url: j.employers?.logo_url || null }));
+    res.json({ jobs });
   } catch(err) { res.status(500).json({ error: 'Failed to fetch jobs' }); }
 });
 
@@ -96,5 +97,43 @@ router.post('/apply', async (req, res) => {
   } catch(err) {
     console.error('POST /jobs/apply error:', err);
     res.status(500).json({ error: 'Failed to apply' });
+  }
+});
+
+// POST /api/employers/logo — upload employer logo
+router.post('/logo', async (req, res) => {
+  try {
+    const { base64, mimeType, fileName } = req.body;
+    if (!base64 || !mimeType) return res.status(400).json({ error: 'No file provided' });
+
+    // Decode base64
+    const buffer = Buffer.from(base64, 'base64');
+    const ext = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+    const path = `${req.userId}.${ext}`;
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('employer-logos')
+      .upload(path, buffer, { contentType: mimeType, upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('employer-logos')
+      .getPublicUrl(path);
+
+    // Save URL to employers table
+    const { error: updateError } = await supabase
+      .from('employers')
+      .update({ logo_url: publicUrl })
+      .eq('clerk_user_id', req.userId);
+
+    if (updateError) throw updateError;
+
+    res.json({ success: true, logo_url: publicUrl });
+  } catch (err) {
+    console.error('POST /employers/logo error:', err);
+    res.status(500).json({ error: 'Failed to upload logo' });
   }
 });
