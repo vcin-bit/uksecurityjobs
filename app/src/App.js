@@ -2914,6 +2914,257 @@ function ForgotPasswordPage() {
   );
 }
 
+// ── EMPLOYER DASHBOARD ──
+function EmployerDashboard() {
+  const { user } = useUser();
+  const { getToken } = useAuth();
+  const [employer, setEmployer] = React.useState(null);
+  const [jobs, setJobs] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [showPostJob, setShowPostJob] = React.useState(false);
+  const [showRegister, setShowRegister] = React.useState(false);
+
+  React.useEffect(() => {
+    async function load() {
+      try {
+        const res = await apiRequest('/api/employers/me', 'GET', null, getToken);
+        setEmployer(res.employer);
+        if (res.employer) {
+          const jobsRes = await apiRequest('/api/employers/jobs', 'GET', null, getToken);
+          setJobs(jobsRes.jobs || []);
+        }
+      } catch(err) { console.error(err); }
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if (loading) return <div style={{textAlign:'center',padding:'4rem',color:'#64748b'}}>Loading...</div>;
+
+  if (!employer) return (
+    <div className="page" style={{background:'var(--off)'}}>
+      <Nav/>
+      <div className="dashboard">
+        <div className="dash-header">
+          <div className="dash-greeting">Welcome, {user?.firstName || 'there'}</div>
+          <div className="dash-sub">Register your company to start posting verified security jobs.</div>
+        </div>
+        <EmployerRegisterForm onSaved={(e) => { setEmployer(e); }} getToken={getToken}/>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="page" style={{background:'var(--off)'}}>
+      <Nav/>
+      <div className="dashboard">
+        <div className="dash-header">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'1rem'}}>
+            <div>
+              <div className="dash-greeting">{employer.company_name}</div>
+              <div className="dash-sub">Employer Dashboard · {jobs.filter(j=>j.status==='active').length} active job{jobs.filter(j=>j.status==='active').length!==1?'s':''}</div>
+            </div>
+            <button className="btn-next" onClick={() => setShowPostJob(true)}>+ Post a Job</button>
+          </div>
+        </div>
+
+        {showPostJob && (
+          <PostJobForm
+            employerName={employer.company_name}
+            getToken={getToken}
+            onSaved={(job) => { setJobs([job, ...jobs]); setShowPostJob(false); }}
+            onCancel={() => setShowPostJob(false)}
+          />
+        )}
+
+        {/* Job listings */}
+        <div className="dash-card">
+          <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'1.25rem'}}>Your Job Postings</div>
+          {jobs.length === 0 ? (
+            <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>
+              No jobs posted yet. Click <strong>+ Post a Job</strong> to get started.
+            </div>
+          ) : (
+            <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
+              {jobs.map(job => (
+                <div key={job.id} style={{background:'#f8fafc',borderRadius:'10px',padding:'1rem 1.25rem',border:'1px solid #e2e8f0'}}>
+                  <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem'}}>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:'0.95rem',color:'#0b1222'}}>{job.title}</div>
+                      <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.2rem'}}>
+                        {job.location} · {job.employment_type} · {job.rate_from && `£${job.rate_from}${job.rate_to?'–£'+job.rate_to:''}/hr`}
+                      </div>
+                      <div style={{marginTop:'0.4rem',display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
+                        {(job.licences_required||[]).map(l => (
+                          <span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8'}}>{l}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <span style={{fontSize:'0.72rem',fontWeight:700,padding:'0.25rem 0.625rem',borderRadius:'999px',background:job.status==='active'?'#dcfce7':'#f1f5f9',color:job.status==='active'?'#15803d':'#64748b'}}>
+                      {job.status}
+                    </span>
+                  </div>
+                  <div style={{fontSize:'0.72rem',color:'#94a3b8',marginTop:'0.5rem'}}>
+                    Posted {new Date(job.created_at).toLocaleDateString('en-GB')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── EMPLOYER REGISTER FORM ──
+function EmployerRegisterForm({ onSaved, getToken }) {
+  const [form, setForm] = React.useState({ company_name:'', email:'', phone:'', website:'', address:'', postcode:'' });
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const u = (f,v) => setForm(prev=>({...prev,[f]:v}));
+
+  const save = async (e) => {
+    e.preventDefault();
+    if (!form.company_name?.trim()) { setError('Company name is required'); return; }
+    setSaving(true);
+    try {
+      const res = await apiRequest('/api/employers/me', 'POST', form, getToken);
+      onSaved(res.employer);
+    } catch(err) { setError('Failed to save. Please try again.'); }
+    setSaving(false);
+  };
+
+  return (
+    <div className="dash-card">
+      <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'1.25rem'}}>Register Your Company</div>
+      {error && <div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'0.75rem',marginBottom:'1rem',fontSize:'0.82rem',color:'#dc2626'}}>{error}</div>}
+      <form onSubmit={save}>
+        <div style={{display:'grid',gap:'1rem'}}>
+          <Field label="Company Name *"><Input type="text" placeholder="e.g. Securitas UK Ltd" value={form.company_name} onChange={v=>u('company_name',v)}/></Field>
+          <div className="field-row">
+            <Field label="Contact Email"><Input type="email" placeholder="hr@company.com" value={form.email} onChange={v=>u('email',v)}/></Field>
+            <Field label="Contact Phone"><Input type="tel" placeholder="01234 567890" value={form.phone} onChange={v=>u('phone',v)}/></Field>
+          </div>
+          <div className="field-row">
+            <Field label="Company Website"><Input type="text" placeholder="www.company.com" value={form.website} onChange={v=>u('website',v)}/></Field>
+            <Field label="Postcode"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={v=>u('postcode',v)}/></Field>
+          </div>
+          <Field label="Company Address"><Input type="text" placeholder="Full address" value={form.address} onChange={v=>u('address',v)}/></Field>
+          <button className="btn-next" type="submit" disabled={saving} style={{width:'100%'}}>{saving?'Saving...':'Register Company →'}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ── POST JOB FORM ──
+function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
+  const [form, setForm] = React.useState({
+    title:'', company_name: employerName, location:'', postcode:'',
+    sector:'', description:'',
+    rate_from:'', rate_to:'', rate_type:'hourly',
+    employment_type:'Full Time', shift_pattern:[],
+    licences_required:[], driving_licence_required:'Not Required',
+    own_transport_required:'Not Required',
+  });
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const u = (f,v) => setForm(prev=>({...prev,[f]:v}));
+
+  const licenceTypes = ['Door Supervisor','Security Guard','CCTV Operator','Close Protection','Cash & Valuables in Transit','Key Holding'];
+  const toggleLicence = (l) => {
+    const list = form.licences_required.includes(l) ? form.licences_required.filter(x=>x!==l) : [...form.licences_required, l];
+    setForm(prev=>({...prev, licences_required: list}));
+  };
+
+  const save = async (e) => {
+    e.preventDefault();
+    if (!form.title?.trim()) { setError('Job title is required'); return; }
+    if (!form.location?.trim()) { setError('Location is required'); return; }
+    if (form.licences_required.length === 0) { setError('Select at least one licence type'); return; }
+    setSaving(true);
+    try {
+      const payload = { ...form, rate_from: form.rate_from ? parseFloat(form.rate_from) : null, rate_to: form.rate_to ? parseFloat(form.rate_to) : null };
+      const res = await apiRequest('/api/employers/jobs', 'POST', payload, getToken);
+      onSaved(res.job);
+    } catch(err) { setError('Failed to post job. Please try again.'); }
+    setSaving(false);
+  };
+
+  const sectors = ['Door Supervisor / Manned Guarding','CCTV / Control Room','Close Protection','Retail Security','Shopping Centre','Events / Festivals','Corporate / Commercial','Distribution / Logistics / Warehousing','Construction','Healthcare / Hospital','Education','Government / MOD','Residential / Concierge','Transport Hub','Cash in Transit','Key Holding / Mobile Patrol','Nightlife / Licensed Premises','Other'];
+
+  return (
+    <div className="dash-card" style={{marginBottom:'1.5rem',border:'2px solid #1a52a8'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.25rem'}}>
+        <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222'}}>Post a New Job</div>
+        <button type="button" onClick={onCancel} style={{background:'none',border:'none',color:'#64748b',cursor:'pointer',fontSize:'1.25rem'}}>×</button>
+      </div>
+      {error && <div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'0.75rem',marginBottom:'1rem',fontSize:'0.82rem',color:'#dc2626'}}>{error}</div>}
+      <form onSubmit={save}>
+        <div style={{display:'grid',gap:'1rem'}}>
+          <div className="field-row">
+            <Field label="Job Title *"><Input type="text" placeholder="e.g. Door Supervisor" value={form.title} onChange={v=>u('title',v)}/></Field>
+            <Field label="Location *"><Input type="text" placeholder="e.g. Central London" value={form.location} onChange={v=>u('location',v)}/></Field>
+            <Field label="Postcode"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={v=>u('postcode',v)}/></Field>
+          </div>
+
+          <Field label="Sector">
+            <Select value={form.sector} onChange={v=>u('sector',v)}>
+              <option value="">Select sector</option>
+              {sectors.map(s=><option key={s}>{s}</option>)}
+            </Select>
+          </Field>
+
+          <Field label="Job Description">
+            <textarea className="f-textarea" rows={3} placeholder="Describe the role, site, duties and any specific requirements..." value={form.description} onChange={e=>u('description',e.target.value)}/>
+          </Field>
+
+          <div className="divider"></div>
+          <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.25rem'}}>SIA Licence Required *</div>
+          <div style={{fontSize:'0.78rem',color:'#64748b',marginBottom:'0.75rem'}}>Select all licence types you will accept for this role</div>
+          <div className="check-grid">
+            {licenceTypes.map(l=><Checkbox key={l} label={l} checked={form.licences_required.includes(l)} onChange={()=>toggleLicence(l)}/>)}
+          </div>
+
+          <div className="divider"></div>
+          <div className="field-row">
+            <Field label="Rate From (£/hr)"><Input type="number" placeholder="13.50" value={form.rate_from} onChange={v=>u('rate_from',v)}/></Field>
+            <Field label="Rate To (£/hr)"><Input type="number" placeholder="15.00" value={form.rate_to} onChange={v=>u('rate_to',v)}/></Field>
+            <Field label="Employment Type">
+              <Select value={form.employment_type} onChange={v=>u('employment_type',v)}>
+                {['Full Time','Part Time','Contract','Either'].map(t=><option key={t}>{t}</option>)}
+              </Select>
+            </Field>
+          </div>
+
+          <div className="field-row">
+            <Field label="Driving Licence">
+              <Select value={form.driving_licence_required} onChange={v=>u('driving_licence_required',v)}>
+                <option>Not Required</option>
+                <option>Preferred</option>
+                <option>Required</option>
+              </Select>
+            </Field>
+            <Field label="Own Transport">
+              <Select value={form.own_transport_required} onChange={v=>u('own_transport_required',v)}>
+                <option>Not Required</option>
+                <option>Preferred</option>
+                <option>Required</option>
+              </Select>
+            </Field>
+          </div>
+
+          <div style={{display:'flex',gap:'1rem'}}>
+            <button className="btn-next" type="submit" disabled={saving} style={{flex:1}}>{saving?'Posting...':'Post Job →'}</button>
+            <button type="button" onClick={onCancel} style={{padding:'0.75rem 1.5rem',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',color:'#64748b',cursor:'pointer',fontFamily:'inherit',fontWeight:600}}>Cancel</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }) {
   return <><SignedIn>{children}</SignedIn><SignedOut><Navigate to="/sign-in" replace/></SignedOut></>;
 }
@@ -2928,6 +3179,7 @@ export default function App() {
           <Route path="/sign-in" element={<SignInPage/>}/>
           <Route path="/forgot-password" element={<ForgotPasswordPage/>}/>
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard/></ProtectedRoute>}/>
+          <Route path="/employer" element={<ProtectedRoute><EmployerDashboard/></ProtectedRoute>}/>
           <Route path="/profile" element={<ProtectedRoute><div className="page" style={{background:'var(--off)'}}><Nav/><ProfileBuilder/></div></ProtectedRoute>}/>
           <Route path="*" element={<Navigate to="/dashboard" replace/>}/>
         </Routes>

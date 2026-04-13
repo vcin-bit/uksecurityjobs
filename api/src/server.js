@@ -9,6 +9,7 @@ const siaRoutes = require('./routes/sia');
 const profileRoutes = require('./routes/profile');
 const adminRoutes = require('./routes/admin');
 const aiRoutes = require('./routes/ai');
+const employerRoutes = require('./routes/employers');
 const { requireAuth } = require('./middleware/auth');
 const { requireAdmin } = require('./middleware/admin');
 
@@ -56,6 +57,8 @@ app.use('/api/candidates', candidateRoutes);
 app.use('/api/sia', siaRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/employers', requireAuth, employerRoutes);
+app.use('/api/jobs', employerRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
