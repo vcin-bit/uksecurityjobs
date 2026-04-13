@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut, useUser, useClerk, useAuth } from '@clerk/clerk-react';
-import { apiRequest } from './api';
+import { apiRequest, wakeApi } from './api';
 import './styles.css';
+
+// Wake the API as soon as the app loads to minimise cold start delays
+wakeApi();
 
 const CLERK_KEY = 'pk_test_ZXhjaXRpbmctdXJjaGluLTQxLmNsZXJrLmFjY291bnRzLmRldiQ';
 
@@ -286,6 +289,8 @@ function StepSIA({ data, onChange, onBack, onNext, isComplete }) {
   };
   const removeLicence = (i) => setLicences(licences.filter((_,idx) => idx!==i));
   const save = () => {
+    const invalidLic = licences.find(l => l.number && l.number.replace(/\s/g,'').length !== 16);
+    if (invalidLic) { alert('Please enter a valid 16-digit SIA licence number.'); return; }
     const mapped = licences.map(l => ({
       ...l,
       expiry: l.expiryYear && l.expiryMonth ? `${l.expiryYear}-${l.expiryMonth}-01` : l.expiry || ''
@@ -338,7 +343,15 @@ function StepSIA({ data, onChange, onBack, onNext, isComplete }) {
               </div>
             </Field>
           </div>
-          {lic.number && <div className="pending-badge">Pending verification — our team will check this against the SIA register within 24 hours</div>}
+          {lic.number && lic.number.replace(/\s/g,'').length !== 16 && (
+            <div className="address-warning" style={{marginTop:'0.5rem'}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+              SIA licence numbers are 16 digits — you have entered {lic.number.replace(/\s/g,'').length}. Please check and correct.
+            </div>
+          )}
+          {lic.number && lic.number.replace(/\s/g,'').length === 16 && (
+            <div className="pending-badge">Pending verification — our team will check this against the SIA register within 24 hours</div>
+          )}
         </div>
       ))}
       {licences.length < 3 && (
