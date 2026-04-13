@@ -589,7 +589,8 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
       </div>
 
       <div className="divider"></div>
-      <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'1rem'}}>Current Address</div>
+      <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.25rem'}}>Current Address</div>
+      <div style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1rem'}}>We need your current address to verify your SIA licence and begin BS7858 checks.</div>
 
       <Field label="Address Line 1 *"><Input type="text" placeholder="House number and street name" value={form.address1} onChange={v=>u('address1',v)}/></Field>
       <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={form.address2} onChange={v=>u('address2',v)}/></Field>
@@ -641,9 +642,13 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
         const y = Math.floor(monthsAtCurrent/12), m = monthsAtCurrent%12;
         const label = y > 0 ? (y+' year'+(y>1?'s':'')+(m>0?' '+m+' month'+(m>1?'s':''):'')) : (monthsAtCurrent+' month'+(monthsAtCurrent!==1?'s':''));
         return monthsAtCurrent < 60 ? (
-          <div className="address-warning" style={{marginTop:'1rem'}}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
-            You have lived here for <strong>{label}</strong>. BS7858 requires a full 5-year address history with no gaps. Add every previous address below — exact dates, no gaps.
+          <div style={{background:'#fff7ed',border:'1px solid #fed7aa',borderRadius:'10px',padding:'1rem 1.25rem',marginTop:'1rem'}}>
+            <div style={{fontWeight:700,fontSize:'0.88rem',color:'#c2410c',marginBottom:'0.35rem'}}>
+              You have lived here for <strong>{label}</strong> — address history required
+            </div>
+            <div style={{fontSize:'0.82rem',color:'#9a3412',lineHeight:'1.5'}}>
+              BS7858 requires a full 5-year address history with no gaps. You will need to complete the <strong>Address History step</strong> later in this profile — have your previous addresses and exact move-in/move-out dates ready.
+            </div>
           </div>
         ) : (
           <div className="address-ok" style={{marginTop:'1rem'}}>
@@ -1839,7 +1844,7 @@ function ProfileBuilder() {
 
   const sections = [
     { name:'SIA Licence', short:'SIA', complete: profileData.licences?.[0]?.verified === true, pending: completedSteps.has('licences') && !profileData.licences?.[0]?.verified, started: completedSteps.has('licences') || !!profileData.licences?.[0] },
-    { name:'Personal Details', short:'Info', complete: completedSteps.has('personal'), started: completedSteps.has('personal') || !!profileData.personal },
+    { name:'Personal Details', short:'Personal', complete: completedSteps.has('personal'), started: completedSteps.has('personal') || !!profileData.personal },
     { name:'Driving & Transport', short:'Drive', complete: completedSteps.has('driving'), started: completedSteps.has('driving') || !!profileData.driving },
     { name:'Sectors & Availability', short:'Work', complete: completedSteps.has('sectors'), started: completedSteps.has('sectors') || !!profileData.sectors },
     { name:'Qualifications', short:'Quals', complete: completedSteps.has('qualifications'), started: completedSteps.has('qualifications') || !!profileData.qualifications },
@@ -2317,7 +2322,7 @@ function Dashboard() {
 
   const sections = [
     { name:'SIA Licence', short:'SIA', complete: profileData?.licences?.[0]?.verified === true, pending: !!profileData?.licences?.[0] && !profileData?.licences?.[0]?.verified, started: !!profileData?.licences?.[0] },
-    { name:'Personal Details', short:'Info', complete: !!(profileData?.personal?.phone || profileData?.personal?.first_name), started: !!profileData?.personal },
+    { name:'Personal Details', short:'Name', complete: !!(profileData?.personal?.phone || profileData?.personal?.first_name), started: !!profileData?.personal },
     { name:'Driving & Transport', short:'Drive', complete: !!profileData?.driving, started: !!profileData?.driving },
     { name:'Sectors & Availability', short:'Work', complete: !!(profileData?.sectors?.sectors?.length || profileData?.sectors?.preferred_shift), started: !!profileData?.sectors },
     { name:'Qualifications', short:'Quals', complete: !!profileData?.qualifications, started: !!profileData?.qualifications },
