@@ -1421,20 +1421,36 @@ function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
 function StepAddress({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
   React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
-  const [addresses, setAddresses] = useState(data.addresses || [{ line1:'', line2:'', town:'', postcode:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false }]);
-  const add = () => setAddresses([...addresses,{ line1:'', line2:'', town:'', postcode:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false }]);
+
+  const emptyAddr = () => ({ line1:'', line2:'', town:'', postcode:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false });
+
+  const normaliseAddr = (a) => ({
+    line1: a.line1 || a.address_line1 || '',
+    line2: a.line2 || a.address_line2 || '',
+    town: a.town || a.city || '',
+    postcode: a.postcode || '',
+    fromMonth: a.fromMonth || (a.moved_in_date ? a.moved_in_date.split('-')[1] : '') || '',
+    fromYear: a.fromYear || (a.moved_in_date ? a.moved_in_date.split('-')[0] : '') || '',
+    toMonth: a.toMonth || (a.moved_out_date ? a.moved_out_date.split('-')[1] : '') || '',
+    toYear: a.toYear || (a.moved_out_date ? a.moved_out_date.split('-')[0] : '') || '',
+    current: a.current || a.is_current || false,
+  });
+
+  const [addresses, setAddresses] = useState(
+    data.addresses?.length ? data.addresses.map(normaliseAddr) : [emptyAddr()]
+  );
+  const add = () => setAddresses([...addresses, emptyAddr()]);
   const update = (i,f,v) => setAddresses(addresses.map((a,idx)=>idx===i?{...a,[f]:v}:a));
   const remove = (i) => setAddresses(addresses.filter((_,idx)=>idx!==i));
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // Calculate total months covered across all addresses (capped at 60)
   const getCoveredMonths = () => {
     const now = new Date();
     const fiveYearsAgo = new Date(now.getFullYear()-5, now.getMonth(), 1);
     let total = 0;
     addresses.forEach(a => {
       const from = a.fromYear && a.fromMonth ? new Date(a.fromYear+'-'+a.fromMonth+'-01') : null;
-      const to = a.current ? now : (a.toYear && a.toMonth ? new Date(a.toYear+'-'+a.toMonth+'-01') : null);
+      const to = (a.current || a.is_current) ? now : (a.toYear && a.toMonth ? new Date(a.toYear+'-'+a.toMonth+'-01') : null);
       if (!from || !to || to <= from) return;
       const start = from < fiveYearsAgo ? fiveYearsAgo : from;
       const end = to > now ? now : to;
@@ -1442,6 +1458,7 @@ function StepAddress({ data, onChange, onBack, onNext, isComplete }) {
     });
     return Math.min(60, Math.round(total));
   };
+
 
   const coveredMonths = getCoveredMonths();
   const remainingMonths = Math.max(0, 60 - coveredMonths);
