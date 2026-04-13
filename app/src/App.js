@@ -2026,7 +2026,6 @@ function ProfileBuilder() {
         try { await apiRequest('/api/profile/sectors', 'PUT', {
           sectors: s.sectors || [],
           preferred_shift: preferredShift,
-          employment_type: s.employmentType || null,
           available_from: null,
           min_hourly_rate: null,
         }, getToken); } catch(e) { console.error('Failed to save sectors:', e.message); }
@@ -2034,20 +2033,28 @@ function ProfileBuilder() {
       if (d.qualifications) {
         const q = d.qualifications;
         // frec_level only allows 'None', 'FREC 3', 'FREC 4'
-        const frecLevel = ['FREC 3','FREC 4'].includes(q.frec_level||q.certType) ? (q.frec_level||q.certType) : 'None';
-        // security_clearance only allows 'None','BPSS','SC','DV','CTC','Other'
+        // Map certType to DB values
+        const certType = q.certType || '';
+        const hasEfaw = q.hasFirstAid === 'yes' && certType.includes('EFAW');
+        const hasFaw = q.hasFirstAid === 'yes' && certType.includes('FAW');
+        // frec_level: map display values to DB values
+        let frecLevel = 'None';
+        if (certType.includes('FREC Level 3') || certType === 'FREC 3') frecLevel = 'FREC 3';
+        else if (certType.includes('FREC Level 4') || certType === 'FREC 4') frecLevel = 'FREC 4';
+        else if (q.frec_level && q.frec_level !== 'None') frecLevel = q.frec_level;
         const validClearance = ['None','BPSS','SC','DV','CTC','Other'];
         const clearance = validClearance.includes(q.clearanceLevel||q.security_clearance) ? (q.clearanceLevel||q.security_clearance) : 'None';
         try { await apiRequest('/api/profile/qualifications', 'PUT', {
           frec_level: frecLevel,
-          has_efaw: !!(q.hasFirstAid === 'yes' && q.certType === 'EFAW') || q.has_efaw || false,
-          has_faw: !!(q.hasFirstAid === 'yes' && q.certType === 'FAW') || q.has_faw || false,
-          first_aid_expiry: q.expiryYear && q.expiryMonth ? `${q.expiryYear}-${q.expiryMonth}-01` : q.first_aid_expiry || null,
+          has_efaw: hasEfaw || q.has_efaw || false,
+          has_faw: hasFaw || q.has_faw || false,
+          first_aid_expiry: q.expiryYear && q.expiryMonth ? q.expiryYear+'-'+q.expiryMonth+'-01' : q.first_aid_expiry || null,
           languages: q.languages || [],
           is_sia_trainer: q.isSIATrainer === 'yes' || q.is_sia_trainer || false,
           security_clearance: clearance,
-          other_qualifications: q.otherQuals || q.other_qualifications || null,
-        }, getToken); } catch(e) { console.error("Failed to save qualifications:", e.message); }
+          security_clearance_ref: q.trainerDetails || q.security_clearance_ref || null,
+          other_qualifications: q.otherQuals || q.issuingBody || q.other_qualifications || null,
+        }, getToken); } catch(e) { console.error('Failed to save qualifications:', e.message); }
       }
       if (d.background) {
         const b = d.background;
@@ -2068,11 +2075,8 @@ function ProfileBuilder() {
         // Mark step complete in profile_step only
       }
       if (d.interview) {
-        // Store interview answers in candidates table notes field for now
-        try { await apiRequest('/api/candidates/me/step', 'PATCH', {
-          profile_step: step + 1,
-          interview_answers: d.interview,
-        }, getToken); } catch(e) { /* handled below */ }
+        // Interview answers stored locally - no separate DB table yet
+        // Will be persisted when employer-facing profile is built
       }
       if (d.employment) {
         await apiRequest('/api/profile/employment/clear', 'DELETE', null, getToken);
