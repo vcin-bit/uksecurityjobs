@@ -1943,8 +1943,8 @@ function ProfileBuilder() {
             reference_job_title: job.contactTitle || null,
             reference_email: job.contactEmail || null,
             reference_phone: job.contactPhone || null,
-            start_date: job.from,
-            end_date: job.to || null,
+            start_date: job.from ? job.from + '-01' : null,
+            end_date: job.to ? job.to + '-01' : null,
             is_current: job.current || false,
             reason_for_leaving: job.reason || null,
           }, getToken);
