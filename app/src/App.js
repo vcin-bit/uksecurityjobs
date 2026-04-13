@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut, useUser, useClerk, useAuth } from '@clerk/clerk-react';
-import { apiRequest, wakeApi } from './api';
+import { apiRequest, startApiKeepAlive } from './api';
 import './styles.css';
+
+startApiKeepAlive();
 
 // Wake the API as soon as the app loads to minimise cold start delays
 wakeApi();
@@ -1820,9 +1822,7 @@ function ProfileBuilder() {
         }, getToken);
       }
       if (d.licences) {
-        for (const lic of d.licences) {
-          if (lic.number) await apiRequest('/api/sia', 'POST', { licence_number: lic.number, licence_type: lic.type, expiry_date: lic.expiry }, getToken);
-        }
+        await apiRequest('/api/sia', 'PUT', { licences: d.licences }, getToken);
       }
       if (d.driving) {
         const dr = d.driving;

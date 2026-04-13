@@ -1,6 +1,6 @@
 const API_URL = 'https://uksecurityjobs-api.onrender.com';
 
-export async function apiRequest(path, method = 'GET', body = null, getToken, retries = 2) {
+export async function apiRequest(path, method = 'GET', body = null, getToken) {
   const token = await getToken();
   const options = {
     method,
@@ -10,25 +10,18 @@ export async function apiRequest(path, method = 'GET', body = null, getToken, re
     }
   };
   if (body) options.body = JSON.stringify(body);
-
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const res = await fetch(`${API_URL}${path}`, options);
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Request failed' }));
-        throw new Error(err.error || 'Request failed');
-      }
-      return res.json();
-    } catch (err) {
-      if (attempt < retries && (err.message === 'Failed to fetch' || err.name === 'TypeError')) {
-        await new Promise(r => setTimeout(r, 3000));
-        continue;
-      }
-      throw err;
-    }
+  const res = await fetch(`${API_URL}${path}`, options);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(err.error || `Request failed (${res.status})`);
   }
+  return res.json();
 }
 
-export async function wakeApi() {
-  try { await fetch(`${API_URL}/health`); } catch(e) {}
+// Ping the API every 10 minutes to prevent Render free tier sleeping
+export function startApiKeepAlive() {
+  fetch(`${API_URL}/health`).catch(() => {});
+  setInterval(() => {
+    fetch(`${API_URL}/health`).catch(() => {});
+  }, 10 * 60 * 1000);
 }
