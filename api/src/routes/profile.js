@@ -264,15 +264,28 @@ router.post('/addresses', async (req, res) => {
     const candidateId = await getCandidateId(req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
+    const b = req.body;
+    const payload = {
+      candidate_id: candidateId,
+      address_line1: b.address_line1 || '',
+      address_line2: b.address_line2 || null,
+      city: b.city || '',
+      postcode: b.postcode || null,
+      moved_in_date: b.moved_in_date || null,
+      moved_out_date: b.moved_out_date || null,
+      is_current: b.is_current || false,
+    };
+
     const { data, error } = await supabase
       .from('address_history')
-      .insert({ ...req.body, candidate_id: candidateId })
+      .insert(payload)
       .select().single();
 
     if (error) throw error;
     await auditLog({ tableName: 'address_history', recordId: data.id, action: 'INSERT', performedBy: req.userId, ipAddress: req.ip });
     res.status(201).json({ success: true, id: data.id });
   } catch (err) {
+    console.error('POST /addresses error:', err);
     res.status(500).json({ error: 'Failed to save address' });
   }
 });
@@ -311,15 +324,40 @@ router.post('/employment', async (req, res) => {
     const candidateId = await getCandidateId(req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
+    const b = req.body;
+
+    // Only send columns that exist in employment_history table
+    const payload = {
+      candidate_id: candidateId,
+      employer_name: b.employer_name || '',
+      job_title: b.job_title || '',
+      employer_address: b.employer_address || null,
+      employer_postcode: b.employer_postcode || null,
+      start_date: b.start_date || null,
+      end_date: b.end_date || null,
+      is_current: b.is_current || false,
+      reason_for_leaving: b.reason_for_leaving || null,
+      reference_name: b.reference_name || null,
+      reference_job_title: b.reference_job_title || null,
+      reference_email: b.reference_email || null,
+      reference_phone: b.reference_phone || null,
+    };
+
+    // start_date is required - skip if missing
+    if (!payload.start_date) {
+      return res.status(400).json({ error: 'start_date is required' });
+    }
+
     const { data, error } = await supabase
       .from('employment_history')
-      .insert({ ...req.body, candidate_id: candidateId })
+      .insert(payload)
       .select().single();
 
     if (error) throw error;
     await auditLog({ tableName: 'employment_history', recordId: data.id, action: 'INSERT', performedBy: req.userId, ipAddress: req.ip });
     res.status(201).json({ success: true, id: data.id });
   } catch (err) {
+    console.error('POST /employment error:', err);
     res.status(500).json({ error: 'Failed to save employment' });
   }
 });

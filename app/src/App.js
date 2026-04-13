@@ -1933,19 +1933,17 @@ function ProfileBuilder() {
         await apiRequest('/api/profile/employment/clear', 'DELETE', null, getToken);
         for (const job of d.employment) {
           if (!job.employer && !job.role) continue;
+          if (!job.from) continue; // start_date required
           await apiRequest('/api/profile/employment', 'POST', {
             employer_name: job.employer || '',
             job_title: job.role || '',
-            sector: job.sector || null,
-            duties: job.duties || null,
             employer_address: [job.address1, job.address2, job.town, job.county, job.postcode].filter(Boolean).join(', ') || null,
             employer_postcode: job.postcode || null,
-            employer_website: job.website || null,
             reference_name: job.contactName || null,
             reference_job_title: job.contactTitle || null,
             reference_email: job.contactEmail || null,
             reference_phone: job.contactPhone || null,
-            start_date: job.from || null,
+            start_date: job.from,
             end_date: job.to || null,
             is_current: job.current || false,
             reason_for_leaving: job.reason || null,
