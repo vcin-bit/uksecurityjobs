@@ -2011,9 +2011,8 @@ function ProfileBuilder() {
 
   // Gated next — only advances if current step is complete
   const gatedNext = () => {
-    const key = stepForIndex[step];
-    if (key && !completedSteps.has(key)) {
-      alert('Please complete this step before continuing.');
+    if (step === 9 && !addressesCoverFiveYears()) {
+      alert('You must cover a full 5-year address history before continuing. Add your previous addresses below.');
       return;
     }
     setStep(s => s + 1);
