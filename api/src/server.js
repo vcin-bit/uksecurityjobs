@@ -40,7 +40,7 @@ app.use(rateLimit({
   message: { error: 'Too many requests, please try again later.' }
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Health check — no auth required
 app.get('/health', (req, res) => {
