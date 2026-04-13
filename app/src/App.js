@@ -1180,7 +1180,7 @@ function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
   React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
   const emptyJob = () => ({
     employer:'', role:'', sector:'', duties:'',
-    address1:'', address2:'', town:'', county:'', postcode:'', website:'',
+    address1:'', address2:'', town:'', county:'', postcode:'', website:'', companyPhone:'', companyEmail:'',
     contactName:'', contactTitle:'', contactEmail:'', contactPhone:'',
     fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false, reason:''
   });
@@ -1197,6 +1197,8 @@ function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
     county: j.county || '',
     postcode: j.postcode || j.employer_postcode || '',
     website: j.website || '',
+    companyPhone: j.companyPhone || '',
+    companyEmail: j.companyEmail || '',
     contactName: j.contactName || j.reference_name || '',
     contactTitle: j.contactTitle || j.reference_job_title || '',
     contactEmail: j.contactEmail || j.reference_email || '',
@@ -1328,18 +1330,14 @@ function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
                 onClick={async () => {
                   update(i,'dutiesLoading',true);
                   try {
-                    const res = await fetch('https://api.anthropic.com/v1/messages', {
+                    const token = await getToken();
+                    const res = await fetch('https://uksecurityjobs-api.onrender.com/api/ai/improve', {
                       method:'POST',
-                      headers:{'Content-Type':'application/json'},
-                      body: JSON.stringify({
-                        model:'claude-sonnet-4-20250514',
-                        max_tokens:500,
-                        messages:[{role:'user',content:`You are helping a UK security officer write their CV. Fix any spelling and grammar errors in the following job duties text and make it professional, clear and concise. Keep it in first or third person consistently, use active voice, and make it suitable for a security industry CV. Return only the improved text with no preamble or explanation:\n\n${job.duties}`}]
-                      })
+                      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+                      body: JSON.stringify({ text: job.duties, type: 'duties' })
                     });
                     const d = await res.json();
-                    const improved = d.content?.[0]?.text;
-                    if (improved) update(i,'duties',improved.trim());
+                    if (d.result) update(i,'duties',d.result.trim());
                   } catch(e) { console.error(e); }
                   update(i,'dutiesLoading',false);
                 }}
@@ -1360,9 +1358,10 @@ function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
             <Field label="Postcode *"><Input type="text" value={job.postcode||''} onChange={v=>update(i,'postcode',v)}/></Field>
           </div>
           <div className="field-row">
-            <Field label="Company Website" hint="e.g. www.company.com"><Input type="text" placeholder="www.company.com" value={job.website||''} onChange={v=>update(i,'website',v)}/></Field>
-            <Field label="Generic / HR Email" hint="e.g. hr@company.com"><Input type="email" placeholder="hr@company.com" value={job.contactEmail||''} onChange={v=>update(i,'contactEmail',v)}/></Field>
+            <Field label="Company Website"><Input type="text" placeholder="www.company.com" value={job.website||''} onChange={v=>update(i,'website',v)}/></Field>
+            <Field label="Main Company Phone"><Input type="tel" placeholder="01234 567890" value={job.companyPhone||''} onChange={v=>update(i,'companyPhone',v)}/></Field>
           </div>
+          <Field label="Generic HR Email" hint="e.g. hr@company.com or info@company.com"><Input type="email" placeholder="hr@company.com" value={job.companyEmail||''} onChange={v=>update(i,'companyEmail',v)}/></Field>
 
           <div className="divider" style={{margin:'1rem 0 0.75rem'}}></div>
           <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.25rem'}}>Reference Contact *</div>
@@ -1371,7 +1370,10 @@ function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
             <Field label="Contact Name *"><Input type="text" placeholder="Full name" value={job.contactName||''} onChange={v=>update(i,'contactName',v)}/></Field>
             <Field label="Job Title"><Input type="text" placeholder="e.g. HR Manager" value={job.contactTitle||''} onChange={v=>update(i,'contactTitle',v)}/></Field>
           </div>
-          <Field label="Direct Phone Number *" hint="Mobile or direct line — not a switchboard"><Input type="tel" placeholder="01234 567890" value={job.contactPhone||''} onChange={v=>update(i,'contactPhone',v)}/></Field>
+          <div className="field-row">
+            <Field label="Direct Phone Number *" hint="Mobile or direct line — not a switchboard"><Input type="tel" placeholder="01234 567890" value={job.contactPhone||''} onChange={v=>update(i,'contactPhone',v)}/></Field>
+            <Field label="Reference Email *"><Input type="email" placeholder="e.g. anna@company.com" value={job.contactEmail||''} onChange={v=>update(i,'contactEmail',v)}/></Field>
+          </div>
 
           <div className="divider" style={{margin:'1rem 0 0.75rem'}}></div>
           <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.75rem'}}>Dates of Employment *</div>
@@ -1654,34 +1656,13 @@ function CoverLetterBuilder({ profileData, userName }) {
         clearance: qualifications.security_clearance && qualifications.security_clearance !== 'None' ? `${qualifications.security_clearance} security clearance` : '',
       };
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('https://uksecurityjobs-api.onrender.com/api/ai/improve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 800,
-          messages: [{
-            role: 'user',
-            content: `Write a professional cover letter for a UK security officer applying for the following role.
-
-Candidate profile:
-- Name: ${profile.name}
-- SIA Licences: ${profile.licences || 'SIA licensed professional'}
-- Recent experience: ${profile.employment || 'Security industry professional'}
-- Additional: ${[profile.firstAid, profile.driving, profile.forces, profile.clearance].filter(Boolean).join(', ') || 'Experienced security professional'}
-
-Application details:
-- Role applying for: ${form.role || 'Security Officer'}
-- Employer/company: ${form.employer || 'the organisation'}
-- Their strongest quality: ${form.strength || 'reliability and professionalism'}
-- Anything else to highlight: ${form.extra || ''}
-
-Write a concise, professional 3-paragraph cover letter. Paragraph 1: introduce and state the role. Paragraph 2: relevant experience and strengths. Paragraph 3: enthusiasm and call to action. Use professional UK English. No spelling or grammar errors. Do not use generic phrases like "I am writing to apply". Return only the letter text, starting with "Dear Hiring Manager," and ending with "Yours sincerely," followed by the name.`
-          }]
-        })
+        body: JSON.stringify({ type: 'generate_cover_letter', text: `Write a professional cover letter for a UK security officer.\nName: ${profile.name}\nLicences: ${profile.licences}\nExperience: ${profile.employment}\nRole: ${form.role || 'Security Officer'}\nEmployer: ${form.employer || 'the organisation'}\nStrongest quality: ${form.strength}\nExtra: ${form.extra}\n\nWrite a 3-paragraph professional cover letter in UK English. Start with Dear Hiring Manager, end with Yours sincerely, and the candidate name. No preamble.` })
       });
       const data = await res.json();
-      const text = data.content?.[0]?.text;
+      const text = data.result;
       if (text) { setLetter(text); setGenerated(true); }
     } catch(e) { console.error(e); }
     setLoading(false);
@@ -1691,20 +1672,13 @@ Write a concise, professional 3-paragraph cover letter. Paragraph 1: introduce a
     if (!letter) return;
     setLoading(true);
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('https://uksecurityjobs-api.onrender.com/api/ai/improve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 800,
-          messages: [{
-            role: 'user',
-            content: `Fix any spelling and grammar errors in this cover letter and make it more impactful while keeping it professional and authentic. Return only the improved letter:\n\n${letter}`
-          }]
-        })
+        body: JSON.stringify({ type: 'cover_letter', text: letter })
       });
       const data = await res.json();
-      const text = data.content?.[0]?.text;
+      const text = data.result;
       if (text) setLetter(text);
     } catch(e) { console.error(e); }
     setLoading(false);
