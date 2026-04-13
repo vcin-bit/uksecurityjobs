@@ -1495,17 +1495,17 @@ function StepAddress({ data, onChange, onBack, onNext, isComplete }) {
     <StepShell step={9} total={11} title="Address History"
       why="A complete 5-year address history with no gaps is a core BS7858 requirement. You cannot proceed until all 5 years are accounted for."
       onBack={onBack} onNext={save}
-      nextLabel={!isFiveYearsCovered ? `${remainingMonths} months still needed — cannot proceed` : 'Save & Continue'}>
+      nextLabel={!isFiveYearsCovered ? `Add addresses to cover last ${remainingMonths} months` : 'Save & Continue'}>
 
       {/* Coverage bar */}
       <div style={{background: isFiveYearsCovered ? '#dcfce7' : '#fef9c3', border: `1px solid ${isFiveYearsCovered ? '#bbf7d0' : '#fde047'}`, borderRadius:'10px', padding:'1rem 1.25rem', marginBottom:'1.5rem'}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'0.5rem'}}>
           <div>
             <div style={{fontWeight:700,fontSize:'0.9rem',color: isFiveYearsCovered ? '#15803d' : '#854d0e'}}>
-              {isFiveYearsCovered ? '5-year address history complete' : `${remainingMonths} month${remainingMonths!==1?'s':''} still to account for`}
+              {isFiveYearsCovered ? '5-year address history complete' : `Add your most recent address to cover the last ${remainingMonths} month${remainingMonths!==1?'s':''}`}
             </div>
             <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.2rem'}}>
-              {coveredMonths} of 60 months covered — BS7858 requires a full 5 years with no gaps
+              Your addresses cover {coveredMonths} of the last 60 months. Only the last 5 years count for BS7858 — older addresses are not required.
             </div>
           </div>
           <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
