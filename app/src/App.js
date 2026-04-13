@@ -1907,28 +1907,18 @@ function ProfileBuilder() {
   useEffect(() => {
     async function loadProfile() {
       try {
-        const [candidateRes, personalRes, siaRes, drivingRes, sectorsRes, qualsRes, bgRes, empRes, addrRes] = await Promise.allSettled([
-          apiRequest('/api/candidates/me', 'GET', null, getToken),
-          apiRequest('/api/candidates/me/personal', 'GET', null, getToken),
-          apiRequest('/api/sia', 'GET', null, getToken),
-          apiRequest('/api/profile/driving', 'GET', null, getToken),
-          apiRequest('/api/profile/sectors', 'GET', null, getToken),
-          apiRequest('/api/profile/qualifications', 'GET', null, getToken),
-          apiRequest('/api/profile/background', 'GET', null, getToken),
-          apiRequest('/api/profile/employment', 'GET', null, getToken),
-          apiRequest('/api/profile/addresses', 'GET', null, getToken),
-        ]);
+        const full = await apiRequest('/api/candidates/me/full', 'GET', null, getToken);
 
-        const licences = siaRes.status === 'fulfilled' ? siaRes.value.licences : null;
-        const personal = personalRes.status === 'fulfilled' ? personalRes.value.personal : null;
-        const driving = drivingRes.status === 'fulfilled' ? drivingRes.value.driving : null;
-        const sectors = sectorsRes.status === 'fulfilled' ? sectorsRes.value.sectors : null;
-        const qualifications = qualsRes.status === 'fulfilled' ? qualsRes.value.qualifications : null;
-        const background = bgRes.status === 'fulfilled' ? bgRes.value.background : null;
-        const employment = empRes.status === 'fulfilled' ? empRes.value.employment : null;
-        const addresses = addrRes.status === 'fulfilled' ? addrRes.value.addresses : null;
+        const licences = full.licences || null;
+        const personal = full.personal || null;
+        const driving = full.driving || null;
+        const sectors = full.sectors || null;
+        const qualifications = full.qualifications || null;
+        const background = full.background || null;
+        const employment = full.employment || null;
+        const addresses = full.addresses || null;
+        const interviewAnswers = full.candidate?.interview_answers || null;
 
-        const interviewAnswers = candidateRes.status === 'fulfilled' ? candidateRes.value.candidate?.interview_answers : null;
         setProfileData({ licences, personal, driving, sectors, qualifications, background, employment, photo: null, addresses, interview: interviewAnswers });
 
         // Infer which steps are already complete from API data
@@ -1940,8 +1930,10 @@ function ProfileBuilder() {
         if (qualifications) completed.add('qualifications');
         if (background) completed.add('background');
         if (employment?.length) completed.add('employment');
-        if (profileData.interview?.whyHire) completed.add('interview');
-        if (addresses?.length) {
+        if (interviewAnswers?.whyHire) completed.add('interview');
+        setCompletedSteps(completed);
+
+        setStep(full.candidate?.profile_step || 0);
           // Only mark complete if 5 years covered
           const now = new Date();
           const fiveYearsAgo = new Date(now.getFullYear()-5, now.getMonth(), 1);
@@ -1958,11 +1950,6 @@ function ProfileBuilder() {
         }
         setCompletedSteps(completed);
 
-        if (candidateRes.status === 'fulfilled') {
-          const c = candidateRes.value.candidate;
-          setStep(c?.profile_step || 0);
-          if (interviewAnswers?.whyHire) completed.add('interview');
-        }
       } catch(err) {
         console.error('Failed to load profile:', err);
       }
@@ -2564,25 +2551,16 @@ function Dashboard() {
   React.useEffect(() => {
     async function load() {
       try {
-        const [siaRes, personalRes, empRes, addrRes, drivingRes, sectorsRes, qualsRes, bgRes] = await Promise.allSettled([
-          apiRequest('/api/sia', 'GET', null, getToken),
-          apiRequest('/api/candidates/me/personal', 'GET', null, getToken),
-          apiRequest('/api/profile/employment', 'GET', null, getToken),
-          apiRequest('/api/profile/addresses', 'GET', null, getToken),
-          apiRequest('/api/profile/driving', 'GET', null, getToken),
-          apiRequest('/api/profile/sectors', 'GET', null, getToken),
-          apiRequest('/api/profile/qualifications', 'GET', null, getToken),
-          apiRequest('/api/profile/background', 'GET', null, getToken),
-        ]);
+        const full = await apiRequest('/api/candidates/me/full', 'GET', null, getToken);
         setProfileData({
-          licences: siaRes.status === 'fulfilled' ? siaRes.value.licences : [],
-          personal: personalRes.status === 'fulfilled' ? personalRes.value.personal : null,
-          employment: empRes.status === 'fulfilled' ? empRes.value.employment : [],
-          addresses: addrRes.status === 'fulfilled' ? addrRes.value.addresses : [],
-          driving: drivingRes.status === 'fulfilled' ? drivingRes.value.driving : null,
-          sectors: sectorsRes.status === 'fulfilled' ? sectorsRes.value.sectors : null,
-          qualifications: qualsRes.status === 'fulfilled' ? qualsRes.value.qualifications : null,
-          background: bgRes.status === 'fulfilled' ? bgRes.value.background : null,
+          licences: full.licences || [],
+          personal: full.personal || null,
+          employment: full.employment || [],
+          addresses: full.addresses || [],
+          driving: full.driving || null,
+          sectors: full.sectors || null,
+          qualifications: full.qualifications || null,
+          background: full.background || null,
         });
       } catch(err) { console.error('Dashboard load error:', err); }
     }

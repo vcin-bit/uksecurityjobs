@@ -217,3 +217,42 @@ router.put('/me/interview', async (req, res) => {
 });
 
 module.exports = router;
+
+// GET /api/candidates/me/full — returns all profile data in one call
+router.get('/me/full', async (req, res) => {
+  try {
+    const { data: candidate } = await supabase
+      .from('candidates')
+      .select('*')
+      .eq('clerk_user_id', req.userId)
+      .single();
+
+    if (!candidate) return res.status(404).json({ error: 'Profile not found' });
+
+    const [siaRes, personalRes, drivingRes, sectorsRes, qualsRes, bgRes, empRes, addrRes] = await Promise.all([
+      supabase.from('sia_licences').select('*').eq('candidate_id', candidate.id),
+      supabase.from('personal_details').select('*').eq('candidate_id', candidate.id).single(),
+      supabase.from('driving_details').select('*').eq('candidate_id', candidate.id).single(),
+      supabase.from('preferred_sectors').select('*').eq('candidate_id', candidate.id).single(),
+      supabase.from('qualifications').select('*').eq('candidate_id', candidate.id).single(),
+      supabase.from('professional_background').select('*').eq('candidate_id', candidate.id).single(),
+      supabase.from('employment_history').select('*').eq('candidate_id', candidate.id).order('start_date', { ascending: false }),
+      supabase.from('address_history').select('*').eq('candidate_id', candidate.id).order('moved_in_date', { ascending: false }),
+    ]);
+
+    res.json({
+      candidate,
+      licences: siaRes.data || [],
+      personal: personalRes.data || null,
+      driving: drivingRes.data || null,
+      sectors: sectorsRes.data || null,
+      qualifications: qualsRes.data || null,
+      background: bgRes.data || null,
+      employment: empRes.data || [],
+      addresses: addrRes.data || [],
+    });
+  } catch (err) {
+    console.error('GET /me/full error:', err);
+    res.status(500).json({ error: 'Failed to load profile' });
+  }
+});
