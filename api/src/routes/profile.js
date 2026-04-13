@@ -98,7 +98,6 @@ router.put('/sectors', async (req, res) => {
       candidate_id: candidateId,
       sectors: b.sectors || [],
       preferred_shift: b.preferred_shift || null,
-      employment_type: b.employmentType || null,
       available_from: b.available_from || null,
       min_hourly_rate: b.min_hourly_rate || null,
     };
