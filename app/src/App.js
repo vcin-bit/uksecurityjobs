@@ -1931,10 +1931,7 @@ function ProfileBuilder() {
         if (background) completed.add('background');
         if (employment?.length) completed.add('employment');
         if (interviewAnswers?.whyHire) completed.add('interview');
-        setCompletedSteps(completed);
-
-        setStep(full.candidate?.profile_step || 0);
-          // Only mark complete if 5 years covered
+        if (addresses?.length) {
           const now = new Date();
           const fiveYearsAgo = new Date(now.getFullYear()-5, now.getMonth(), 1);
           let total = 0;
@@ -1949,6 +1946,7 @@ function ProfileBuilder() {
           if (Math.round(total) >= 60) completed.add('addresses');
         }
         setCompletedSteps(completed);
+        setStep(full.candidate?.profile_step || 0);
 
       } catch(err) {
         console.error('Failed to load profile:', err);
