@@ -1480,10 +1480,14 @@ function StepAddress({ data, onChange, onBack, onNext, isComplete }) {
     return (
       <CompletedStep
         title="Address History"
-        summary={[{label:"Addresses recorded",value:(data.addresses?.length||jobs?.length||0)+" address(es)"},{label:"Status",value:"Complete"}]}
+        summary={[
+          { label:'Addresses recorded', value: (data.addresses?.length||0)+' address(es)' },
+          { label:'Coverage', value: coveredMonths+' of 60 months' },
+          { label:'Status', value: isFiveYearsCovered ? '5-year history complete' : remainingMonths+' months still needed' },
+        ]}
         onEdit={() => setEditing(true)}
         onBack={onBack}
-        onNext={onNext}
+        onNext={isFiveYearsCovered ? onNext : () => { setEditing(true); }}
       />
     );
   }
@@ -1976,7 +1980,30 @@ function ProfileBuilder() {
 
   if (loading) return <div style={{textAlign:'center',padding:'4rem',color:'#64748b'}}>Loading your profile...</div>;
 
-  const next = () => setStep(s => s + 1);
+  const addressesCoverFiveYears = () => {
+    const addrs = profileData.addresses || [];
+    if (!addrs.length) return false;
+    const now = new Date();
+    const fiveYearsAgo = new Date(now.getFullYear()-5, now.getMonth(), 1);
+    let total = 0;
+    addrs.forEach(a => {
+      const from = a.moved_in_date ? new Date(a.moved_in_date) : (a.from ? new Date(a.from+'-01') : null);
+      const to = (a.is_current || a.current) ? now : (a.moved_out_date ? new Date(a.moved_out_date) : (a.to ? new Date(a.to+'-01') : null));
+      if (!from || !to) return;
+      const start = from < fiveYearsAgo ? fiveYearsAgo : from;
+      const end = to > now ? now : to;
+      if (end > start) total += (end - start) / (1000*60*60*24*30.5);
+    });
+    return Math.round(total) >= 60;
+  };
+
+  const next = () => {
+    if (step === 9 && !addressesCoverFiveYears()) {
+      alert('You must cover a full 5-year address history before continuing. Add your previous addresses below.');
+      return;
+    }
+    setStep(s => s + 1);
+  };
   const back = () => setStep(s => s - 1);
 
   // Steps that require completion before advancing
