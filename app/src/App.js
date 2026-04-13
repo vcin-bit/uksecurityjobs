@@ -267,14 +267,31 @@ function StepWelcome({ onNext, name }) {
 // ── STEP 2: SIA LICENCES ──
 function StepSIA({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
-  const [licences, setLicences] = useState(data.licences || [{ type:'', number:'', expiry:'' }]);
-  const addLicence = () => setLicences([...licences, { type:'', number:'', expiry:'' }]);
+  const normaliseLicence = (l) => ({
+    type: l.type || l.licence_type || '',
+    number: l.number || l.licence_number || '',
+    expiry: l.expiry || l.expiry_date || '',
+    expiryMonth: l.expiryMonth || (l.expiry_date ? l.expiry_date.split('-')[1] : l.expiry ? l.expiry.split('-')[1] : '') || '',
+    expiryYear: l.expiryYear || (l.expiry_date ? l.expiry_date.split('-')[0] : l.expiry ? l.expiry.split('-')[0] : '') || '',
+    verified: l.verified || false,
+    id: l.id || null,
+  });
+  const [licences, setLicences] = useState(
+    data.licences?.length ? data.licences.map(normaliseLicence) : [{ type:'', number:'', expiry:'', expiryMonth:'', expiryYear:'' }]
+  );
+  const addLicence = () => setLicences([...licences, { type:'', number:'', expiry:'', expiryMonth:'', expiryYear:'' }]);
   const updateLicence = (i, field, val) => {
     const updated = licences.map((l,idx) => idx===i ? {...l,[field]:val} : l);
     setLicences(updated);
   };
   const removeLicence = (i) => setLicences(licences.filter((_,idx) => idx!==i));
-  const save = () => { onChange({ licences }); onNext(); };
+  const save = () => {
+    const mapped = licences.map(l => ({
+      ...l,
+      expiry: l.expiryYear && l.expiryMonth ? `${l.expiryYear}-${l.expiryMonth}-01` : l.expiry || ''
+    }));
+    onChange({ licences: mapped }); onNext();
+  };
   const licenceTypes = ['Door Supervisor','Security Guard','CCTV Operator','Close Protection','Cash & Valuables in Transit','Key Holding','Non-Front Line'];
 
   if (isComplete && !editing) {
@@ -302,17 +319,23 @@ function StepSIA({ data, onChange, onBack, onNext, isComplete }) {
           {i > 0 && <div className="licence-block-header"><span>Additional Licence {i+1}</span><button className="btn-remove" onClick={()=>removeLicence(i)}>Remove</button></div>}
           <div className="field-row">
             <Field label="Licence Type">
-              <Select value={lic.type} onChange={e=>updateLicence(i,'type',e.target.value)}>
+              <Select value={lic.type} onChange={v=>updateLicence(i,"type",v)}>
                 <option value="">Select type</option>
                 {licenceTypes.map(t=><option key={t}>{t}</option>)}
               </Select>
             </Field>
             <Field label="SIA Licence Number" hint="Your 16-digit licence number">
               <Input type="text" placeholder="0000 0000 0000 0000" maxLength={19} value={lic.number}
-                onChange={e=>updateLicence(i,'number',e.target.value)}/>
+                onChange={v=>updateLicence(i,"number",v)}/>
             </Field>
             <Field label="Expiry Date">
-              <Input type="date" value={lic.expiry} onChange={e=>updateLicence(i,'expiry',e.target.value)}/>
+              <div className="field-row" style={{gap:'0.5rem',marginBottom:0}}>
+                <Select value={lic.expiryMonth||''} onChange={v=>updateLicence(i,'expiryMonth',v)}>
+                  <option value="">Month</option>
+                  {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,'0')}>{m}</option>)}
+                </Select>
+                <Input type="number" placeholder="Year" min={new Date().getFullYear()} max={new Date().getFullYear()+10} value={lic.expiryYear||''} onChange={v=>updateLicence(i,'expiryYear',v)} style={{width:'90px'}}/>
+              </div>
             </Field>
           </div>
           {lic.number && <div className="pending-badge">Pending verification — our team will check this against the SIA register within 24 hours</div>}
