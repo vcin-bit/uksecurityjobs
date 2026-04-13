@@ -1479,7 +1479,7 @@ function StepComplete({ name }) {
       <div className="complete-next">
         <div className="cn-item"><div className="cn-n">1</div><div><strong>SIA Verification</strong><p>We will verify your SIA licence against the public register within 24 hours.</p></div></div>
         <div className="cn-item"><div className="cn-n">2</div><div><strong>Profile Review</strong><p>Our team reviews your profile for completeness. We may be in touch if anything needs clarifying.</p></div></div>
-        <div className="cn-item"><div className="cn-n">3</div><div><strong>Go Live</strong><p>Once verified, your profile goes live and employers can find you.</p></div></div>
+        <div className="cn-item"><div className="cn-n">3</div><div><strong>Apply for Roles</strong><p>Once verified, you can apply for jobs on the platform. Employers will be able to see your vettability score and verified profile when you apply.</p></div></div>
       </div>
       <a href="/dashboard" className="btn-next" style={{display:'block',textAlign:'center',marginTop:'2rem'}}>Go to My Dashboard</a>
     </div>
