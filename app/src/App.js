@@ -780,7 +780,7 @@ function StepDriving({ data, onChange, onBack, onNext, isComplete }) {
   const raw = data.driving || {};
   const [form, setForm] = useState({
     hasLicence: raw.hasLicence || (raw.has_driving_licence ? 'yes' : raw.has_driving_licence === false ? 'no' : ''),
-    licenceType: raw.licenceType || raw.licence_type || '',
+    licenceType: (raw.licenceType || raw.licence_type || '') === 'Full' ? 'Full UK' : (raw.licenceType || raw.licence_type || ''),
     licenceNumber: raw.licenceNumber || '',
     yearsHeld: raw.yearsHeld || '',
     points: raw.points || '',
@@ -1895,7 +1895,7 @@ function ProfileBuilder() {
         const dr = d.driving;
         try { await apiRequest('/api/profile/driving', 'PUT', {
           has_driving_licence: dr.hasLicence === 'yes',
-          licence_type: dr.licenceType || null,
+          licence_type: dr.licenceType === 'Full' ? 'Full UK' : dr.licenceType || null,
           endorsement_codes: dr.endorsements || [],
           has_ban_history: dr.hasBan === 'yes',
           has_own_vehicle: dr.hasTransport === 'yes',

@@ -99,8 +99,6 @@ router.put('/sectors', async (req, res) => {
       sectors: b.sectors || [],
       preferred_shift: b.preferred_shift || null,
       employment_type: b.employmentType || null,
-      availability: Array.isArray(b.availability) ? b.availability : [],
-      shift_lengths: b.shiftType || [],
       available_from: b.available_from || null,
       min_hourly_rate: b.min_hourly_rate || null,
     };
