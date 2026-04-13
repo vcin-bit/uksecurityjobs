@@ -2226,57 +2226,83 @@ function CVPanel({ profileData, userName, mobileOpen, onMobileClose }) {
   const driving = profileData.driving || {};
   const background = profileData.background || {};
   const addresses = profileData.addresses || [];
+  const interview = profileData.interview || {};
+  const sectors = profileData.sectors || {};
 
-  const name = userName || [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Your Name';
+  const name = userName?.trim() || [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Your Name';
   const phone = p.phone || '';
   const town = p.city || p.town || '';
   const postcode = p.postcode || '';
 
   const fmtDate = (d) => {
     if (!d) return '';
-    const parts = d.split('-');
-    if (parts.length === 2) {
+    const parts = String(d).split('-');
+    if (parts.length >= 2) {
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      return months[parseInt(parts[1])-1] + ' ' + parts[0];
+      const m = parseInt(parts[1]) - 1;
+      return (months[m] || '') + ' ' + parts[0];
     }
     return d;
   };
 
+  const sectionStyle = { marginBottom:'1.25rem' };
+  const titleStyle = { fontSize:'0.62rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.12em', color:'#1a52a8', borderBottom:'1.5px solid #1a52a8', paddingBottom:'0.2rem', marginBottom:'0.6rem' };
+  const jobStyle = { marginBottom:'0.75rem', paddingBottom:'0.75rem', borderBottom:'1px solid #f1f5f9' };
+
   const CandidateCV = () => (
     <div className="cv-doc">
       {/* Header */}
-      <div className="cv-name">{name}</div>
-      <div className="cv-contact">
-        {[phone, town, postcode].filter(Boolean).join(' · ')}
-        {licences.length > 0 && ' · SIA Licensed'}
+      <div style={{marginBottom:'1rem',paddingBottom:'0.875rem',borderBottom:'2px solid #0b1222'}}>
+        <div style={{fontSize:'1.25rem',fontWeight:900,color:'#0b1222',letterSpacing:'-0.02em'}}>{name}</div>
+        <div style={{fontSize:'0.75rem',color:'#64748b',marginTop:'0.2rem'}}>
+          {[phone, town && postcode ? town+', '+postcode : town||postcode].filter(Boolean).join(' · ')}
+          {licences.length > 0 && ' · SIA Licensed'}
+        </div>
+        {licences.length > 0 && (
+          <div style={{marginTop:'0.4rem',display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
+            {licences.map((l,i) => (
+              <span key={i} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:l.verified?'#dcfce7':'#fef9c3',color:l.verified?'#15803d':'#854d0e',border:`1px solid ${l.verified?'#bbf7d0':'#fde047'}`}}>
+                {l.verified?'✓ ':'⏳ '}{l.licence_type||l.type}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* SIA Licences */}
-      {licences.length > 0 && (
-        <div className="cv-section">
-          <div className="cv-section-title">SIA Licences</div>
-          {licences.map((l,i) => (
-            <span key={i} className={'cv-badge ' + (l.verified ? 'verified' : 'pending')}>
-              {l.verified ? '✓' : '⏳'} {l.licence_type || l.type}
-            </span>
-          ))}
+      {/* Personal Statement */}
+      {(interview.whyHire || employment.length > 0) && (
+        <div style={sectionStyle}>
+          <div style={titleStyle}>Professional Profile</div>
+          <div style={{fontSize:'0.78rem',lineHeight:'1.65',color:'#374151'}}>
+            {interview.whyHire || (
+              `${name} is a${licences.length > 0 ? ` SIA licensed ${licences.map(l=>l.licence_type||l.type).filter(Boolean).join(' and ')} professional` : ' security professional'} with experience across ${(sectors.sectors||[]).slice(0,2).join(' and ') || 'the security sector'}. ${driving.has_driving_licence||driving.hasLicence==='yes'?'Full UK driving licence held. ':''}${qualifications.has_efaw||qualifications.has_faw?'First Aid certified. ':''}${background.served_in_forces?'Former '+background.forces_branch+'. ':''}Available and ready to deploy.`
+            )}
+          </div>
         </div>
       )}
 
-      {/* Personal Statement */}
-      {employment.length > 0 && (
-        <div className="cv-section">
-          <div className="cv-section-title">Professional Summary</div>
-          <div className="cv-job-duties">
-            {name} is a{licences.length > 0 ? ` SIA licensed ${licences.map(l=>l.licence_type||l.type).join(' and ')} professional` : ' security professional'} with {employment.filter(j=>!j.current&&!j.is_current).length > 0 ? 'extensive' : 'relevant'} experience across{employment.map(j=>j.sector).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).slice(0,3).map(s=>' '+s).join(',') || ' the security sector'}. {driving.hasLicence==='yes'?'Full UK driving licence held. ': ''}{qualifications.has_efaw||qualifications.has_faw?'First Aid certified. ': ''}{background.served_in_forces?'Former '+background.forces_branch+'. ': ''}Available and ready to deploy.
+      {/* Core Competencies */}
+      {(licences.length > 0 || (sectors.sectors||[]).length > 0 || qualifications.security_clearance) && (
+        <div style={sectionStyle}>
+          <div style={titleStyle}>Core Competencies</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.25rem 1rem',fontSize:'0.75rem',color:'#374151'}}>
+            {licences.map((l,i) => <div key={'l'+i} style={{display:'flex',alignItems:'center',gap:'0.3rem'}}><span style={{color:'#1a52a8',fontWeight:700}}>›</span>{l.licence_type||l.type}</div>)}
+            {(sectors.sectors||[]).map((s,i) => <div key={'s'+i} style={{display:'flex',alignItems:'center',gap:'0.3rem'}}><span style={{color:'#1a52a8',fontWeight:700}}>›</span>{s}</div>)}
+            {(qualifications.has_efaw) && <div style={{display:'flex',alignItems:'center',gap:'0.3rem'}}><span style={{color:'#1a52a8',fontWeight:700}}>›</span>Emergency First Aid (EFAW)</div>}
+            {(qualifications.has_faw) && <div style={{display:'flex',alignItems:'center',gap:'0.3rem'}}><span style={{color:'#1a52a8',fontWeight:700}}>›</span>First Aid at Work (FAW)</div>}
+            {qualifications.security_clearance && qualifications.security_clearance !== 'None' && <div style={{display:'flex',alignItems:'center',gap:'0.3rem'}}><span style={{color:'#1a52a8',fontWeight:700}}>›</span>{qualifications.security_clearance} Clearance</div>}
+            {(driving.has_driving_licence||driving.hasLicence==='yes') && <div style={{display:'flex',alignItems:'center',gap:'0.3rem'}}><span style={{color:'#1a52a8',fontWeight:700}}>›</span>Full UK Driving Licence</div>}
+            {(driving.has_own_vehicle||driving.hasTransport==='yes') && <div style={{display:'flex',alignItems:'center',gap:'0.3rem'}}><span style={{color:'#1a52a8',fontWeight:700}}>›</span>Own Transport</div>}
+            {background.served_in_forces && <div style={{display:'flex',alignItems:'center',gap:'0.3rem'}}><span style={{color:'#1a52a8',fontWeight:700}}>›</span>{background.forces_branch} Veteran</div>}
+            {(qualifications.languages||[]).map((l,i) => <div key={'lang'+i} style={{display:'flex',alignItems:'center',gap:'0.3rem'}}><span style={{color:'#1a52a8',fontWeight:700}}>›</span>{l}</div>)}
           </div>
         </div>
       )}
 
       {/* Employment */}
       {employment.length > 0 && (
-        <div className="cv-section">
-          <div className="cv-section-title">Employment History</div>
+        <div style={sectionStyle}>
+          <div style={titleStyle}>Employment History</div>
           {employment.map((j,i) => {
             const employer = j.employer || j.employer_name || '';
             const role = j.role || j.job_title || '';
@@ -2284,12 +2310,23 @@ function CVPanel({ profileData, userName, mobileOpen, onMobileClose }) {
             const to = j.to || j.end_date || '';
             const current = j.current || j.is_current;
             const duties = j.duties || '';
+            const sector = j.sector || '';
             return (
-              <div key={i} className="cv-job">
-                <div className="cv-job-title">{role}</div>
-                <div className="cv-job-employer">{employer}{j.sector ? ' · '+j.sector : ''}</div>
-                <div className="cv-job-dates">{fmtDate(from)} — {current ? 'Present' : fmtDate(to)}</div>
-                {duties && <div className="cv-job-duties">{duties}</div>}
+              <div key={i} style={{...jobStyle, ...(i === employment.length-1 ? {borderBottom:'none',paddingBottom:0} : {})}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'0.5rem'}}>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222'}}>{role}</div>
+                    <div style={{fontSize:'0.75rem',color:'#475569',fontWeight:500}}>{employer}{sector ? ' · '+sector : ''}</div>
+                  </div>
+                  <div style={{fontSize:'0.7rem',color:'#94a3b8',whiteSpace:'nowrap',fontWeight:500}}>
+                    {fmtDate(from)} — {current ? 'Present' : fmtDate(to)}
+                  </div>
+                </div>
+                {duties && (
+                  <div style={{marginTop:'0.35rem',fontSize:'0.73rem',color:'#4b5563',lineHeight:'1.6'}}>
+                    {duties}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -2297,29 +2334,51 @@ function CVPanel({ profileData, userName, mobileOpen, onMobileClose }) {
       )}
 
       {/* Qualifications */}
-      {(qualifications.frec_level || qualifications.has_efaw || qualifications.has_faw || qualifications.security_clearance) && (
-        <div className="cv-section">
-          <div className="cv-section-title">Qualifications</div>
-          {qualifications.frec_level && qualifications.frec_level !== 'None' && <div className="cv-job-duties">{qualifications.frec_level}</div>}
-          {qualifications.has_efaw && <div className="cv-job-duties">Emergency First Aid at Work (EFAW)</div>}
-          {qualifications.has_faw && <div className="cv-job-duties">First Aid at Work (FAW)</div>}
-          {qualifications.security_clearance && qualifications.security_clearance !== 'None' && <div className="cv-job-duties">Security Clearance: {qualifications.security_clearance}</div>}
-          {qualifications.is_sia_trainer && <div className="cv-job-duties">Qualified SIA Trainer / Assessor</div>}
+      {(qualifications.frec_level && qualifications.frec_level !== 'None') || qualifications.has_efaw || qualifications.has_faw || qualifications.is_sia_trainer ? (
+        <div style={sectionStyle}>
+          <div style={titleStyle}>Qualifications & Training</div>
+          <div style={{fontSize:'0.75rem',color:'#374151',lineHeight:'1.8'}}>
+            {qualifications.frec_level && qualifications.frec_level !== 'None' && <div>{qualifications.frec_level}</div>}
+            {qualifications.has_efaw && <div>Emergency First Aid at Work (EFAW)</div>}
+            {qualifications.has_faw && <div>First Aid at Work (FAW)</div>}
+            {qualifications.is_sia_trainer && <div>Qualified SIA Trainer / Assessor</div>}
+            {qualifications.other_qualifications && <div>{qualifications.other_qualifications}</div>}
+          </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Skills */}
-      {(driving.hasLicence === 'yes' || (qualifications.languages||[]).length > 0 || driving.hasTransport === 'yes') && (
-        <div className="cv-section">
-          <div className="cv-section-title">Additional Skills</div>
-          <div>
-            {driving.hasLicence === 'yes' && <span className="cv-badge">Full UK Driving Licence</span>}
-            {driving.hasTransport === 'yes' && <span className="cv-badge">Own Transport</span>}
-            {(qualifications.languages||[]).map(l=><span key={l} className="cv-badge">{l}</span>)}
-            {background.served_in_forces && <span className="cv-badge">{background.forces_branch}</span>}
+      {/* Military/Police */}
+      {background.served_in_forces && (
+        <div style={sectionStyle}>
+          <div style={titleStyle}>Service Background</div>
+          <div style={{...jobStyle, borderBottom:'none', paddingBottom:0}}>
+            <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222'}}>{background.forces_rank || 'Veteran'}</div>
+            <div style={{fontSize:'0.75rem',color:'#475569'}}>{background.forces_branch}{background.forces_years ? ' · '+background.forces_years+' years served' : ''}</div>
+            {background.forces_discharge_type && <div style={{fontSize:'0.72rem',color:'#64748b',marginTop:'0.2rem'}}>{background.forces_discharge_type}</div>}
           </div>
         </div>
       )}
+
+      {/* Interview answers - strongest achievement */}
+      {interview.proudOf && (
+        <div style={sectionStyle}>
+          <div style={titleStyle}>Career Highlight</div>
+          <div style={{fontSize:'0.75rem',color:'#374151',lineHeight:'1.6',fontStyle:'italic'}}>"{interview.proudOf}"</div>
+        </div>
+      )}
+
+      {/* Availability */}
+      {(interview.availability || interview.salary) && (
+        <div style={sectionStyle}>
+          <div style={titleStyle}>Availability & Rate</div>
+          <div style={{fontSize:'0.75rem',color:'#374151',display:'flex',gap:'2rem'}}>
+            {interview.availability && <div><span style={{fontWeight:600}}>Available: </span>{interview.availability}</div>}
+            {interview.salary && <div><span style={{fontWeight:600}}>Rate: </span>{interview.salary}</div>}
+          </div>
+        </div>
+      )}
+
+      <div style={{marginTop:'1rem',fontSize:'0.65rem',color:'#94a3b8',textAlign:'center'}}>References available on request · SIA Licence verified by UKSecurityJobs.co.uk</div>
 
       {employment.length === 0 && licences.length === 0 && (
         <div style={{color:'#94a3b8',fontSize:'0.78rem',textAlign:'center',padding:'2rem 0'}}>
@@ -2331,28 +2390,30 @@ function CVPanel({ profileData, userName, mobileOpen, onMobileClose }) {
 
   const VettingProfile = () => (
     <div className="cv-doc">
-      <div className="cv-name">{name}</div>
-      <div className="cv-contact" style={{marginBottom:'1rem'}}>BS7858 Vetting Profile · {new Date().toLocaleDateString('en-GB')}</div>
+      <div style={{marginBottom:'1rem',paddingBottom:'0.875rem',borderBottom:'2px solid #0b1222'}}>
+        <div style={{fontSize:'1.1rem',fontWeight:900,color:'#0b1222'}}>{name}</div>
+        <div style={{fontSize:'0.68rem',color:'#64748b',marginTop:'0.15rem',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.08em'}}>BS7858 Vetting Profile · Generated {new Date().toLocaleDateString('en-GB')}</div>
+      </div>
 
       {/* Personal */}
-      <div className="cv-section">
-        <div className="cv-section-title">Personal Details</div>
-        <div className="cv-grid">
-          {phone && <div className="cv-field"><label>Phone</label><span>{phone}</span></div>}
-          {p.date_of_birth && <div className="cv-field"><label>Date of Birth</label><span>{p.date_of_birth}</span></div>}
-          {p.ni_number && <div className="cv-field"><label>NI Number</label><span>••••••••</span></div>}
-          {postcode && <div className="cv-field"><label>Postcode</label><span>{postcode}</span></div>}
+      <div style={sectionStyle}>
+        <div style={titleStyle}>Personal Details</div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.4rem',fontSize:'0.73rem'}}>
+          {phone && <div><span style={{color:'#94a3b8',fontWeight:600,display:'block',fontSize:'0.62rem',textTransform:'uppercase',letterSpacing:'0.06em'}}>Phone</span>{phone}</div>}
+          {p.date_of_birth && <div><span style={{color:'#94a3b8',fontWeight:600,display:'block',fontSize:'0.62rem',textTransform:'uppercase',letterSpacing:'0.06em'}}>Date of Birth</span>{p.date_of_birth}</div>}
+          {p.ni_number && <div><span style={{color:'#94a3b8',fontWeight:600,display:'block',fontSize:'0.62rem',textTransform:'uppercase',letterSpacing:'0.06em'}}>NI Number</span>••••••••</div>}
+          {postcode && <div><span style={{color:'#94a3b8',fontWeight:600,display:'block',fontSize:'0.62rem',textTransform:'uppercase',letterSpacing:'0.06em'}}>Postcode</span>{postcode}</div>}
         </div>
       </div>
 
       {/* SIA */}
       {licences.length > 0 && (
-        <div className="cv-section">
-          <div className="cv-section-title">SIA Licences</div>
+        <div style={sectionStyle}>
+          <div style={titleStyle}>SIA Licences</div>
           {licences.map((l,i) => (
-            <div key={i} style={{marginBottom:'0.4rem'}}>
-              <div className="cv-job-title">{l.licence_type||l.type}</div>
-              <div className="cv-job-dates">Expires: {l.expiry_date||l.expiry} · <span style={{color:l.verified?'#15803d':'#a16207'}}>{l.verified?'Verified':'Pending verification'}</span></div>
+            <div key={i} style={{marginBottom:'0.5rem',fontSize:'0.73rem'}}>
+              <div style={{fontWeight:700,color:'#0b1222'}}>{l.licence_type||l.type}</div>
+              <div style={{color:'#64748b'}}>Expires: {fmtDate(l.expiry_date||l.expiry)} · <span style={{color:l.verified?'#15803d':'#a16207',fontWeight:600}}>{l.verified?'Verified':'Pending verification'}</span></div>
             </div>
           ))}
         </div>
@@ -2360,21 +2421,21 @@ function CVPanel({ profileData, userName, mobileOpen, onMobileClose }) {
 
       {/* Address history */}
       {addresses.length > 0 && (
-        <div className="cv-section">
-          <div className="cv-section-title">Address History</div>
+        <div style={sectionStyle}>
+          <div style={titleStyle}>Address History</div>
           {addresses.map((a,i) => (
-            <div key={i} className="cv-job">
-              <div className="cv-job-title">{[a.address_line1||a.line1, a.city||a.town].filter(Boolean).join(', ')}</div>
-              <div className="cv-job-dates">{fmtDate(a.moved_in_date||a.from)} — {a.is_current||a.current?'Present':fmtDate(a.moved_out_date||a.to)}</div>
+            <div key={i} style={{marginBottom:'0.4rem',fontSize:'0.73rem'}}>
+              <div style={{fontWeight:600,color:'#0b1222'}}>{[a.address_line1||a.line1, a.city||a.town, a.postcode].filter(Boolean).join(', ')}</div>
+              <div style={{color:'#64748b'}}>{fmtDate(a.moved_in_date||a.from)} — {a.is_current||a.current?'Present':fmtDate(a.moved_out_date||a.to)}</div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Employment with references */}
+      {/* Employment with full reference details */}
       {employment.length > 0 && (
-        <div className="cv-section">
-          <div className="cv-section-title">Employment History</div>
+        <div style={sectionStyle}>
+          <div style={titleStyle}>Employment History</div>
           {employment.map((j,i) => {
             const employer = j.employer || j.employer_name || '';
             const role = j.role || j.job_title || '';
@@ -2382,28 +2443,35 @@ function CVPanel({ profileData, userName, mobileOpen, onMobileClose }) {
             const to = j.to || j.end_date || '';
             const current = j.current || j.is_current;
             return (
-              <div key={i} className="cv-job">
-                <div className="cv-job-title">{role} — {employer}</div>
-                <div className="cv-job-dates">{fmtDate(from)} — {current?'Present':fmtDate(to)}</div>
-                {j.contactName && <div className="cv-job-duties">Ref: {j.contactName}{j.contactTitle?' ('+j.contactTitle+')':''} · {j.contactEmail} · {j.contactPhone}</div>}
-                {(j.address1||j.employer_address) && <div className="cv-job-duties">{[j.address1||j.employer_address, j.postcode||j.employer_postcode].filter(Boolean).join(', ')}</div>}
+              <div key={i} style={{...jobStyle, ...(i===employment.length-1?{borderBottom:'none',paddingBottom:0}:{}), fontSize:'0.73rem'}}>
+                <div style={{fontWeight:700,color:'#0b1222'}}>{role} — {employer}</div>
+                <div style={{color:'#64748b',marginBottom:'0.25rem'}}>{fmtDate(from)} — {current?'Present':fmtDate(to)}</div>
+                {j.employer_address && <div style={{color:'#475569'}}>Address: {j.employer_address}</div>}
+                {(j.reference_name||j.contactName) && (
+                  <div style={{marginTop:'0.25rem',background:'#f8fafc',borderRadius:'4px',padding:'0.3rem 0.5rem',fontSize:'0.7rem'}}>
+                    <span style={{fontWeight:600}}>Reference: </span>{j.reference_name||j.contactName}
+                    {(j.reference_job_title||j.contactTitle) ? ' ('+( j.reference_job_title||j.contactTitle)+')' : ''}
+                    {(j.reference_email||j.contactEmail) ? ' · '+(j.reference_email||j.contactEmail) : ''}
+                    {(j.reference_phone||j.contactPhone) ? ' · '+(j.reference_phone||j.contactPhone) : ''}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Criminal */}
-      <div className="cv-section">
-        <div className="cv-section-title">Criminal Disclosure</div>
-        <div className="cv-job-duties">{background.has_criminal_record ? 'Disclosed — see case notes' : 'No unspent convictions declared'}</div>
+      {/* Criminal disclosure */}
+      <div style={sectionStyle}>
+        <div style={titleStyle}>Criminal Disclosure</div>
+        <div style={{fontSize:'0.73rem',color:'#374151'}}>
+          {background.has_criminal_record ? 'Unspent convictions declared — see attached disclosure' : 'No unspent convictions declared by candidate'}
+        </div>
       </div>
 
-      {addresses.length === 0 && employment.length === 0 && (
-        <div style={{color:'#94a3b8',fontSize:'0.78rem',textAlign:'center',padding:'2rem 0'}}>
-          Your vetting profile builds automatically as you complete each step.
-        </div>
-      )}
+      <div style={{marginTop:'1rem',fontSize:'0.62rem',color:'#94a3b8',borderTop:'1px solid #f1f5f9',paddingTop:'0.5rem'}}>
+        This document is confidential and for vetting purposes only · UKSecurityJobs.co.uk · {new Date().toLocaleDateString('en-GB')}
+      </div>
     </div>
   );
 
