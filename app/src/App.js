@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut, useUser, useClerk, useAuth } from '@clerk/clerk-react';
 import { apiRequest, startApiKeepAlive } from './api';
 import './styles.css';
@@ -1607,7 +1607,37 @@ function StepPhoto({ data, onChange, onBack, onNext }) {
 }
 
 // ── STEP 10: COMPLETE ──
-function StepComplete({ name }) {
+function StepComplete({ name, sections, onGoToStep }) {
+  const incomplete = sections.filter(s => !s.complete && !s.pending);
+  const allDone = incomplete.length === 0;
+
+  if (!allDone) {
+    return (
+      <div className="complete-screen">
+        <div style={{fontSize:'2rem',marginBottom:'0.5rem'}}>👋</div>
+        <h2>Almost there, {name}</h2>
+        <p>You have {incomplete.length} section{incomplete.length!==1?'s':''} still to complete before your profile can go live.</p>
+        <div className="complete-next" style={{textAlign:'left'}}>
+          {sections.map((s,i) => (
+            <div key={i} className="cn-item" style={{cursor: !s.complete ? 'pointer' : 'default'}}
+              onClick={() => !s.complete && onGoToStep && onGoToStep(i)}>
+              <div className="cn-n" style={{background: s.complete ? '#10b981' : s.pending ? '#f59e0b' : '#e2e8f0', color: s.complete||s.pending ? '#fff' : '#64748b'}}>
+                {s.complete ? '✓' : s.pending ? '?' : i+1}
+              </div>
+              <div>
+                <strong style={{color: s.complete ? '#15803d' : '#0b1222'}}>{s.name}</strong>
+                <p style={{margin:'0.1rem 0 0',fontSize:'0.78rem',color:'#64748b'}}>
+                  {s.complete ? 'Complete' : s.pending ? 'Pending verification' : 'Not yet completed — click to go to this step'}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <a href="/dashboard" className="btn-next" style={{display:'block',textAlign:'center',marginTop:'2rem'}}>Go to My Dashboard</a>
+      </div>
+    );
+  }
+
   return (
     <div className="complete-screen">
       <div className="complete-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg></div>
@@ -2022,8 +2052,8 @@ function ProfileBuilder() {
     if(step === 7) return <><ProgressRings sections={sections}/><StepPhoto data={profileData} onChange={update} onBack={back} onNext={next}/></>;
     if(step === 8) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('employment')}/></>;
     if(step === 9) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('addresses')}/></>;
-    if(step === 10) return <><ProgressRings sections={sections}/><StepComplete name={user?.firstName || 'there'}/></>;
-    return <StepComplete name={user?.firstName || 'there'}/>;
+    if(step === 10) return <><ProgressRings sections={sections}/><StepComplete name={user?.firstName || 'there'} sections={sections} onGoToStep={i=>setStep(i+1)}/></>;
+    return <StepComplete name={user?.firstName || 'there'} sections={sections} onGoToStep={i=>setStep(i+1)}/>;
   })();
 
   return (
@@ -2390,11 +2420,14 @@ function Dashboard() {
           <ProgressRings sections={sections}/>
           <div style={{display:'flex',flexWrap:'wrap',gap:'0.5rem',marginTop:'1rem'}}>
             {sections.map((s,i) => (
-              <button key={i} onClick={()=>navigate('/profile')}
-                style={{fontSize:'0.72rem',padding:'0.3rem 0.75rem',borderRadius:'999px',border:'1px solid #e2e8f0',background: s.complete?'#f0fdf4':s.pending?'#fef9c3':'#f8fafc',color:s.complete?'#15803d':s.pending?'#854d0e':'#64748b',cursor:'pointer',fontFamily:'inherit',fontWeight:600}}>
+              <span key={i}
+                style={{fontSize:'0.72rem',padding:'0.3rem 0.75rem',borderRadius:'999px',border:'1px solid #e2e8f0',background: s.complete?'#f0fdf4':s.pending?'#fef9c3':'#f8fafc',color:s.complete?'#15803d':s.pending?'#854d0e':'#94a3b8',fontWeight:600}}>
                 {s.complete ? '✓ ' : s.pending ? '⏳ ' : '○ '}{s.name}
-              </button>
+              </span>
             ))}
+          </div>
+          <div style={{marginTop:'0.75rem',fontSize:'0.78rem',color:'#64748b'}}>
+            Click <strong>Continue Profile</strong> above to edit any section.
           </div>
         </div>
 
