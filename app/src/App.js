@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { ClerkProvider, SignedIn, SignedOut, useUser, useClerk, useAuth } from '@clerk/clerk-react';
+import { ClerkProvider, SignedIn, SignedOut, useUser, useClerk, useAuth, useSignUp, useSignIn } from '@clerk/clerk-react';
 import { apiRequest, startApiKeepAlive } from './api';
 import './styles.css';
 
@@ -2851,33 +2851,31 @@ function SignUpPage() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const clerk = useClerk();
+  const { signUp, setActive } = useSignUp();
 
   const handleRegister = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     if (!form.gdprConsent) { setError('You must agree to the privacy policy to continue.'); setLoading(false); return; }
     try {
-      const result = await clerk.client.signUp.create({
+      await signUp.create({
         firstName: form.firstName, lastName: form.lastName,
         emailAddress: form.email, password: form.password,
       });
-      await result.prepareEmailAddressVerification({ strategy: 'email_code' });
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setStep(2);
     } catch(err) { setError(err.errors?.[0]?.message || 'Something went wrong. Please try again.'); }
     setLoading(false);
   };
 
-  const handleVerifyAndCreate = async (e) => {
+  const handleVerify = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      const result = await clerk.client.signUp.attemptEmailAddressVerification({ code });
-      await clerk.setActive({ session: result.createdSessionId });
-      // Create candidate record in secure API
-      const token = await result.createdSessionId;
+      const result = await signUp.attemptEmailAddressVerification({ code });
+      await setActive({ session: result.createdSessionId });
       try {
         await fetch('https://uksecurityjobs-api.onrender.com/api/candidates', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${result.createdSessionId}` },
           body: JSON.stringify({ email: form.email, gdpr_consent: true })
         });
       } catch(apiErr) { console.error('API create failed:', apiErr); }
@@ -2885,8 +2883,6 @@ function SignUpPage() {
     } catch(err) { setError(err.errors?.[0]?.message || 'Invalid code. Please try again.'); }
     setLoading(false);
   };
-
-  const handleVerify = handleVerifyAndCreate;
 
   return (
     <div className="page">
@@ -2906,12 +2902,13 @@ function SignUpPage() {
               <div className="field"><label className="field-label">Email Address</label><input className="f-input" type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="your@email.com"/></div>
               <div className="field"><label className="field-label">Password</label><input className="f-input" type="password" required value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Min. 8 characters"/></div>
               <div className="field" style={{marginTop:'0.5rem'}}>
-                <label style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',cursor:'pointer',fontSize:'0.85rem',color:'#374151',lineHeight:'1.5'}}>
-                  <input type="checkbox" required checked={form.gdprConsent} onChange={e=>setForm({...form,gdprConsent:e.target.checked})} style={{marginTop:'3px',flexShrink:0}}/>
-                  <span>I agree to the <a href="https://www.uksecurityjobs.co.uk/privacy.html" target="_blank" rel="noopener noreferrer" style={{color:'#1a52a8'}}>Privacy Policy</a> and consent to UKSecurityJobs storing my personal data securely for the purpose of matching me with security employment opportunities. I understand I can withdraw consent at any time.</span>
+                <label style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',cursor:'pointer',fontSize:'0.85rem',color:'#374151',lineHeight:'1.5',background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'0.875rem'}}>
+                  <input type="checkbox" checked={form.gdprConsent} onChange={e=>setForm({...form,gdprConsent:e.target.checked})} style={{marginTop:'2px',flexShrink:0,width:'18px',height:'18px',cursor:'pointer',accentColor:'#1a52a8'}}/>
+                  <span>I agree to the <a href="https://www.uksecurityjobs.co.uk/privacy" target="_blank" rel="noopener noreferrer" style={{color:'#1a52a8',fontWeight:600}}>Privacy Policy</a> and consent to UKSecurityJobs storing my personal data securely for the purpose of matching me with security employment opportunities. I understand I can withdraw consent at any time.</span>
                 </label>
+                {!form.gdprConsent && <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.4rem',paddingLeft:'0.25rem'}}>You must tick this box to continue.</div>}
               </div>
-              <button className="btn-full" type="submit" disabled={loading}>{loading?'Creating account...':'Create My Profile →'}</button>
+              <button className="btn-full" type="button" disabled={loading || !form.gdprConsent} onClick={handleRegister} style={{opacity: form.gdprConsent ? 1 : 0.5}}>{loading?'Creating account...':'Create My Profile →'}</button>
             </form>
             <div className="auth-footer">Already registered? <a href="/sign-in">Sign in</a></div>
           </> : <>
@@ -2933,14 +2930,13 @@ function SignInPage() {
   const [form, setForm] = useState({ email:'', password:'' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const clerk = useClerk();
+  const { signIn, setActive } = useSignIn();
   const { getToken } = useAuth();
   const handleSignIn = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      const result = await clerk.client.signIn.create({ identifier: form.email, password: form.password });
-      await clerk.setActive({ session: result.createdSessionId });
-      // Check if employer — if so redirect to employer dashboard
+      const result = await signIn.create({ identifier: form.email, password: form.password });
+      await setActive({ session: result.createdSessionId });
       setTimeout(async () => {
         try {
           const token = await getToken();
@@ -2986,16 +2982,16 @@ function EmployerSignUpPage() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const clerk = useClerk();
+  const { signUp, setActive } = useSignUp();
 
   const handleSignUp = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      await clerk.client.signUp.create({
+      await signUp.create({
         firstName: form.firstName, lastName: form.lastName,
         emailAddress: form.email, password: form.password
       });
-      await clerk.client.signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setStep(2);
     } catch(err) { setError(err.errors?.[0]?.message || 'Something went wrong.'); }
     setLoading(false);
@@ -3004,8 +3000,8 @@ function EmployerSignUpPage() {
   const handleVerify = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      const result = await clerk.client.signUp.attemptEmailAddressVerification({ code });
-      await clerk.setActive({ session: result.createdSessionId });
+      const result = await signUp.attemptEmailAddressVerification({ code });
+      await setActive({ session: result.createdSessionId });
       window.location.href = '/employer';
     } catch(err) { setError(err.errors?.[0]?.message || 'Invalid code.'); }
     setLoading(false);
@@ -3055,20 +3051,13 @@ function ForgotPasswordPage() {
   const [password, setPassword] = React.useState('');
   const [error, setError] = React.useState('');
   const [loading, setLoading] = React.useState(false);
-  const { signIn, setActive } = window.Clerk ? 
-    { signIn: window.Clerk.client?.signIn, setActive: (s) => window.Clerk.setActive(s) } :
-    { signIn: null, setActive: null };
-  const clerk = useClerk();
+  const { signIn, setActive } = useSignIn();
 
   const sendCode = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      const si = await clerk.client.signIn.create({
-        strategy: 'reset_password_email_code',
-        identifier: email,
-      });
-      if (si.status === 'needs_first_factor') setStep(2);
-      else setStep(2);
+      await signIn.create({ strategy: 'reset_password_email_code', identifier: email });
+      setStep(2);
     } catch(err) {
       setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Could not send reset code. Check your email address.');
     }
@@ -3078,17 +3067,15 @@ function ForgotPasswordPage() {
   const resetPassword = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      const result = await clerk.client.signIn.attemptFirstFactor({
-        strategy: 'reset_password_email_code',
-        code,
-        password,
+      const result = await signIn.attemptFirstFactor({
+        strategy: 'reset_password_email_code', code, password,
       });
       if (result.status === 'complete') {
-        await clerk.setActive({ session: result.createdSessionId });
+        await setActive({ session: result.createdSessionId });
         window.location.href = '/dashboard';
       }
     } catch(err) {
-      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Invalid code or password too weak. Password must be at least 8 characters.');
+      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Invalid code or password too weak.');
     }
     setLoading(false);
   };
