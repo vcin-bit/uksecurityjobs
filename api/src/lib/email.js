@@ -95,27 +95,44 @@ async function sendApplicationConfirmation({ toEmail, firstName, jobTitle, compa
 }
 
 // ── 3. INTERVIEW SCHEDULED (CANDIDATE) ──
-async function sendInterviewScheduled({ toEmail, firstName, jobTitle, companyName, interviewDate }) {
+async function sendInterviewScheduled({ toEmail, firstName, jobTitle, companyName, interviewDate, interviewLocation, interviewFormat, interviewNotes }) {
   const dateStr = interviewDate ? new Date(interviewDate).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' }) : 'To be confirmed';
+  const formatLabel = { in_person: 'In person', video: 'Video call', phone: 'Phone call' }[interviewFormat] || interviewFormat || 'To be confirmed';
   const html = baseTemplate(`
     <h1>Interview Confirmed</h1>
     <p>Hi ${firstName},</p>
-    <p>An interview has been scheduled for your application:</p>
+    <p>An interview has been arranged for your application:</p>
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:1rem;margin:1rem 0;">
       <div class="detail-row"><span class="detail-label">Role</span><span class="detail-value">${jobTitle}</span></div>
       <div class="detail-row"><span class="detail-label">Company</span><span class="detail-value">${companyName}</span></div>
       <div class="detail-row"><span class="detail-label">Date &amp; Time</span><span class="detail-value">${dateStr}</span></div>
+      <div class="detail-row"><span class="detail-label">Format</span><span class="detail-value">${formatLabel}</span></div>
+      ${interviewLocation ? `<div class="detail-row"><span class="detail-label">Location</span><span class="detail-value">${interviewLocation}</span></div>` : ''}
     </div>
-    <p>Before your interview, make sure you have the following documents ready:</p>
+    ${interviewNotes ? `<p style="font-size:0.88rem;color:#4a5568;background:#f8fafc;border-radius:8px;padding:1rem;border:1px solid #e2e8f0;"><strong>Notes from employer:</strong> ${interviewNotes}</p>` : ''}
+    <p>Please bring the following documents to your interview:</p>
     <ul style="font-size:0.88rem;color:#4a5568;line-height:1.8;margin:0.5rem 0 1rem 1.25rem;">
       <li>Your SIA licence card</li>
       <li>Proof of right to work (passport or share code)</li>
       <li>Proof of address (bank statement or utility bill)</li>
       <li>Any relevant certificates (first aid, qualifications)</li>
     </ul>
-    <div class="notice"><strong>Important:</strong> If you cannot attend, contact the employer immediately. Failure to attend without notice will result in a ban from UKSecurityJobs.</div>
+    <div class="notice"><strong>Important:</strong> If you cannot attend, contact the employer immediately and update your application on UKSecurityJobs. Failure to attend without notice will result in a platform ban.</div>
   `);
   return send(toEmail, `Interview confirmed — ${jobTitle} at ${companyName}`, html);
+}
+
+// ── 4a. SHORTLISTED (CANDIDATE) ──
+async function sendShortlisted({ toEmail, firstName, jobTitle, companyName }) {
+  const html = baseTemplate(`
+    <h1>You have been shortlisted</h1>
+    <p>Hi ${firstName},</p>
+    <p>Good news — you have been shortlisted for <strong>${jobTitle}</strong> at <strong>${companyName}</strong>.</p>
+    <p>The employer will be in touch shortly to arrange an interview. Make sure your availability is up to date on your dashboard so they can reach you quickly.</p>
+    <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn">View My Applications →</a>
+    <div class="notice"><strong>Be ready:</strong> Have your SIA licence card, proof of right to work and a proof of address document to hand for the interview.</div>
+  `);
+  return send(toEmail, `You have been shortlisted — ${jobTitle} at ${companyName}`, html);
 }
 
 // ── 4. APPLICATION UNSUCCESSFUL (CANDIDATE) ──
@@ -176,6 +193,7 @@ module.exports = {
   sendSiaVerified,
   sendApplicationConfirmation,
   sendInterviewScheduled,
+  sendShortlisted,
   sendApplicationUnsuccessful,
   sendNewApplicant,
   sendEmployerWelcome,

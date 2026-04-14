@@ -2682,11 +2682,15 @@ function CandidateApplications({ getToken }) {
   if (applications.length === 0) return null;
 
   const statusConfig = {
-    applied: { label: 'Applied', color: '#1d4ed8', bg: '#dbeafe' },
-    shortlisted: { label: 'Shortlisted', color: '#15803d', bg: '#dcfce7' },
-    interview_scheduled: { label: 'Interview Scheduled', color: '#854d0e', bg: '#fef9c3' },
-    rejected: { label: 'Unsuccessful', color: '#dc2626', bg: '#fee2e2' },
-    no_show: { label: 'No Show Recorded', color: '#7c3aed', bg: '#f3e8ff' },
+    applied:              { label: 'Applied', color: '#1d4ed8', bg: '#dbeafe' },
+    shortlisted:          { label: 'Shortlisted', color: '#15803d', bg: '#dcfce7' },
+    interview_proposed:   { label: 'Interview Proposed', color: '#854d0e', bg: '#fef9c3' },
+    interview_confirmed:  { label: 'Interview Confirmed', color: '#854d0e', bg: '#fef3c7' },
+    interview_completed:  { label: 'Interview Completed', color: '#475569', bg: '#f1f5f9' },
+    offered:              { label: 'Offer Made', color: '#15803d', bg: '#dcfce7' },
+    rejected:             { label: 'Unsuccessful', color: '#dc2626', bg: '#fee2e2' },
+    no_show:              { label: 'No Show Recorded', color: '#7c3aed', bg: '#f3e8ff' },
+    withdrawn:            { label: 'Withdrawn', color: '#64748b', bg: '#f1f5f9' },
   };
 
   return (
@@ -3387,8 +3391,16 @@ function ApplicantModal({ applicationId, candidateId, jobTitle, getToken, onClos
   const [candidate, setCandidate] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [updating, setUpdating] = React.useState(false);
-  const [interviewDate, setInterviewDate] = React.useState('');
-  const [feedback, setFeedback] = React.useState('');
+  const [tab, setTab] = React.useState('profile'); // profile | interview | scorecard
+  // Interview fields
+  const [intDate, setIntDate] = React.useState('');
+  const [intLocation, setIntLocation] = React.useState('');
+  const [intFormat, setIntFormat] = React.useState('in_person');
+  const [intNotes, setIntNotes] = React.useState('');
+  // Scorecard
+  const [scores, setScores] = React.useState({ communication:0, knowledge:0, reliability:0, experience:0, presentation:0 });
+  const [scorecardNotes, setScorecardNotes] = React.useState('');
+  const [scorecardAgreed, setScorecardAgreed] = React.useState(false);
 
   React.useEffect(() => {
     apiRequest(`/api/employers/candidate/${candidateId}`, 'GET', null, getToken)
@@ -3406,90 +3418,215 @@ function ApplicantModal({ applicationId, candidateId, jobTitle, getToken, onClos
     setUpdating(false);
   };
 
-  const p = candidate?.candidate_personal?.[0] || candidate?.candidate_personal || {};
-  const licences = candidate?.candidate_licences || [];
-  const employment = candidate?.candidate_employment || [];
-  const addresses = candidate?.candidate_addresses || [];
+  const submitScorecard = async () => {
+    if (!scorecardAgreed) { alert('Please confirm you have read the guidance disclaimer before submitting.'); return; }
+    const total = Object.values(scores).reduce((a,b)=>a+Number(b),0);
+    const composite = Math.round(total / Object.keys(scores).length * 20); // 0-100
+    setUpdating(true);
+    try {
+      await apiRequest(`/api/employers/applications/${applicationId}`, 'PATCH', {
+        status: 'interview_completed',
+        interview_score: composite,
+        interview_scores: scores,
+        employer_feedback: scorecardNotes,
+      }, getToken);
+      onStatusUpdate(applicationId, 'interview_completed');
+      onClose();
+    } catch(e) { alert('Failed to submit scorecard. Please try again.'); }
+    setUpdating(false);
+  };
+
+  const p = candidate?.personal || candidate?.candidate_personal?.[0] || candidate?.candidate_personal || {};
+  const licences = candidate?.licences || candidate?.candidate_licences || [];
+  const employment = candidate?.employment || candidate?.candidate_employment || [];
+  const scoreLabels = { communication:'Communication & professional presentation', knowledge:'Role & licence knowledge', reliability:'Reliability & attendance record', experience:'Relevant experience', presentation:'Overall professional presentation' };
+
+  const TabBtn = ({id,label}) => (
+    <button onClick={()=>setTab(id)} style={{padding:'0.5rem 1rem',borderRadius:'6px',border:'none',background:tab===id?'#0b1222':'transparent',color:tab===id?'#fff':'#64748b',fontWeight:700,fontSize:'0.8rem',cursor:'pointer',fontFamily:'inherit'}}>{label}</button>
+  );
 
   return (
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:1000,overflowY:'auto',padding:'2rem 1rem'}}>
-      <div style={{background:'#fff',borderRadius:'16px',maxWidth:'680px',margin:'0 auto',padding:'2rem'}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'1.5rem'}}>
+      <div style={{background:'#fff',borderRadius:'16px',maxWidth:'700px',margin:'0 auto',padding:'2rem'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'1.25rem'}}>
           <div>
             <div style={{fontWeight:800,fontSize:'1.1rem',color:'#0b1222'}}>{p.first_name} {p.last_name}</div>
-            <div style={{fontSize:'0.82rem',color:'#64748b',marginTop:'0.2rem'}}>Applied for: {jobTitle}</div>
+            <div style={{fontSize:'0.82rem',color:'#64748b',marginTop:'0.2rem'}}>{jobTitle}</div>
           </div>
           <button onClick={onClose} style={{background:'none',border:'none',fontSize:'1.5rem',color:'#94a3b8',cursor:'pointer',lineHeight:1}}>×</button>
         </div>
 
+        {/* Tabs */}
+        <div style={{display:'flex',gap:'0.25rem',background:'#f8fafc',borderRadius:'8px',padding:'0.25rem',marginBottom:'1.25rem'}}>
+          <TabBtn id="profile" label="Profile"/>
+          <TabBtn id="interview" label="Schedule Interview"/>
+          <TabBtn id="scorecard" label="Interview Scorecard"/>
+        </div>
+
         {loading ? <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8'}}>Loading profile...</div> : (
           <>
-            {/* Contact & RTW */}
-            <div style={{background:'#f8fafc',borderRadius:'10px',padding:'1rem',marginBottom:'1rem',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
-              <div><div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#94a3b8',marginBottom:'0.2rem'}}>Phone</div><div style={{fontSize:'0.88rem',fontWeight:600,color:'#0b1222'}}>{p.phone || '—'}</div></div>
-              <div><div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#94a3b8',marginBottom:'0.2rem'}}>Right to Work</div><RtwBadge status={p.right_to_work_status}/></div>
-              {p.right_to_work_status === 'student_visa' && (
-                <div style={{gridColumn:'1/-1',background:'#fee2e2',borderRadius:'8px',padding:'0.75rem',fontSize:'0.78rem',color:'#7f1d1d'}}>
-                  <strong>Student Visa:</strong> Maximum 20 hours per week during term time. You must verify right to work documents before engagement and ensure hours comply with visa conditions. Fines of up to £60,000 per worker apply.
-                </div>
-              )}
-              {p.visa_expiry && <div><div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#94a3b8',marginBottom:'0.2rem'}}>Visa Expiry</div><div style={{fontSize:'0.88rem',color:'#0b1222'}}>{new Date(p.visa_expiry).toLocaleDateString('en-GB')}</div></div>}
-            </div>
-
-            {/* SIA Licences */}
-            {licences.length > 0 && (
-              <div style={{marginBottom:'1rem'}}>
-                <div style={{fontSize:'0.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',color:'#94a3b8',marginBottom:'0.5rem'}}>SIA Licences</div>
-                {licences.map((l,i) => (
-                  <div key={i} style={{background:'#f8fafc',borderRadius:'8px',padding:'0.75rem 1rem',marginBottom:'0.4rem',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <div>
-                      <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222'}}>{l.licence_type}</div>
-                      <div style={{fontSize:'0.75rem',color:'#64748b'}}>Expires: {l.expiry_date ? new Date(l.expiry_date).toLocaleDateString('en-GB') : '—'}</div>
+            {/* PROFILE TAB */}
+            {tab === 'profile' && (
+              <>
+                <div style={{background:'#f8fafc',borderRadius:'10px',padding:'1rem',marginBottom:'1rem',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
+                  <div><div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#94a3b8',marginBottom:'0.2rem'}}>Phone</div><div style={{fontSize:'0.88rem',fontWeight:600,color:'#0b1222'}}>{p.phone||'—'}</div></div>
+                  <div><div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#94a3b8',marginBottom:'0.2rem'}}>Right to Work</div><RtwBadge status={p.right_to_work_status}/></div>
+                  {p.right_to_work_status==='student_visa' && (
+                    <div style={{gridColumn:'1/-1',background:'#fee2e2',borderRadius:'8px',padding:'0.75rem',fontSize:'0.78rem',color:'#7f1d1d'}}>
+                      <strong>Student Visa:</strong> Maximum 20 hours per week during term time. Verify documents before engagement.
                     </div>
-                    <span style={{fontSize:'0.7rem',fontWeight:700,padding:'0.2rem 0.6rem',borderRadius:'999px',background:l.verified?'#dcfce7':'#fef9c3',color:l.verified?'#15803d':'#854d0e'}}>{l.verified?'SIA Verified':'Pending'}</span>
+                  )}
+                  {p.visa_expiry && <div><div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#94a3b8',marginBottom:'0.2rem'}}>Visa Expiry</div><div style={{fontSize:'0.88rem',color:'#0b1222'}}>{new Date(p.visa_expiry).toLocaleDateString('en-GB')}</div></div>}
+                </div>
+
+                {licences.length > 0 && (
+                  <div style={{marginBottom:'1rem'}}>
+                    <div style={{fontSize:'0.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',color:'#94a3b8',marginBottom:'0.5rem'}}>SIA Licences</div>
+                    {licences.map((l,i) => (
+                      <div key={i} style={{background:'#f8fafc',borderRadius:'8px',padding:'0.75rem 1rem',marginBottom:'0.4rem',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222'}}>{l.licence_type}</div>
+                          <div style={{fontSize:'0.75rem',color:'#64748b'}}>Expires: {l.expiry_date?new Date(l.expiry_date).toLocaleDateString('en-GB'):'—'}</div>
+                        </div>
+                        <span style={{fontSize:'0.7rem',fontWeight:700,padding:'0.2rem 0.6rem',borderRadius:'999px',background:l.verified?'#dcfce7':'#fef9c3',color:l.verified?'#15803d':'#854d0e'}}>{l.verified?'SIA Verified':'Pending'}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+
+                {employment.length > 0 && (
+                  <div style={{marginBottom:'1rem'}}>
+                    <div style={{fontSize:'0.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',color:'#94a3b8',marginBottom:'0.5rem'}}>Employment History</div>
+                    {employment.slice(0,3).map((e,i) => (
+                      <div key={i} style={{background:'#f8fafc',borderRadius:'8px',padding:'0.75rem 1rem',marginBottom:'0.4rem'}}>
+                        <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222'}}>{e.job_title} — {e.company_name}</div>
+                        <div style={{fontSize:'0.75rem',color:'#64748b'}}>{e.start_date} → {e.end_date||'Present'}</div>
+                        {e.reference_name && <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.2rem'}}>Ref: {e.reference_name} · {e.reference_phone}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'0.875rem',marginBottom:'1.25rem',fontSize:'0.75rem',color:'#0369a1',lineHeight:1.65}}>
+                  <strong>Right to Work Reminder:</strong> Verify original documents before this candidate starts work. UKSecurityJobs declarations are not a statutory check. Fines up to £60,000 apply.
+                </div>
+
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
+                  <button onClick={()=>updateStatus('shortlisted')} disabled={updating} style={{background:'#f0fdf4',border:'1px solid #86efac',borderRadius:'8px',padding:'0.75rem',fontSize:'0.85rem',fontWeight:700,color:'#15803d',cursor:'pointer'}}>Shortlist</button>
+                  <button onClick={()=>updateStatus('rejected')} disabled={updating} style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'0.75rem',fontSize:'0.85rem',fontWeight:700,color:'#dc2626',cursor:'pointer'}}>Reject</button>
+                </div>
+
+                <div style={{marginTop:'0.75rem',background:'#fef9c3',borderRadius:'8px',padding:'1rem',border:'1px solid #fde047'}}>
+                  <div style={{fontWeight:600,fontSize:'0.82rem',color:'#854d0e',marginBottom:'0.4rem'}}>No-Show Report</div>
+                  <div style={{fontSize:'0.75rem',color:'#854d0e',marginBottom:'0.5rem',lineHeight:1.6}}>Only if the candidate confirmed and did not attend without notice. Results in a platform ban.</div>
+                  <button onClick={()=>{ if(window.confirm('Report no-show? This will ban the candidate temporarily.')) updateStatus('no_show',{no_show:true}); }} disabled={updating} style={{background:'#dc2626',color:'#fff',border:'none',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.82rem',fontWeight:700,cursor:'pointer'}}>Report No-Show</button>
+                </div>
+              </>
+            )}
+
+            {/* INTERVIEW SCHEDULING TAB */}
+            {tab === 'interview' && (
+              <div>
+                <div style={{background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'0.875rem',marginBottom:'1.25rem',fontSize:'0.78rem',color:'#0369a1',lineHeight:1.65}}>
+                  Propose an interview date and time. The candidate will be notified immediately by email. Security workers often work shift patterns — be flexible on timing where possible.
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.875rem',marginBottom:'0.875rem'}}>
+                  <div style={{gridColumn:'1/-1'}}>
+                    <label style={{fontSize:'0.82rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.4rem'}}>Date and time *</label>
+                    <input type="datetime-local" value={intDate} onChange={e=>setIntDate(e.target.value)}
+                      min={new Date().toISOString().slice(0,16)}
+                      style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.88rem',fontFamily:'inherit'}}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize:'0.82rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.4rem'}}>Format *</label>
+                    <select value={intFormat} onChange={e=>setIntFormat(e.target.value)}
+                      style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.88rem',fontFamily:'inherit',background:'#fff'}}>
+                      <option value="in_person">In person</option>
+                      <option value="video">Video call</option>
+                      <option value="phone">Phone call</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{fontSize:'0.82rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.4rem'}}>Location {intFormat==='in_person'?'*':''}</label>
+                    <input type="text" value={intLocation} onChange={e=>setIntLocation(e.target.value)}
+                      placeholder={intFormat==='in_person'?'Address or postcode':'e.g. Google Meet link'}
+                      style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.88rem',fontFamily:'inherit'}}/>
+                  </div>
+                </div>
+                <div style={{marginBottom:'1.25rem'}}>
+                  <label style={{fontSize:'0.82rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.4rem'}}>Notes for candidate (optional)</label>
+                  <textarea value={intNotes} onChange={e=>setIntNotes(e.target.value)} rows={3}
+                    placeholder="e.g. Please bring your SIA licence and proof of address. Ask for reception on arrival. Parking available on site."
+                    style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.88rem',fontFamily:'inherit',resize:'vertical'}}/>
+                </div>
+                <button onClick={()=>updateStatus('interview_proposed',{interview_date:intDate,interview_location:intLocation,interview_format:intFormat,interview_notes:intNotes})}
+                  disabled={updating||!intDate||(intFormat==='in_person'&&!intLocation)}
+                  style={{background:'#0b1222',color:'#fff',border:'none',borderRadius:'8px',padding:'0.75rem 2rem',fontSize:'0.88rem',fontWeight:700,cursor:'pointer',width:'100%',opacity:(intDate&&(intFormat!=='in_person'||intLocation))?1:0.5}}>
+                  {updating?'Sending...':'Propose Interview'}
+                </button>
               </div>
             )}
 
-            {/* Employment History */}
-            {employment.length > 0 && (
-              <div style={{marginBottom:'1rem'}}>
-                <div style={{fontSize:'0.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',color:'#94a3b8',marginBottom:'0.5rem'}}>Employment History ({employment.length} roles)</div>
-                {employment.slice(0,3).map((e,i) => (
-                  <div key={i} style={{background:'#f8fafc',borderRadius:'8px',padding:'0.75rem 1rem',marginBottom:'0.4rem'}}>
-                    <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222'}}>{e.job_title} — {e.company_name}</div>
-                    <div style={{fontSize:'0.75rem',color:'#64748b'}}>{e.start_date} → {e.end_date || 'Present'}</div>
-                    {e.reference_name && <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.2rem'}}>Ref: {e.reference_name} · {e.reference_phone}</div>}
+            {/* SCORECARD TAB */}
+            {tab === 'scorecard' && (
+              <div>
+                <div style={{background:'#fff7ed',border:'1px solid #fed7aa',borderRadius:'8px',padding:'0.875rem',marginBottom:'1.25rem',fontSize:'0.78rem',color:'#9a3412',lineHeight:1.7}}>
+                  <strong>Legal Guidance:</strong> Interview scoring must be based on genuine occupational requirements only. The Equality Act 2010 prohibits discrimination on the basis of age, disability, gender reassignment, marriage, pregnancy, race, religion, sex or sexual orientation. Do not score on any protected characteristic. Rehabilitation of Offenders Act 1974 — spent convictions must not influence scoring unless the role is specifically exempt. This framework is guidance only — not legal advice. Seek independent HR advice if in doubt.
+                </div>
+
+                <div style={{marginBottom:'1.25rem'}}>
+                  {Object.entries(scoreLabels).map(([key,label]) => (
+                    <div key={key} style={{marginBottom:'1rem'}}>
+                      <div style={{display:'flex',justifyContent:'space-between',marginBottom:'0.4rem'}}>
+                        <label style={{fontSize:'0.82rem',fontWeight:600,color:'#334155'}}>{label}</label>
+                        <span style={{fontSize:'0.82rem',fontWeight:700,color:'#0b1222'}}>{scores[key]}/5</span>
+                      </div>
+                      <div style={{display:'flex',gap:'0.4rem'}}>
+                        {[1,2,3,4,5].map(n => (
+                          <button key={n} onClick={()=>setScores(prev=>({...prev,[key]:n}))}
+                            style={{flex:1,padding:'0.5rem',borderRadius:'6px',border:`1px solid ${scores[key]>=n?'#1a52a8':'#e2e8f0'}`,background:scores[key]>=n?'#eff6ff':'#f8fafc',color:scores[key]>=n?'#1a52a8':'#94a3b8',fontWeight:700,fontSize:'0.85rem',cursor:'pointer'}}>
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{background:'#f8fafc',borderRadius:'8px',padding:'0.875rem',border:'1px solid #e2e8f0',marginBottom:'1rem'}}>
+                  <div style={{fontSize:'0.82rem',fontWeight:700,color:'#0b1222',marginBottom:'0.25rem'}}>
+                    Composite Score: {Math.round(Object.values(scores).reduce((a,b)=>a+Number(b),0)/Object.keys(scores).length*20)}/100
                   </div>
-                ))}
-                {employment.length > 3 && <div style={{fontSize:'0.75rem',color:'#94a3b8',textAlign:'center',padding:'0.5rem'}}>+ {employment.length - 3} more roles</div>}
+                  <div style={{fontSize:'0.72rem',color:'#94a3b8'}}>Average of all criteria × 20</div>
+                </div>
+
+                <div style={{marginBottom:'1.25rem'}}>
+                  <label style={{fontSize:'0.82rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.4rem'}}>Interview notes (shared with UKSecurityJobs admin only)</label>
+                  <textarea value={scorecardNotes} onChange={e=>setScorecardNotes(e.target.value)} rows={3}
+                    placeholder="Overall impression, specific observations, reasons for decision..."
+                    style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.88rem',fontFamily:'inherit',resize:'vertical'}}/>
+                </div>
+
+                <div style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',marginBottom:'1.25rem',background:'#f8fafc',borderRadius:'8px',padding:'0.875rem',border:'1px solid #e2e8f0'}}>
+                  <input type="checkbox" checked={scorecardAgreed} onChange={e=>setScorecardAgreed(e.target.checked)}
+                    id="scorecard-agree" style={{marginTop:'2px',width:'16px',height:'16px',cursor:'pointer'}}/>
+                  <label htmlFor="scorecard-agree" style={{fontSize:'0.78rem',color:'#64748b',lineHeight:1.65,cursor:'pointer'}}>
+                    I confirm I have read the recruitment guidance disclaimer. This scoring is based on legitimate occupational requirements only and does not take into account any protected characteristic under the Equality Act 2010. I understand this information is retained by UKSecurityJobs for audit purposes.
+                  </label>
+                </div>
+
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
+                  <button onClick={()=>{ updateStatus('offered',{interview_score:Math.round(Object.values(scores).reduce((a,b)=>a+Number(b),0)/Object.keys(scores).length*20),interview_scores:scores,employer_feedback:scorecardNotes}); }} disabled={updating||!scorecardAgreed}
+                    style={{background:'#15803d',color:'#fff',border:'none',borderRadius:'8px',padding:'0.75rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',opacity:scorecardAgreed?1:0.5}}>
+                    Make Offer
+                  </button>
+                  <button onClick={()=>submitScorecard()} disabled={updating||!scorecardAgreed}
+                    style={{background:'#0b1222',color:'#fff',border:'none',borderRadius:'8px',padding:'0.75rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',opacity:scorecardAgreed?1:0.5}}>
+                    {updating?'Saving...':'Save Scorecard'}
+                  </button>
+                </div>
               </div>
             )}
-
-            {/* Legal disclaimer */}
-            <div style={{background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'0.875rem',marginBottom:'1.25rem',fontSize:'0.75rem',color:'#0369a1',lineHeight:1.65}}>
-              <strong>Right to Work Reminder:</strong> You must verify original right to work documents before this candidate starts work. UKSecurityJobs candidate self-declarations do not constitute a statutory right to work check. Fines of up to £60,000 per worker apply for non-compliance.
-            </div>
-
-            {/* Actions */}
-            <div style={{borderTop:'1px solid #e2e8f0',paddingTop:'1.25rem'}}>
-              <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.875rem'}}>Update Application Status</div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem',marginBottom:'1rem'}}>
-                <button onClick={() => updateStatus('shortlisted')} disabled={updating} style={{background:'#f0fdf4',border:'1px solid #86efac',borderRadius:'8px',padding:'0.75rem',fontSize:'0.85rem',fontWeight:700,color:'#15803d',cursor:'pointer'}}>Shortlist</button>
-                <button onClick={() => updateStatus('rejected')} disabled={updating} style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'0.75rem',fontSize:'0.85rem',fontWeight:700,color:'#dc2626',cursor:'pointer'}}>Reject</button>
-              </div>
-              <div style={{background:'#f8fafc',borderRadius:'8px',padding:'1rem',border:'1px solid #e2e8f0',marginBottom:'0.75rem'}}>
-                <div style={{fontWeight:600,fontSize:'0.82rem',color:'#0b1222',marginBottom:'0.5rem'}}>Invite to Interview</div>
-                <input type="datetime-local" value={interviewDate} onChange={e=>setInterviewDate(e.target.value)} style={{width:'100%',padding:'0.6rem 0.875rem',border:'1.5px solid #e2e8f0',borderRadius:'7px',fontSize:'0.85rem',marginBottom:'0.5rem',fontFamily:'inherit'}}/>
-                <button onClick={() => updateStatus('interview_scheduled', {interview_date: interviewDate})} disabled={updating || !interviewDate} style={{background:'#0b1222',color:'#fff',border:'none',borderRadius:'8px',padding:'0.65rem 1.5rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',opacity:interviewDate?1:0.5}}>Confirm Interview</button>
-              </div>
-              <div style={{background:'#fef9c3',borderRadius:'8px',padding:'1rem',border:'1px solid #fde047'}}>
-                <div style={{fontWeight:600,fontSize:'0.82rem',color:'#854d0e',marginBottom:'0.5rem'}}>No-Show Report</div>
-                <div style={{fontSize:'0.75rem',color:'#854d0e',marginBottom:'0.5rem',lineHeight:1.6}}>Only use this if the candidate confirmed an interview and did not attend without prior notice. This will result in a platform ban.</div>
-                <button onClick={() => { if(window.confirm('Confirm no-show? This will ban the candidate from the platform temporarily.')) updateStatus('no_show', {no_show: true}); }} disabled={updating} style={{background:'#dc2626',color:'#fff',border:'none',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.82rem',fontWeight:700,cursor:'pointer'}}>Report No-Show</button>
-              </div>
-            </div>
           </>
         )}
       </div>
@@ -3504,11 +3641,23 @@ function EmployerDashboard() {
   const [jobs, setJobs] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [showPostJob, setShowPostJob] = React.useState(false);
-  const [showRegister, setShowRegister] = React.useState(false);
   const [selectedJob, setSelectedJob] = React.useState(null);
   const [applicants, setApplicants] = React.useState({});
   const [loadingApplicants, setLoadingApplicants] = React.useState(false);
   const [viewingApplicant, setViewingApplicant] = React.useState(null);
+  const [pauseModal, setPauseModal] = React.useState(null); // { jobId, jobTitle }
+  const [pauseReason, setPauseReason] = React.useState('');
+  const [pauseNotes, setPauseNotes] = React.useState('');
+  const [statusUpdating, setStatusUpdating] = React.useState(null);
+
+  const PAUSE_REASONS = [
+    'Role filled externally',
+    'Role filled via UKSecurityJobs',
+    'Budget freeze',
+    'Role requirements changed',
+    'On hold — internal review',
+    'Other',
+  ];
 
   React.useEffect(() => {
     async function load() {
@@ -3526,7 +3675,7 @@ function EmployerDashboard() {
   }, []);
 
   const loadApplicants = async (jobId) => {
-    if (applicants[jobId]) { setSelectedJob(jobId); return; }
+    if (applicants[jobId]) { setSelectedJob(jobId === selectedJob ? null : jobId); return; }
     setLoadingApplicants(true);
     setSelectedJob(jobId);
     try {
@@ -3534,6 +3683,24 @@ function EmployerDashboard() {
       setApplicants(prev => ({ ...prev, [jobId]: res.applicants || [] }));
     } catch(e) { console.error(e); }
     setLoadingApplicants(false);
+  };
+
+  const updateJobStatus = async (jobId, status, reason, notes) => {
+    setStatusUpdating(jobId);
+    try {
+      const res = await apiRequest(`/api/employers/jobs/${jobId}/status`, 'PATCH', {
+        status,
+        pause_reason: reason || undefined,
+        pause_notes: notes || undefined,
+      }, getToken);
+      if (res.success) {
+        setJobs(prev => prev.map(j => j.id === jobId ? { ...j, ...res.job } : j));
+        setPauseModal(null);
+        setPauseReason('');
+        setPauseNotes('');
+      }
+    } catch(e) { console.error(e); }
+    setStatusUpdating(null);
   };
 
   const handleStatusUpdate = (applicationId, newStatus) => {
@@ -3544,6 +3711,22 @@ function EmployerDashboard() {
       });
       return updated;
     });
+  };
+
+  const statusBadge = (status) => {
+    const cfg = {
+      active: { bg:'#dcfce7', color:'#15803d', label:'Live' },
+      paused: { bg:'#fef9c3', color:'#854d0e', label:'Paused' },
+      ended: { bg:'#f1f5f9', color:'#64748b', label:'Ended' },
+    };
+    const c = cfg[status] || cfg.ended;
+    return <span style={{fontSize:'0.72rem',fontWeight:700,padding:'0.25rem 0.625rem',borderRadius:'999px',background:c.bg,color:c.color}}>{c.label}</span>;
+  };
+
+  const daysLeft = (expiresAt) => {
+    if (!expiresAt) return null;
+    const days = Math.ceil((new Date(expiresAt) - new Date()) / (1000*60*60*24));
+    return days;
   };
 
   if (loading) return <div style={{textAlign:'center',padding:'4rem',color:'#64748b'}}>Loading...</div>;
@@ -3606,7 +3789,7 @@ function EmployerDashboard() {
                 const isSelected = selectedJob === job.id;
                 const statusColors = { applied:'#1d4ed8', shortlisted:'#15803d', interview_scheduled:'#854d0e', rejected:'#dc2626', no_show:'#7c3aed' };
                 return (
-                  <div key={job.id} style={{background:'#f8fafc',borderRadius:'10px',border:'1px solid #e2e8f0',overflow:'hidden'}}>
+                  <div key={job.id} style={{background:'#f8fafc',borderRadius:'10px',border:`1px solid ${job.status==='paused'?'#fde68a':job.status==='ended'?'#e2e8f0':'#e2e8f0'}`,overflow:'hidden'}}>
                     <div style={{padding:'1rem 1.25rem'}}>
                       <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem'}}>
                         <div style={{flex:1}}>
@@ -3614,21 +3797,53 @@ function EmployerDashboard() {
                           <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.2rem'}}>
                             {job.location} · {job.employment_type} · {job.rate_from && `£${job.rate_from}${job.rate_to?'–£'+job.rate_to:''}/hr`}
                           </div>
-                          <div style={{marginTop:'0.4rem',display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
+                          <div style={{marginTop:'0.4rem',display:'flex',flexWrap:'wrap',gap:'0.3rem',alignItems:'center'}}>
+                            {statusBadge(job.status)}
                             {(job.licences_required||[]).map(l => (
                               <span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8'}}>{l}</span>
                             ))}
+                            {job.status==='active' && daysLeft(job.expires_at) !== null && daysLeft(job.expires_at) <= 7 && (
+                              <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#fef2f2',color:'#b91c1c'}}>
+                                Expires in {daysLeft(job.expires_at)} day{daysLeft(job.expires_at)!==1?'s':''}
+                              </span>
+                            )}
+                            {job.status==='paused' && job.pause_reason && (
+                              <span style={{fontSize:'0.72rem',color:'#854d0e',marginLeft:'0.25rem'}}>— {job.pause_reason}</span>
+                            )}
                           </div>
                         </div>
                         <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.4rem'}}>
-                          <span style={{fontSize:'0.72rem',fontWeight:700,padding:'0.25rem 0.625rem',borderRadius:'999px',background:job.status==='active'?'#dcfce7':'#f1f5f9',color:job.status==='active'?'#15803d':'#64748b'}}>{job.status}</span>
-                          <button onClick={() => isSelected ? setSelectedJob(null) : loadApplicants(job.id)} style={{background:isSelected?'#0b1222':'#eff6ff',color:isSelected?'#fff':'#1a52a8',border:'none',borderRadius:'7px',padding:'0.4rem 0.875rem',fontSize:'0.78rem',fontWeight:700,cursor:'pointer'}}>
-                            {isSelected ? 'Hide Applicants' : 'View Applicants'}
+                          <button onClick={() => selectedJob===job.id ? setSelectedJob(null) : loadApplicants(job.id)}
+                            style={{background:selectedJob===job.id?'#0b1222':'#eff6ff',color:selectedJob===job.id?'#fff':'#1a52a8',border:'none',borderRadius:'7px',padding:'0.4rem 0.875rem',fontSize:'0.78rem',fontWeight:700,cursor:'pointer'}}>
+                            {selectedJob===job.id ? 'Hide' : `Applicants (${Array.isArray(job.job_applications)?job.job_applications[0]?.count||0:0})`}
                           </button>
+                          <div style={{display:'flex',gap:'0.3rem'}}>
+                            {job.status==='active' && (
+                              <button onClick={()=>setPauseModal({jobId:job.id,jobTitle:job.title})}
+                                style={{padding:'0.3rem 0.75rem',borderRadius:'6px',border:'1px solid #fde68a',background:'#fffbeb',color:'#854d0e',fontSize:'0.72rem',fontWeight:700,cursor:'pointer'}}>
+                                Pause
+                              </button>
+                            )}
+                            {job.status==='paused' && (
+                              <button onClick={()=>updateJobStatus(job.id,'active')}
+                                disabled={statusUpdating===job.id}
+                                style={{padding:'0.3rem 0.75rem',borderRadius:'6px',border:'1px solid #bbf7d0',background:'#f0fdf4',color:'#15803d',fontSize:'0.72rem',fontWeight:700,cursor:'pointer'}}>
+                                Reactivate
+                              </button>
+                            )}
+                            {job.status!=='ended' && (
+                              <button onClick={()=>{ if(window.confirm('End this job posting? This cannot be undone.')) updateJobStatus(job.id,'ended'); }}
+                                disabled={statusUpdating===job.id}
+                                style={{padding:'0.3rem 0.75rem',borderRadius:'6px',border:'1px solid #fecaca',background:'#fef2f2',color:'#b91c1c',fontSize:'0.72rem',fontWeight:700,cursor:'pointer'}}>
+                                End
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div style={{fontSize:'0.72rem',color:'#94a3b8',marginTop:'0.5rem'}}>
                         Posted {new Date(job.created_at).toLocaleDateString('en-GB')}
+                        {job.expires_at && job.status==='active' && ` · Expires ${new Date(job.expires_at).toLocaleDateString('en-GB')}`}
                       </div>
                     </div>
 
@@ -3683,6 +3898,49 @@ function EmployerDashboard() {
             You must check and verify original right to work documents for every candidate before they start work. UKSecurityJobs candidate declarations are not a substitute for a statutory right to work check. Fines of up to £60,000 per illegal worker apply. <a href="https://www.gov.uk/check-job-applicant-right-to-work" target="_blank" rel="noopener" style={{color:'#854d0e',fontWeight:700}}>Use the Home Office online service →</a>
           </div>
         </div>
+
+        {/* Recruitment legal disclaimer */}
+        <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'10px',padding:'1rem 1.25rem',marginTop:'0.75rem'}}>
+          <div style={{fontWeight:700,fontSize:'0.78rem',color:'#475569',marginBottom:'0.3rem'}}>Recruitment Guidance Disclaimer</div>
+          <div style={{fontSize:'0.72rem',color:'#94a3b8',lineHeight:1.7}}>
+            UKSecurityJobs provides interview guidance and scoring frameworks as a reference only, based on UK employment legislation including the Equality Act 2010 and Rehabilitation of Offenders Act 1974. This does not constitute legal advice. Employers are solely responsible for their recruitment decisions and must ensure their processes comply with applicable legislation. Candidates with spent convictions cannot be automatically excluded unless the specific role is exempt. Working Time Regulations 1998 apply to all roles. Digital Software Group Ltd accepts no liability for recruitment outcomes. If in doubt, seek independent HR or legal advice.
+          </div>
+        </div>
+
+        {/* Pause job modal */}
+        {pauseModal && (
+          <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem'}}>
+            <div style={{background:'#fff',borderRadius:'14px',padding:'1.75rem',width:'100%',maxWidth:'460px'}}>
+              <div style={{fontWeight:800,fontSize:'1rem',color:'#0b1222',marginBottom:'0.5rem'}}>Pause Job Posting</div>
+              <div style={{fontSize:'0.85rem',color:'#64748b',marginBottom:'1.25rem'}}>{pauseModal.jobTitle}</div>
+              <div style={{marginBottom:'1rem'}}>
+                <label style={{fontSize:'0.82rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.5rem'}}>Reason for pausing *</label>
+                <select value={pauseReason} onChange={e=>setPauseReason(e.target.value)}
+                  style={{width:'100%',padding:'0.6rem 0.875rem',borderRadius:'8px',border:'1px solid #e2e8f0',fontSize:'0.88rem',fontFamily:'inherit',background:'#fff'}}>
+                  <option value="">Select a reason</option>
+                  {PAUSE_REASONS.map(r=><option key={r}>{r}</option>)}
+                </select>
+              </div>
+              <div style={{marginBottom:'1.25rem'}}>
+                <label style={{fontSize:'0.82rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.5rem'}}>Additional notes (optional)</label>
+                <textarea value={pauseNotes} onChange={e=>setPauseNotes(e.target.value)} rows={2}
+                  placeholder="Any additional context..."
+                  style={{width:'100%',padding:'0.6rem 0.875rem',borderRadius:'8px',border:'1px solid #e2e8f0',fontSize:'0.88rem',fontFamily:'inherit',resize:'vertical'}}/>
+              </div>
+              <div style={{display:'flex',gap:'0.75rem'}}>
+                <button onClick={()=>{ if(!pauseReason){alert('Please select a reason');return;} updateJobStatus(pauseModal.jobId,'paused',pauseReason,pauseNotes); }}
+                  disabled={statusUpdating===pauseModal.jobId}
+                  style={{flex:1,padding:'0.65rem',borderRadius:'8px',background:'#854d0e',color:'#fff',fontWeight:700,fontSize:'0.88rem',border:'none',cursor:'pointer',fontFamily:'inherit'}}>
+                  {statusUpdating===pauseModal.jobId ? 'Pausing...' : 'Pause Job'}
+                </button>
+                <button onClick={()=>{setPauseModal(null);setPauseReason('');setPauseNotes('');}}
+                  style={{flex:1,padding:'0.65rem',borderRadius:'8px',background:'#f8fafc',color:'#475569',fontWeight:600,fontSize:'0.88rem',border:'1px solid #e2e8f0',cursor:'pointer',fontFamily:'inherit'}}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {viewingApplicant && (
           <ApplicantModal

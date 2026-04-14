@@ -39,24 +39,36 @@ router.post('/me', async (req, res) => {
   } catch(err) { console.error('POST /employers/me error:', err); res.status(500).json({ error: 'Failed to save employer' }); }
 });
 
-// GET /api/employers/jobs — get employer's jobs
+// GET /api/employers/jobs — get employer's jobs with applicant counts
 router.get('/jobs', async (req, res) => {
   try {
     const employerId = await getEmployerId(req.userId);
     if (!employerId) return res.json({ jobs: [] });
-    const { data, error } = await supabase.from('jobs').select('*').eq('employer_id', employerId).order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*, job_applications(count)')
+      .eq('employer_id', employerId)
+      .order('created_at', { ascending: false });
     if (error) throw error;
     res.json({ jobs: data });
   } catch(err) { res.status(500).json({ error: 'Failed to fetch jobs' }); }
 });
 
-// POST /api/employers/jobs — post a job
+// POST /api/employers/jobs — post a job (sets 60-day expiry, status=active)
 router.post('/jobs', async (req, res) => {
   try {
     const employerId = await getEmployerId(req.userId);
     if (!employerId) return res.status(404).json({ error: 'Employer profile not found' });
-    const { data, error } = await supabase.from('jobs').insert({ ...req.body, employer_id: employerId }).select().single();
+    const expires_at = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await supabase.from('jobs').insert({
+      ...req.body,
+      employer_id: employerId,
+      status: 'active',
+      expires_at,
+      created_at: new Date().toISOString()
+    }).select().single();
     if (error) throw error;
+    await auditLog(req.userId, 'job_posted', { job_id: data.id, title: data.title });
     res.json({ success: true, job: data });
   } catch(err) { console.error('POST /employers/jobs error:', err); res.status(500).json({ error: 'Failed to post job' }); }
 });
@@ -66,20 +78,50 @@ router.put('/jobs/:id', async (req, res) => {
   try {
     const employerId = await getEmployerId(req.userId);
     if (!employerId) return res.status(404).json({ error: 'Not found' });
-    const { data, error } = await supabase.from('jobs').update({ ...req.body, updated_at: new Date() })
+    const { data, error } = await supabase.from('jobs')
+      .update({ ...req.body, updated_at: new Date() })
       .eq('id', req.params.id).eq('employer_id', employerId).select().single();
     if (error) throw error;
     res.json({ success: true, job: data });
   } catch(err) { res.status(500).json({ error: 'Failed to update job' }); }
 });
 
-// GET /api/jobs/public — public job listings
+// PATCH /api/employers/jobs/:id/status — change job status
+router.patch('/jobs/:id/status', async (req, res) => {
+  try {
+    const employerId = await getEmployerId(req.userId);
+    if (!employerId) return res.status(403).json({ error: 'Not authorised' });
+    const { status, pause_reason, pause_notes } = req.body;
+    const validStatuses = ['active', 'paused', 'ended'];
+    if (!validStatuses.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+    const validPauseReasons = ['Role filled externally','Role filled via UKSecurityJobs','Budget freeze','Role requirements changed','On hold — internal review','Other'];
+    if (status === 'paused' && !pause_reason) return res.status(400).json({ error: 'pause_reason required' });
+    if (status === 'paused' && !validPauseReasons.includes(pause_reason)) return res.status(400).json({ error: 'Invalid pause reason' });
+    const update = {
+      status, updated_at: new Date().toISOString(),
+      ...(status === 'paused' && { pause_reason, pause_notes: pause_notes||null, paused_at: new Date().toISOString() }),
+      ...(status === 'ended' && { ended_at: new Date().toISOString() }),
+      ...(status === 'active' && { pause_reason: null, pause_notes: null, paused_at: null }),
+    };
+    const { data, error } = await supabase.from('jobs').update(update).eq('id', req.params.id).eq('employer_id', employerId).select().single();
+    if (error) throw error;
+    await auditLog(req.userId, `job_${status}`, { job_id: req.params.id, pause_reason: pause_reason||null });
+    res.json({ success: true, job: data });
+  } catch(err) { console.error('PATCH /employers/jobs/:id/status error:', err); res.status(500).json({ error: 'Failed to update job status' }); }
+});
+
+// GET /api/jobs/public — public job listings (active, not expired)
 router.get('/public', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('jobs').select('*, employers(logo_url)').eq('status', 'active').order('created_at', { ascending: false });
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*, employers(company_name, logo_url, sia_acs)')
+      .eq('status', 'active')
+      .gt('expires_at', now)
+      .order('created_at', { ascending: false });
     if (error) throw error;
-    const jobs = (data || []).map(j => ({ ...j, logo_url: j.employers?.logo_url || null }));
-    res.json({ jobs });
+    res.json({ jobs: data || [] });
   } catch(err) { res.status(500).json({ error: 'Failed to fetch jobs' }); }
 });
 
@@ -113,29 +155,49 @@ router.get('/jobs/:id/applicants', async (req, res) => {
   }
 });
 
-// PATCH /api/employers/applications/:id — update application status
+// PATCH /api/employers/applications/:id — update application status with full pipeline
 router.patch('/applications/:id', async (req, res) => {
   try {
     const employerId = await getEmployerId(req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
 
-    const { status, interview_date, employer_feedback, no_show } = req.body;
+    const {
+      status,
+      interview_date,
+      interview_location,
+      interview_format,       // in_person | video | phone
+      interview_notes,        // notes for candidate
+      employer_feedback,
+      interview_score,        // 1-100 composite score
+      interview_scores,       // JSON object with criteria scores
+      no_show
+    } = req.body;
 
-    // Build update object
+    const validStatuses = ['applied','shortlisted','interview_proposed','interview_confirmed','interview_completed','offered','rejected','no_show','withdrawn'];
+    if (status && !validStatuses.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+
     const update = { updated_at: new Date() };
     if (status) update.status = status;
     if (interview_date) update.interview_date = interview_date;
+    if (interview_location) update.interview_location = interview_location;
+    if (interview_format) update.interview_format = interview_format;
+    if (interview_notes) update.interview_notes = interview_notes;
     if (employer_feedback) update.employer_feedback = employer_feedback;
+    if (interview_score) update.interview_score = interview_score;
+    if (interview_scores) update.interview_scores = interview_scores;
 
-    // Handle no-show — increment candidate strike count
+    // No-show — increment strike count and apply ban
     if (no_show) {
       update.status = 'no_show';
-      // Get candidate id from application
       const { data: app } = await supabase.from('job_applications').select('candidate_id').eq('id', req.params.id).single();
       if (app?.candidate_id) {
         const { data: cand } = await supabase.from('candidates').select('no_show_count').eq('id', app.candidate_id).single();
         const newCount = (cand?.no_show_count || 0) + 1;
-        const bannedUntil = newCount >= 3 ? '2099-12-31' : newCount === 2 ? new Date(Date.now() + 90*24*60*60*1000).toISOString() : new Date(Date.now() + 30*24*60*60*1000).toISOString();
+        const bannedUntil = newCount >= 3
+          ? '2099-12-31'
+          : newCount === 2
+            ? new Date(Date.now() + 90*24*60*60*1000).toISOString()
+            : new Date(Date.now() + 30*24*60*60*1000).toISOString();
         await supabase.from('candidates').update({ no_show_count: newCount, banned_until: bannedUntil }).eq('id', app.candidate_id);
       }
     }
@@ -144,21 +206,25 @@ router.patch('/applications/:id', async (req, res) => {
     if (error) throw error;
 
     // Send status emails
-    if (status && data) {
+    if ((status || no_show) && data) {
       const { data: job } = await supabase.from('jobs').select('title, employers(company_name)').eq('id', data.job_id).single();
       const { data: cand } = await supabase.from('candidates').select('email, candidate_personal(first_name)').eq('id', data.candidate_id).single();
       if (cand?.email && job) {
         const firstName = cand.candidate_personal?.[0]?.first_name || cand.candidate_personal?.first_name || 'Officer';
         const jobTitle = job.title;
         const companyName = job.employers?.company_name || 'Employer';
-        if (status === 'interview_scheduled') {
-          email.sendInterviewScheduled({ toEmail: cand.email, firstName, jobTitle, companyName, interviewDate: interview_date }).catch(e => console.error('Interview email failed:', e));
-        } else if (status === 'rejected') {
+        const effectiveStatus = no_show ? 'no_show' : status;
+        if (effectiveStatus === 'interview_proposed' || effectiveStatus === 'interview_confirmed') {
+          email.sendInterviewScheduled({ toEmail: cand.email, firstName, jobTitle, companyName, interviewDate: interview_date, interviewLocation: interview_location, interviewFormat: interview_format, interviewNotes: interview_notes }).catch(e => console.error('Interview email failed:', e));
+        } else if (effectiveStatus === 'rejected') {
           email.sendApplicationUnsuccessful({ toEmail: cand.email, firstName, jobTitle, companyName }).catch(e => console.error('Rejection email failed:', e));
+        } else if (effectiveStatus === 'shortlisted') {
+          email.sendShortlisted({ toEmail: cand.email, firstName, jobTitle, companyName }).catch(e => console.error('Shortlist email failed:', e));
         }
       }
     }
 
+    await auditLog(req.userId, 'application_updated', { application_id: req.params.id, status: status || (no_show ? 'no_show' : null) });
     res.json({ success: true, application: data });
   } catch(err) {
     console.error('PATCH /employers/applications/:id error:', err);
