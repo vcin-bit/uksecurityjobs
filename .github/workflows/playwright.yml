@@ -32,6 +32,12 @@ jobs:
         working-directory: app
         run: npx playwright install chromium --with-deps
 
+      - name: Run link checker tests
+        working-directory: app
+        run: npx playwright test tests/links.spec.ts --reporter=list
+        env:
+          MARKETING_BASE_URL: https://www.uksecurityjobs.co.uk
+
       - name: Run marketing site tests
         working-directory: app
         run: npx playwright test tests/marketing.spec.ts --reporter=list
