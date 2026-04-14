@@ -2657,7 +2657,17 @@ const industryFacts = [
   },
 ];
 
-// ── DASHBOARD ──
+// ── TEXT FORMATTING UTILITIES ──
+const fmt = {
+  titleCase: v => v.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.substr(1).toLowerCase()),
+  sentenceCase: v => v.charAt(0).toUpperCase() + v.slice(1),
+  postcode: v => { const c = v.toUpperCase().replace(/\s/g,''); return c.length > 3 ? c.slice(0,-3)+' '+c.slice(-3) : c; },
+  uppercase: v => v.toUpperCase(),
+  lowercase: v => v.toLowerCase(),
+  phone: v => v.replace(/[^0-9+\s]/g,''),
+};
+
+
 function CandidateApplications({ getToken }) {
   const [applications, setApplications] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
@@ -2781,6 +2791,30 @@ function Dashboard() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16.5"/></svg>
               Before you start — have these to hand
             </div>
+
+            {/* BS7858 No Shortcuts Warning */}
+            <div style={{background:'#fff7ed',border:'1px solid #fed7aa',borderRadius:'10px',padding:'1rem',marginBottom:'1rem'}}>
+              <div style={{fontWeight:700,fontSize:'0.88rem',color:'#9a3412',marginBottom:'0.4rem',display:'flex',alignItems:'center',gap:'0.5rem'}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c2410c" strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                There are no shortcuts on this platform
+              </div>
+              <div style={{fontSize:'0.82rem',color:'#7c2d12',lineHeight:1.7}}>
+                BS7858 vetting is a legal requirement for the majority of security roles in the UK. Every employer who hires through this platform will verify your employment history, address history and identity — going back five years, with no unexplained gaps. If you are not prepared to complete this fully and honestly, this platform is not for you. <strong>Indeed is that way.</strong>
+              </div>
+            </div>
+
+            {/* How your profile becomes your CV */}
+            <div style={{background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:'10px',padding:'1rem',marginBottom:'1rem'}}>
+              <div style={{fontWeight:700,fontSize:'0.88rem',color:'#14532d',marginBottom:'0.4rem',display:'flex',alignItems:'center',gap:'0.5rem'}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Your profile is your CV — built once, used everywhere
+              </div>
+              <div style={{fontSize:'0.82rem',color:'#166534',lineHeight:1.7}}>
+                When you apply for a role on UKSecurityJobs, you do not send a CV. You share your verified profile. Every employer sees the same structured information — your licences, work history, qualifications and references — presented professionally and consistently. No blank boxes, no missing dates, no unexplained gaps. Employers know exactly who they are interviewing before they pick up the phone.<br/><br/>
+                <strong>That is why we are selective.</strong> We are not interested in volume. We are here for professionals who take their career seriously.
+              </div>
+            </div>
+
             <div style={{fontSize:'0.82rem',color:'#334155',marginBottom:'1rem',lineHeight:'1.6'}}>
               Your profile is used for BS7858 vetting. The more accurate and complete it is, the faster you get hired. Take your time — rushing causes errors that delay the process.
             </div>

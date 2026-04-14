@@ -88,9 +88,9 @@ router.get('/jobs/:id/applicants', async (req, res) => {
       .from('job_applications')
       .select(`
         id, status, created_at, interview_date, employer_feedback,
-        candidates(id, clerk_user_id, sia_verified, profile_complete,
+        candidates(id, sia_verified, profile_complete,
           candidate_personal(first_name, last_name, phone, right_to_work_status, visa_expiry),
-          candidate_licences(licence_type, sia_number, expiry_date, verified)
+          candidate_licences(licence_type, expiry_date, verified)
         )
       `)
       .eq('job_id', req.params.id)
@@ -140,7 +140,7 @@ router.patch('/applications/:id', async (req, res) => {
   }
 });
 
-// GET /api/employers/candidate/:id — get candidate full profile for employer
+// GET /api/employers/candidate/:id — get candidate profile for employer (data minimised)
 router.get('/candidate/:id', async (req, res) => {
   try {
     const employerId = await getEmployerId(req.userId);
@@ -157,16 +157,76 @@ router.get('/candidate/:id', async (req, res) => {
 
     if (!application) return res.status(403).json({ error: 'Not authorised to view this candidate' });
 
-    // Get full candidate profile
-    const { data: candidate, error } = await supabase
-      .from('candidates')
-      .select(`*, candidate_personal(*), candidate_licences(*), candidate_employment(*), candidate_addresses(*), candidate_qualifications(*), candidate_sectors(*), candidate_driving(*)`)
-      .eq('id', req.params.id)
-      .single();
+    // Fetch each table with explicit field selection — data minimisation per GDPR Article 5(1)(c)
+    const [
+      { data: personal },
+      { data: licences },
+      { data: employment },
+      { data: addresses },
+      { data: qualifications },
+      { data: sectors },
+      { data: driving },
+      { data: candidate }
+    ] = await Promise.all([
+      // Personal — no DOB, no full address, no email, no gender, no health
+      supabase.from('candidate_personal').select(
+        'first_name, last_name, phone, right_to_work_status, visa_expiry'
+      ).eq('candidate_id', req.params.id).single(),
 
-    if (error) throw error;
-    await auditLog(req.userId, 'employer_view_candidate', { candidate_id: req.params.id, employer_id: employerId });
-    res.json({ candidate });
+      // Licences — type, expiry and verified status only. No licence number.
+      supabase.from('candidate_licences').select(
+        'licence_type, expiry_date, verified'
+      ).eq('candidate_id', req.params.id),
+
+      // Employment — full history for BS7858. Reference contacts included.
+      supabase.from('candidate_employment').select(
+        'job_title, company_name, start_date, end_date, employment_type, reference_name, reference_phone, reference_email, reason_for_leaving'
+      ).eq('candidate_id', req.params.id).order('start_date', { ascending: false }),
+
+      // Addresses — town and county only. No full street address.
+      supabase.from('candidate_addresses').select(
+        'city, county, moved_in_date, moved_out_date'
+      ).eq('candidate_id', req.params.id).order('moved_in_date', { ascending: false }),
+
+      // Qualifications — all relevant
+      supabase.from('candidate_qualifications').select(
+        'first_aid_level, languages, sia_trainer, security_clearance, additional_certs'
+      ).eq('candidate_id', req.params.id).single(),
+
+      // Sectors and availability
+      supabase.from('candidate_sectors').select(
+        'sectors, preferred_shift, travel_radius, available_from'
+      ).eq('candidate_id', req.params.id).single(),
+
+      // Driving — type and vehicle access only
+      supabase.from('candidate_driving').select(
+        'licence_type, own_vehicle, travel_radius'
+      ).eq('candidate_id', req.params.id).single(),
+
+      // Candidate meta — verified status and score only
+      supabase.from('candidates').select(
+        'id, sia_verified, profile_complete, vettability_score, created_at'
+      ).eq('id', req.params.id).single(),
+    ]);
+
+    await auditLog(req.userId, 'employer_view_candidate', {
+      candidate_id: req.params.id,
+      employer_id: employerId,
+      fields_accessed: 'data_minimised_employer_view'
+    });
+
+    res.json({
+      candidate: {
+        ...candidate,
+        personal,
+        licences: licences || [],
+        employment: employment || [],
+        addresses: addresses || [],
+        qualifications,
+        sectors,
+        driving,
+      }
+    });
   } catch(err) {
     console.error('GET /employers/candidate/:id error:', err);
     res.status(500).json({ error: 'Failed to fetch candidate' });
