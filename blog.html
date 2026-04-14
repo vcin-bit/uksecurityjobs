@@ -108,6 +108,22 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
 .foot-legal a:hover{color:#94a3b8;}
 @media(max-width:900px){.foot-top{grid-template-columns:1fr;gap:2rem;}.foot-nav{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:500px){.foot-nav{grid-template-columns:1fr;}.foot-bottom{flex-direction:column;gap:0.5rem;}}
+
+/* FAQ ACCORDION */
+.faq-section{padding:4rem 2rem;background:#f9fafb;border-top:1px solid #e2e8f0;}
+.faq-inner{max-width:800px;margin:0 auto;}
+.faq-section h2{font-size:1.75rem;font-weight:900;letter-spacing:-0.02em;margin-bottom:0.5rem;}
+.faq-section .faq-sub{font-size:0.92rem;color:#4a5568;margin-bottom:2.5rem;line-height:1.7;}
+.faq-item{border-bottom:1px solid #e2e8f0;}
+.faq-item:last-child{border-bottom:none;}
+.faq-q{width:100%;background:none;border:none;text-align:left;padding:1.1rem 0;font-size:0.95rem;font-weight:700;color:#0b1222;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:1rem;font-family:inherit;}
+.faq-q:hover{color:#1a52a8;}
+.faq-icon{flex-shrink:0;font-size:1.3rem;color:#94a3b8;transition:transform 0.2s;line-height:1;}
+.faq-a{display:none;padding:0 0 1.1rem;font-size:0.88rem;color:#4a5568;line-height:1.8;}
+.faq-a a{color:#1a52a8;font-weight:600;}
+.faq-item.open .faq-a{display:block;}
+.faq-item.open .faq-icon{transform:rotate(45deg);}
+
 </style>
 </head>
 <body>
@@ -307,6 +323,43 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
       </div>
     </div>
   </div>
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "mainEntity":[
+    {"@type":"Question","name":"What topics does the UKSecurityJobs blog cover?","acceptedAnswer":{"@type":"Answer","text":"The UKSecurityJobs blog covers SIA licensing, BS7858 vetting, security career progression, licence types, industry news, employer guides and recruitment best practice — all written from a practitioner's perspective by people who have worked in the UK licensed security industry."}},
+    {"@type":"Question","name":"How do I get an SIA licence in the UK?","acceptedAnswer":{"@type":"Answer","text":"To obtain an SIA licence you must complete an approved training course for your chosen licence type, pass the relevant assessments, and apply through the SIA online portal. Most courses take between 4 and 6 days. The licence is valid for 3 years. Training costs vary by provider and licence type."}},
+    {"@type":"Question","name":"What is the difference between a Door Supervisor and Security Guard licence?","acceptedAnswer":{"@type":"Answer","text":"A Door Supervisor licence permits work on licensed premises and allows physical intervention techniques. A Security Guard licence is for static guarding roles such as retail, corporate and construction sites, and does not permit work on licensed premises or physical intervention. Many employers prefer Door Supervisor licence holders as they are more versatile."}},
+    {"@type":"Question","name":"How long does BS7858 vetting take?","acceptedAnswer":{"@type":"Answer","text":"BS7858 vetting typically takes between 2 and 6 weeks depending on how quickly employers and references respond. The most common cause of delays is incomplete employment history or missing reference contacts. A complete UKSecurityJobs profile significantly reduces this time because all the required information is already collected and verified."}},
+    {"@type":"Question","name":"Is there a shortage of security officers in the UK?","acceptedAnswer":{"@type":"Answer","text":"Yes. The UK licensed security industry faces a significant shortage of experienced, qualified security professionals. Demand is growing across retail, corporate, events and residential sectors. Officers with multiple SIA licences, a clean record and a complete BS7858 profile are in particularly high demand."}}
+  ]
+}</script>
+<section class="faq-section">
+  <div class="faq-inner">
+    <h2>Frequently Asked Questions</h2>
+    <p class="faq-sub">Everything you need to know — answered directly.</p>
+    <div class="faq-item">
+      <button class="faq-q">What topics does the UKSecurityJobs blog cover?<span class="faq-icon">+</span></button>
+      <div class="faq-a">The blog covers SIA licensing, BS7858 vetting, security career progression, licence types, industry news and employer guides — all written from a practitioner's perspective with 30 years of industry experience behind it.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">How do I get an SIA licence in the UK?<span class="faq-icon">+</span></button>
+      <div class="faq-a">Complete an approved training course for your chosen licence type — <a href='/door-supervisor-jobs'>Door Supervisor</a>, <a href='/security-guard-jobs'>Security Guard</a>, <a href='/cctv-jobs'>CCTV Operator</a> or <a href='/close-protection-jobs'>Close Protection</a>. Pass the assessments and apply through the SIA online portal. Most courses take 4–6 days and licences are valid for 3 years.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">What is the difference between a Door Supervisor and Security Guard licence?<span class="faq-icon">+</span></button>
+      <div class="faq-a">A <a href='/door-supervisor-jobs'>Door Supervisor licence</a> permits work on licensed premises and allows physical intervention. A <a href='/security-guard-jobs'>Security Guard licence</a> covers static guarding — retail, corporate, construction — but does not permit licensed premises work or physical intervention. Door Supervisor licence holders are more versatile and typically earn more.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">How long does BS7858 vetting take?<span class="faq-icon">+</span></button>
+      <div class="faq-a">Typically 2–6 weeks depending on how quickly references respond. The most common cause of delay is incomplete employment history or missing contact details. A complete UKSecurityJobs profile significantly reduces this — all required information is already collected, structured and ready to go. <a href='/blog/what-is-bs7858-vetting'>Read our full BS7858 guide →</a></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">Is there a shortage of security officers in the UK?<span class="faq-icon">+</span></button>
+      <div class="faq-a">Yes. The UK licensed security industry faces a genuine shortage of qualified, experienced professionals. Demand is growing across retail, corporate, events and residential sectors. Officers with multiple SIA licences, a clean record and a complete BS7858-ready profile are in particularly high demand right now.</div>
+    </div>
+  </div>
+</section>
 </footer>
 
 <script>
@@ -319,5 +372,17 @@ menuBtn.addEventListener('click',openMenu);
 menuClose.addEventListener('click',closeMenu);
 mobMenu.querySelectorAll('a').forEach(a=>a.addEventListener('click',closeMenu));
 </script>
+
+<script>
+document.querySelectorAll('.faq-q').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var item=this.parentElement;
+    var isOpen=item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(function(i){i.classList.remove('open');});
+    if(!isOpen)item.classList.add('open');
+  });
+});
+</script>
+
 </body>
 </html>

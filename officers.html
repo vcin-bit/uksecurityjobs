@@ -157,6 +157,22 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
 .foot-legal a:hover{color:#94a3b8;}
 @media(max-width:900px){.foot-top{grid-template-columns:1fr;gap:2rem;}.foot-nav{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:500px){.foot-nav{grid-template-columns:1fr;}.foot-bottom{flex-direction:column;gap:0.5rem;}}
+
+/* FAQ ACCORDION */
+.faq-section{padding:4rem 2rem;background:#f9fafb;border-top:1px solid #e2e8f0;}
+.faq-inner{max-width:800px;margin:0 auto;}
+.faq-section h2{font-size:1.75rem;font-weight:900;letter-spacing:-0.02em;margin-bottom:0.5rem;}
+.faq-section .faq-sub{font-size:0.92rem;color:#4a5568;margin-bottom:2.5rem;line-height:1.7;}
+.faq-item{border-bottom:1px solid #e2e8f0;}
+.faq-item:last-child{border-bottom:none;}
+.faq-q{width:100%;background:none;border:none;text-align:left;padding:1.1rem 0;font-size:0.95rem;font-weight:700;color:#0b1222;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:1rem;font-family:inherit;}
+.faq-q:hover{color:#1a52a8;}
+.faq-icon{flex-shrink:0;font-size:1.3rem;color:#94a3b8;transition:transform 0.2s;line-height:1;}
+.faq-a{display:none;padding:0 0 1.1rem;font-size:0.88rem;color:#4a5568;line-height:1.8;}
+.faq-a a{color:#1a52a8;font-weight:600;}
+.faq-item.open .faq-a{display:block;}
+.faq-item.open .faq-icon{transform:rotate(45deg);}
+
 </style>
 </head>
 <body>
@@ -401,6 +417,48 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
       </div>
     </div>
   </div>
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "mainEntity":[
+    {"@type":"Question","name":"How do I register as a security officer on UKSecurityJobs?","acceptedAnswer":{"@type":"Answer","text":"Register free at app.uksecurityjobs.co.uk/sign-up. Complete your profile including your SIA licence details, 5-year employment history and address history. Your licence is verified within 24 hours and your profile goes live to employers once complete."}},
+    {"@type":"Question","name":"What SIA licences are accepted on UKSecurityJobs?","acceptedAnswer":{"@type":"Answer","text":"We accept Door Supervisor, Security Guard, CCTV Operator (PSS), Close Protection, Cash and Valuables in Transit and Key Holding licences. You can hold multiple licences on your profile, which increases the number of roles you can apply for."}},
+    {"@type":"Question","name":"What is a BS7858-ready profile?","acceptedAnswer":{"@type":"Answer","text":"A BS7858-ready profile means you have provided everything an employer needs to begin the BS7858 vetting process — a verified 5-year employment history with no gaps, a complete 5-year address history, reference contacts for every employer, and identity documents. UKSecurityJobs guides you through building this before you apply for any role."}},
+    {"@type":"Question","name":"Is my personal data safe on UKSecurityJobs?","acceptedAnswer":{"@type":"Answer","text":"Yes. Sensitive data including your National Insurance number and any criminal disclosures are encrypted at field level in our database. Your data is stored in the European Union and is never shared without your explicit consent. We are registered with the ICO and are pursuing Cyber Essentials certification."}},
+    {"@type":"Question","name":"Can I apply for security jobs anywhere in the UK?","acceptedAnswer":{"@type":"Answer","text":"Yes. Your profile works across all UK employers on the platform. You set your preferred locations, travel radius and sectors, and employers can see whether you are a match before you apply. One profile covers every opportunity on the platform."}},
+    {"@type":"Question","name":"What happens after I apply for a security job?","acceptedAnswer":{"@type":"Answer","text":"When you apply, your full BS7858-ready profile — including employment history, reference contacts and vetting documents — is sent to the employer. The employer can review your profile, vetting score and CV before contacting you. We check in on every placement one month after you start."}}
+  ]
+}</script>
+<section class="faq-section">
+  <div class="faq-inner">
+    <h2>Frequently Asked Questions</h2>
+    <p class="faq-sub">Everything you need to know — answered directly.</p>
+    <div class="faq-item">
+      <button class="faq-q">How do I register as a security officer on UKSecurityJobs?<span class="faq-icon">+</span></button>
+      <div class="faq-a">Register free at <a href='https://app.uksecurityjobs.co.uk/sign-up'>app.uksecurityjobs.co.uk/sign-up</a>. Complete your profile including your SIA licence details, 5-year employment history and address history. Your licence is verified within 24 hours and your profile goes live to employers once complete.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">What SIA licences are accepted on UKSecurityJobs?<span class="faq-icon">+</span></button>
+      <div class="faq-a">We accept <a href='/door-supervisor-jobs'>Door Supervisor</a>, <a href='/security-guard-jobs'>Security Guard</a>, <a href='/cctv-jobs'>CCTV Operator (PSS)</a>, <a href='/close-protection-jobs'>Close Protection</a>, Cash and Valuables in Transit and Key Holding licences. You can add multiple licences to your profile, which increases the number of roles you can apply for.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">What is a BS7858-ready profile and why does it matter?<span class="faq-icon">+</span></button>
+      <div class="faq-a">A BS7858-ready profile means you have provided everything an employer needs to begin the BS7858 vetting process — a verified 5-year employment history with no unexplained gaps, a complete 5-year address history, reference contacts for every employer, and identity documents. UKSecurityJobs guides you through building this step by step before you apply for any role. <a href='/blog/what-is-bs7858-vetting'>Read our full guide to BS7858 vetting →</a></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">Is my personal data safe on UKSecurityJobs?<span class="faq-icon">+</span></button>
+      <div class="faq-a">Yes. Sensitive data including your National Insurance number and any criminal disclosures are encrypted at field level in our database. Your data is stored in the European Union in compliance with UK GDPR and is never shared without your explicit consent. See our <a href='/privacy'>Privacy Policy</a> for full details.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">Can I apply for security jobs anywhere in the UK?<span class="faq-icon">+</span></button>
+      <div class="faq-a">Yes. Your profile works across all UK employers on the platform. You set your preferred locations, travel radius and sectors when building your profile. Browse <a href='/security-jobs-london'>security jobs in London</a>, <a href='/security-jobs-manchester'>Manchester</a>, <a href='/security-jobs-birmingham'>Birmingham</a> and across the UK — one profile covers every opportunity.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">What happens if I do not attend an interview?<span class="faq-icon">+</span></button>
+      <div class="faq-a">Candidates who accept an interview and fail to attend without prior notice and a valid reason will receive a 30-day ban from the platform. A second offence results in a 90-day ban. A third offence results in a permanent ban. This policy protects employers' time and maintains the professional standards the platform is built on.</div>
+    </div>
+  </div>
+</section>
 </footer>
 
 <script>
@@ -413,5 +471,17 @@ menuBtn.addEventListener('click',openMenu);
 menuClose.addEventListener('click',closeMenu);
 mobMenu.querySelectorAll('a').forEach(a=>a.addEventListener('click',closeMenu));
 </script>
+
+<script>
+document.querySelectorAll('.faq-q').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var item=this.parentElement;
+    var isOpen=item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(function(i){i.classList.remove('open');});
+    if(!isOpen)item.classList.add('open');
+  });
+});
+</script>
+
 </body>
 </html>

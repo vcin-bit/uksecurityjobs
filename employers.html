@@ -126,6 +126,22 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
 .foot-legal a:hover{color:#94a3b8;}
 @media(max-width:900px){.foot-top{grid-template-columns:1fr;gap:2rem;}.foot-nav{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:500px){.foot-nav{grid-template-columns:1fr;}.foot-bottom{flex-direction:column;gap:0.5rem;}}
+
+/* FAQ ACCORDION */
+.faq-section{padding:4rem 2rem;background:#f9fafb;border-top:1px solid #e2e8f0;}
+.faq-inner{max-width:800px;margin:0 auto;}
+.faq-section h2{font-size:1.75rem;font-weight:900;letter-spacing:-0.02em;margin-bottom:0.5rem;}
+.faq-section .faq-sub{font-size:0.92rem;color:#4a5568;margin-bottom:2.5rem;line-height:1.7;}
+.faq-item{border-bottom:1px solid #e2e8f0;}
+.faq-item:last-child{border-bottom:none;}
+.faq-q{width:100%;background:none;border:none;text-align:left;padding:1.1rem 0;font-size:0.95rem;font-weight:700;color:#0b1222;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:1rem;font-family:inherit;}
+.faq-q:hover{color:#1a52a8;}
+.faq-icon{flex-shrink:0;font-size:1.3rem;color:#94a3b8;transition:transform 0.2s;line-height:1;}
+.faq-a{display:none;padding:0 0 1.1rem;font-size:0.88rem;color:#4a5568;line-height:1.8;}
+.faq-a a{color:#1a52a8;font-weight:600;}
+.faq-item.open .faq-a{display:block;}
+.faq-item.open .faq-icon{transform:rotate(45deg);}
+
 </style>
 </head>
 <body>
@@ -309,6 +325,48 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
       </div>
     </div>
   </div>
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "mainEntity":[
+    {"@type":"Question","name":"How do security companies register on UKSecurityJobs?","acceptedAnswer":{"@type":"Answer","text":"Register at app.uksecurityjobs.co.uk/employer/sign-up. Create your employer account, complete your company details and upload your logo. You can start posting verified security vacancies immediately."}},
+    {"@type":"Question","name":"What makes UKSecurityJobs different from Indeed or Reed for security recruitment?","acceptedAnswer":{"@type":"Answer","text":"Every candidate on UKSecurityJobs holds a verified SIA licence and has a complete BS7858-ready profile before they apply. There are no unlicensed applicants, no incomplete profiles and no candidates who do not meet basic vetting requirements. You see a vettability score, structured CV and verified licence before you pick up the phone."}},
+    {"@type":"Question","name":"Can I post any type of security vacancy?","acceptedAnswer":{"@type":"Answer","text":"You can post vacancies for any role that requires a valid SIA licence — door supervisor, security guard, CCTV operator, close protection, key holding and cash in transit roles. All job postings must be for genuine vacancies and must accurately represent the role, pay rate and conditions."}},
+    {"@type":"Question","name":"How much does it cost to post a security job on UKSecurityJobs?","acceptedAnswer":{"@type":"Answer","text":"Job posting pricing details are available on the platform. Unlike generic job boards where you pay for volume and get unsuitable applicants, UKSecurityJobs charges for access to a pre-qualified, verified candidate pool. Every applicant is SIA licensed and BS7858 ready."}},
+    {"@type":"Question","name":"Are employers responsible for conducting their own BS7858 vetting?","acceptedAnswer":{"@type":"Answer","text":"Yes. UKSecurityJobs provides BS7858-ready candidate profiles — meaning all the information required to begin vetting is collected, verified and structured. However, the formal BS7858 vetting process and any resulting employment decisions remain the responsibility of the employer."}},
+    {"@type":"Question","name":"How does interview feedback work on UKSecurityJobs?","acceptedAnswer":{"@type":"Answer","text":"After an interview, employers submit feedback through the platform with a single click. This feedback is used to monitor candidate attendance and professionalism. Candidates who do not attend interviews without notice are banned from the platform, protecting your time and maintaining quality standards."}}
+  ]
+}</script>
+<section class="faq-section">
+  <div class="faq-inner">
+    <h2>Frequently Asked Questions</h2>
+    <p class="faq-sub">Everything you need to know — answered directly.</p>
+    <div class="faq-item">
+      <button class="faq-q">How do security companies register on UKSecurityJobs?<span class="faq-icon">+</span></button>
+      <div class="faq-a">Register at <a href='https://app.uksecurityjobs.co.uk/employer/sign-up'>app.uksecurityjobs.co.uk/employer/sign-up</a>. Create your employer account, complete your company details and upload your company logo. You can start posting verified security vacancies immediately after registration.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">What makes UKSecurityJobs different from Indeed or Reed for security recruitment?<span class="faq-icon">+</span></button>
+      <div class="faq-a">Every candidate on UKSecurityJobs holds a verified SIA licence and has a complete BS7858-ready profile before they can apply. There are no unlicensed applicants, no incomplete CVs and no candidates who haven't met basic vetting requirements. You see a vettability score, structured CV and verified licence status before you pick up the phone.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">What types of security vacancy can I post?<span class="faq-icon">+</span></button>
+      <div class="faq-a">You can post vacancies for any role requiring a valid SIA licence — <a href='/door-supervisor-jobs'>door supervisor</a>, <a href='/security-guard-jobs'>security guard</a>, <a href='/cctv-jobs'>CCTV operator</a>, <a href='/close-protection-jobs'>close protection</a>, key holding and cash in transit roles. All postings must be for genuine vacancies and must accurately represent the role, pay and conditions.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">Are employers responsible for their own BS7858 vetting?<span class="faq-icon">+</span></button>
+      <div class="faq-a">Yes. UKSecurityJobs provides BS7858-ready candidate profiles — all the information required to begin vetting is collected, verified and structured. The formal BS7858 vetting process and all employment decisions remain the responsibility of the employer. Read our <a href='/blog/what-is-bs7858-vetting'>guide to BS7858 vetting</a> for more detail.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">How does the no-show policy protect employers?<span class="faq-icon">+</span></button>
+      <div class="faq-a">Candidates who accept an interview and fail to attend without prior notice are banned from the platform — 30 days for the first offence, 90 days for the second, permanent for the third. Employers submit interview feedback with a single click. This policy is enforced strictly to protect your time.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">Can I post security jobs for multiple locations?<span class="faq-icon">+</span></button>
+      <div class="faq-a">Yes. You can post separate vacancies for different locations across the UK. Each listing can specify its own location, licence requirements, pay rate, shift pattern and start date. Candidates are matched by location preference and licence type before they see your vacancy.</div>
+    </div>
+  </div>
+</section>
 </footer>
 
 <script>
@@ -321,5 +379,17 @@ menuBtn.addEventListener('click',openMenu);
 menuClose.addEventListener('click',closeMenu);
 mobMenu.querySelectorAll('a').forEach(a=>a.addEventListener('click',closeMenu));
 </script>
+
+<script>
+document.querySelectorAll('.faq-q').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var item=this.parentElement;
+    var isOpen=item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(function(i){i.classList.remove('open');});
+    if(!isOpen)item.classList.add('open');
+  });
+});
+</script>
+
 </body>
 </html>
