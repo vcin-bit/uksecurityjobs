@@ -12,7 +12,7 @@ test.describe('Profile Builder — Public', () => {
 
   test('sign in page loads correctly', async ({ page }) => {
     await page.goto('/sign-in');
-    await expect(page.getByText('Sign in')).toBeVisible({ timeout: 8000 });
+    await expect(page.getByRole('button', { name: /Sign In/ })).toBeVisible({ timeout: 8000 });
   });
 
   test('unauthenticated dashboard redirects to sign in', async ({ page }) => {
