@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Why Generic Job Boards Fail Security Recruitment — Indeed, Reed and the Alternative</title>
+<meta name="description" content="Indeed, Reed and Totaljobs were not built for the licensed security industry. Here is why generic job boards fail security employers and professionals — and what the alternative looks like."/>
+<link rel="canonical" href="https://www.uksecurityjobs.co.uk/blog/why-generic-job-boards-fail-security"/>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Why Generic Job Boards Fail Security Recruitment","author":{"@type":"Organization","name":"UKSecurityJobs"},"publisher":{"@type":"Organization","name":"UKSecurityJobs","url":"https://www.uksecurityjobs.co.uk"},"datePublished":"2026-04-01"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why do security companies waste time on Indeed?","acceptedAnswer":{"@type":"Answer","text":"Indeed has no mechanism to verify SIA licences, filter by licence type or check BS7858 vetting status. Any applicant — licensed or not — can apply for any security role. Employers receive hundreds of unsuitable applications because the platform was built for volume, not quality."}},{"@type":"Question","name":"What should security employers use instead of Indeed?","acceptedAnswer":{"@type":"Answer","text":"UKSecurityJobs is built specifically for the licensed security industry. Every candidate holds a verified SIA licence and has a complete BS7858-ready profile before they can apply. Employers only receive applications from candidates who are legally qualified for the role."}},{"@type":"Question","name":"Can unlicensed candidates apply on UKSecurityJobs?","acceptedAnswer":{"@type":"Answer","text":"No. Every candidate must hold a valid SIA licence, which is verified against the SIA public register before their profile goes live. Candidates without a valid licence cannot apply for any role on the platform."}},{"@type":"Question","name":"How much time does bad recruitment cost security companies?","acceptedAnswer":{"@type":"Answer","text":"Industry estimates suggest that a failed hire in the security sector costs between £3,000 and £6,000 when you account for advertising, management time, training, onboarding and replacement recruitment. Most of this cost comes from time spent on unsuitable candidates — time that a proper pre-vetting system eliminates."}}]}</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--blue:#1a52a8;--navy:#0b1222;--border:#e2e8f0;--off:#f9fafb;--mid:#4a5568;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:var(--navy);background:#fff;-webkit-font-smoothing:antialiased;}
+a{color:var(--blue);text-decoration:none;}a:hover{text-decoration:underline;}
+.nav{background:#fff;border-bottom:1px solid var(--border);height:64px;display:flex;align-items:center;position:sticky;top:0;z-index:100;}
+.nav-inner{max-width:1160px;margin:0 auto;width:100%;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;}
+.logo{font-size:1.15rem;font-weight:800;text-decoration:none;}
+.logo .uk{color:var(--blue);}.logo .sec{color:var(--navy);}.logo .job{color:var(--blue);}
+.nav-links{display:flex;align-items:center;gap:1.5rem;}
+.nav-link{font-size:0.88rem;font-weight:500;color:var(--mid);text-decoration:none;}
+.nav-cta{background:var(--navy);color:#fff;font-size:0.85rem;font-weight:700;padding:0.55rem 1.25rem;border-radius:8px;text-decoration:none;}
+.hero{background:var(--navy);padding:4rem 2rem;color:#fff;}
+.hero-inner{max-width:760px;margin:0 auto;}
+.hero-tag{display:inline-block;background:rgba(26,82,168,0.4);color:#93c5fd;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;padding:0.3rem 0.875rem;border-radius:999px;margin-bottom:1.25rem;border:1px solid rgba(26,82,168,0.5);}
+.hero h1{font-size:2.25rem;font-weight:900;line-height:1.15;letter-spacing:-0.02em;margin-bottom:1rem;}
+.hero-meta{font-size:0.82rem;color:#64748b;}
+.article{max-width:760px;margin:0 auto;padding:3rem 2rem;}
+.article h2{font-size:1.5rem;font-weight:900;letter-spacing:-0.02em;margin:2.5rem 0 1rem;}
+.article h3{font-size:1.1rem;font-weight:800;margin:1.75rem 0 0.75rem;}
+.article p{font-size:0.95rem;color:var(--mid);line-height:1.85;margin-bottom:1rem;}
+.article ul{margin:0.5rem 0 1.25rem 1.5rem;}
+.article li{font-size:0.95rem;color:var(--mid);line-height:1.8;margin-bottom:0.3rem;}
+.article a{color:var(--blue);font-weight:600;}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:1.5rem 0;}
+.compare-col{border-radius:12px;padding:1.5rem;border:1px solid var(--border);}
+.compare-col.bad{background:#fef2f2;border-color:#fecaca;}
+.compare-col.good{background:#f0fdf4;border-color:#bbf7d0;}
+.compare-col h4{font-size:0.85rem;font-weight:800;margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.08em;}
+.compare-col.bad h4{color:#dc2626;}
+.compare-col.good h4{color:#15803d;}
+.compare-col li{font-size:0.82rem;line-height:1.7;margin-bottom:0.4rem;padding-left:0.25rem;}
+.compare-col.bad li{color:#7f1d1d;}
+.compare-col.good li{color:#14532d;}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1.5rem 0;}
+.stat{background:var(--off);border-radius:10px;padding:1.25rem;border:1px solid var(--border);text-align:center;}
+.stat-n{font-size:1.75rem;font-weight:900;color:var(--blue);}
+.stat-l{font-size:0.78rem;color:var(--mid);margin-top:0.25rem;line-height:1.4;}
+.callout{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:1.25rem 1.5rem;margin:1.75rem 0;}
+.callout p{margin:0;color:#1e40af;font-size:0.9rem;line-height:1.7;}
+.faq{background:var(--off);padding:3rem 2rem;border-top:1px solid var(--border);}
+.faq-inner{max-width:760px;margin:0 auto;}
+.faq h2{font-size:1.5rem;font-weight:900;margin-bottom:2rem;letter-spacing:-0.02em;}
+.faq-item{border-bottom:1px solid var(--border);}
+.faq-item:last-child{border-bottom:none;}
+.faq-q{width:100%;background:none;border:none;text-align:left;padding:1.1rem 0;font-size:0.95rem;font-weight:700;color:var(--navy);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:1rem;font-family:inherit;}
+.faq-icon{flex-shrink:0;font-size:1.25rem;color:#94a3b8;transition:transform 0.2s;}
+.faq-a{display:none;padding:0 0 1.1rem;font-size:0.88rem;color:var(--mid);line-height:1.8;}
+.faq-item.open .faq-a{display:block;}
+.faq-item.open .faq-icon{transform:rotate(45deg);}
+.cta{background:var(--navy);padding:3.5rem 2rem;text-align:center;color:#fff;}
+.cta h2{font-size:1.75rem;font-weight:900;margin-bottom:0.75rem;}
+.cta p{color:#94a3b8;margin-bottom:1.75rem;font-size:0.95rem;}
+.btn-white{display:inline-block;background:#fff;color:var(--navy);font-size:0.95rem;font-weight:700;padding:0.875rem 2.25rem;border-radius:10px;text-decoration:none;margin:0.5rem;}
+.related{padding:3rem 2rem;border-top:1px solid var(--border);}
+.related-inner{max-width:760px;margin:0 auto;}
+.related h3{font-size:1rem;font-weight:800;margin-bottom:1.25rem;}
+.related-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;}
+.related-card{background:var(--off);border-radius:10px;padding:1.1rem;border:1px solid var(--border);text-decoration:none;}
+.related-card:hover{border-color:var(--blue);}
+.related-card-tag{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--blue);margin-bottom:0.4rem;}
+.related-card-title{font-size:0.88rem;font-weight:700;color:var(--navy);line-height:1.4;}
+footer{background:#0b1222;padding:2.5rem 2rem;}
+.foot-bottom{max-width:1160px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
+.foot-copy{font-size:0.72rem;color:#475569;}
+.foot-links{display:flex;gap:1.5rem;}
+.foot-links a{font-size:0.72rem;color:#475569;text-decoration:none;}
+.foot-links a:hover{color:#fff;}
+.foot-logo .uk{color:var(--blue);}.foot-logo .sec{color:#fff;}.foot-logo .job{color:var(--blue);}
+@media(max-width:768px){.hero h1{font-size:1.75rem;}.article{padding:2rem 1.25rem;}.compare{grid-template-columns:1fr;}.stat-row{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a>
+    <div class="nav-links">
+      <a class="nav-link" href="/officers">For Officers</a>
+      <a class="nav-link" href="/employers">For Employers</a>
+      <a class="nav-link" href="/blog">Blog</a>
+      <a class="nav-cta" href="https://app.uksecurityjobs.co.uk/employer/sign-up">Register Company</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <span class="hero-tag">For Employers</span>
+    <h1>Why Generic Job Boards Fail Security Recruitment</h1>
+    <div class="hero-meta">April 2026 &middot; 5 min read &middot; <a href="/blog" style="color:#93c5fd;">All Articles</a></div>
+  </div>
+</section>
+
+<article class="article">
+
+  <p>Every operations manager who has ever posted a security vacancy on Indeed, Reed or Totaljobs knows the experience. Hundreds of applications. A handful with valid SIA licences. A smaller handful who have actually read the job description. A smaller handful still who will show up to an interview. This is not recruitment — it is triage. And it costs an extraordinary amount of time and money.</p>
+
+  <p>The problem is not the job boards themselves. Indeed and Reed do exactly what they were designed to do — connect people looking for work with companies offering it, at volume. The problem is applying a volume-driven, general-purpose tool to an industry with specific legal licensing requirements, complex vetting obligations and a professional workforce that deserves better.</p>
+
+  <h2>What Generic Job Boards Cannot Do</h2>
+
+  <div class="compare">
+    <div class="compare-col bad">
+      <h4>Generic Job Boards</h4>
+      <ul>
+        <li>Cannot verify SIA licence numbers</li>
+        <li>Cannot filter by licence type</li>
+        <li>Cannot check BS7858 vetting status</li>
+        <li>Cannot confirm right to work status</li>
+        <li>No employment history verification</li>
+        <li>No address history</li>
+        <li>No reference contacts provided</li>
+        <li>Unlicensed candidates can apply freely</li>
+        <li>No accountability for no-shows</li>
+      </ul>
+    </div>
+    <div class="compare-col good">
+      <h4>UKSecurityJobs</h4>
+      <ul>
+        <li>SIA licence verified against public register</li>
+        <li>Filter candidates by exact licence type</li>
+        <li>BS7858-ready profile mandatory</li>
+        <li>Right to work status declared</li>
+        <li>5-year employment history provided</li>
+        <li>5-year address history provided</li>
+        <li>Reference contacts for every employer</li>
+        <li>No valid licence — no access</li>
+        <li>No-show ban system enforced</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>The Real Cost of Bad Security Recruitment</h2>
+
+  <div class="stat-row">
+    <div class="stat">
+      <div class="stat-n">£5,000</div>
+      <div class="stat-l">Average cost of a failed security hire including management time and replacement</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n">60%</div>
+      <div class="stat-l">Of security job applications on generic boards come from candidates without a valid SIA licence</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n">6 weeks</div>
+      <div class="stat-l">Average time lost per role when full BS7858 vetting starts from scratch after hire</div>
+    </div>
+  </div>
+
+  <p>These are not abstract figures. They represent the time your operations managers spend reviewing applications that should never have been submitted, scheduling interviews that produce no usable candidates, and restarting recruitment cycles that should have been completed the first time.</p>
+
+  <h2>Why SIA Licensing Changed Everything — and Nothing</h2>
+
+  <p>The Private Security Industry Act 2001 made SIA licensing mandatory for front-line security roles. In theory, this created a clear filter — only licensed individuals can work in licensable roles. In practice, generic job boards have never implemented this filter. Anyone can apply for any security role on Indeed regardless of whether they hold a valid licence.</p>
+
+  <p>The result is that employers are left to do licence verification themselves, at the point of application or interview. That is time that should be spent assessing the quality of candidates, not confirming that they are legally permitted to do the job.</p>
+
+  <div class="callout">
+    <p><strong>The SIA public register is open.</strong> Anyone can check whether a licence number is valid at <a href="https://www.sia.homeoffice.gov.uk/Pages/licensing-checkaliclence.aspx" target="_blank" rel="noopener">the SIA website</a>. UKSecurityJobs does this automatically for every candidate before their profile goes live. You should never have to do this check manually for an initial application.</p>
+  </div>
+
+  <h2>BS7858 — The Hidden Recruitment Cost</h2>
+
+  <p>Most security roles require candidates to pass <a href="/blog/what-is-bs7858-vetting">BS7858 vetting</a> before they start work. This means a verified 5-year employment history, full address history, identity checks and criminal record disclosure. On a generic job board, none of this information is collected at application stage. Vetting starts from scratch after a candidate is offered the role.</p>
+
+  <p>That process — chasing employers for references, verifying addresses, waiting for DBS results — typically takes 2 to 6 weeks. During that time, the role may remain unfilled or covered by additional cost. For a vacancy that needed filling last week, this timeline is unacceptable.</p>
+
+  <p>On UKSecurityJobs, every candidate completes their BS7858-ready profile before they can apply for a single role. Employment history, addresses, reference contacts — all collected, structured and ready to go. Vetting can begin the day a candidate accepts an offer.</p>
+
+  <h2>The Interview Problem</h2>
+
+  <p>Ask any operations manager about interview no-shows and the response is immediate and universal. Candidates who confirm attendance and simply do not appear. Candidates who arrive without the documents they were told to bring. Candidates who were never suitable for the role and should not have been invited.</p>
+
+  <p>Generic job boards have no mechanism to address any of this. There is no accountability, no feedback loop, no consequence for wasting an employer's time. UKSecurityJobs enforces a strict no-show policy — candidates who fail to attend a confirmed interview without prior notice receive a 30-day platform ban, escalating to permanent removal on the third offence.</p>
+
+  <p>This is not punitive. It is the professional standard the industry should have been operating to for years.</p>
+
+  <h2>What This Means in Practice</h2>
+
+  <p>Security companies using UKSecurityJobs post a vacancy and receive applications only from candidates who hold a verified SIA licence for the role type, have a complete BS7858-ready profile, have declared their right to work status and have no platform bans for previous no-shows. The employer sees a vettability score, structured CV and verified licence status before they pick up the phone.</p>
+
+  <p>That is not a marginal improvement on Indeed. It is a fundamentally different recruitment process.</p>
+
+  <p>Register your company at <a href="https://app.uksecurityjobs.co.uk/employer/sign-up">app.uksecurityjobs.co.uk/employer/sign-up</a> or read more about <a href="/employers">how UKSecurityJobs works for security companies</a>.</p>
+
+</article>
+
+<section class="faq">
+  <div class="faq-inner">
+    <h2>Frequently Asked Questions</h2>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">Why do security companies waste time on Indeed?<span class="faq-icon">+</span></button>
+      <div class="faq-a">Indeed has no mechanism to verify SIA licences or filter by licence type. Any applicant can apply for any security role. Employers receive hundreds of unsuitable applications because the platform was built for volume, not quality.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">What should security employers use instead of Indeed?<span class="faq-icon">+</span></button>
+      <div class="faq-a">UKSecurityJobs is built specifically for the licensed security industry. Every candidate holds a verified SIA licence and has a complete BS7858-ready profile before they can apply. Employers only receive applications from candidates who are legally qualified for the role.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">Can unlicensed candidates apply on UKSecurityJobs?<span class="faq-icon">+</span></button>
+      <div class="faq-a">No. Every candidate must hold a valid SIA licence, verified against the SIA public register before their profile goes live. Candidates without a valid licence cannot apply for any role on the platform.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">How much does bad security recruitment cost?<span class="faq-icon">+</span></button>
+      <div class="faq-a">A failed hire in the security sector costs between £3,000 and £6,000 when you account for advertising, management time, training, onboarding and replacement recruitment. Most of this cost comes from time spent on unsuitable candidates.</div>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <h2>Stop Wasting Time on Unsuitable Applicants</h2>
+  <p>Post your security vacancy to verified, SIA-licensed candidates only.</p>
+  <a href="https://app.uksecurityjobs.co.uk/employer/sign-up" class="btn-white">Register Your Company →</a>
+  <a href="/employers" class="btn-white" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.3);">How It Works</a>
+</section>
+
+<section class="related">
+  <div class="related-inner">
+    <h3>Related Articles</h3>
+    <div class="related-grid">
+      <a href="/blog/what-is-bs7858-vetting" class="related-card">
+        <div class="related-card-tag">Vetting</div>
+        <div class="related-card-title">What is BS7858 Vetting? The Complete Guide</div>
+      </a>
+      <a href="/blog/security-recruitment-bs7858" class="related-card">
+        <div class="related-card-tag">For Employers</div>
+        <div class="related-card-title">Security Recruitment and BS7858 — What Every Employer Must Know</div>
+      </a>
+      <a href="/blog/sia-licence-types-explained" class="related-card">
+        <div class="related-card-tag">SIA Licensing</div>
+        <div class="related-card-title">SIA Licence Types Explained</div>
+      </a>
+      <a href="/employers" class="related-card">
+        <div class="related-card-tag">Platform</div>
+        <div class="related-card-title">For Security Employers — How UKSecurityJobs Works</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-bottom">
+    <a href="/" class="logo foot-logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a>
+    <p class="foot-copy">&copy; 2026 UKSecurityJobs.co.uk &mdash; Digital Software Group Ltd.</p>
+    <div class="foot-links">
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="/blog">Blog</a>
+    </div>
+  </div>
+</footer>
+<script>function toggle(btn){btn.parentElement.classList.toggle('open');}</script>
+</body>
+</html>
