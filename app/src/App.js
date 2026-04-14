@@ -2722,6 +2722,7 @@ function Dashboard() {
   const navigate = useNavigate();
   const [fact] = React.useState(() => industryFacts[Math.floor(Math.random() * industryFacts.length)]);
   const [profileData, setProfileData] = React.useState(null);
+  const [profileLoading, setProfileLoading] = React.useState(true);
 
   React.useEffect(() => {
     async function load() {
@@ -2737,7 +2738,12 @@ function Dashboard() {
           qualifications: full.qualifications || null,
           background: full.background || null,
         });
-      } catch(err) { console.error('Dashboard load error:', err); }
+      } catch(err) {
+        console.error('Dashboard load error:', err);
+        // Set empty profile so dashboard renders correctly for new users
+        setProfileData({ licences:[], personal:null, employment:[], addresses:[], driving:null, sectors:null, qualifications:null, background:null });
+      }
+      setProfileLoading(false);
     }
     load();
   }, []);
@@ -2764,12 +2770,12 @@ function Dashboard() {
       <Nav/>
       <div className="dashboard">
         <div className="dash-header">
-          <div className="dash-greeting">Welcome back, {user?.firstName || 'Officer'}</div>
+          <div className="dash-greeting">Welcome{!profileLoading && !profileData?.personal?.first_name ? `, ${user?.firstName || 'Officer'}` : `, ${profileData?.personal?.first_name || user?.firstName || 'Officer'}`}</div>
           <div className="dash-sub">Complete your profile to unlock security vacancies and exclusive member benefits.</div>
         </div>
 
-        {/* PREPARATION GUIDE — only shown when profile incomplete */}
-        {pct < 100 && (
+        {/* PREPARATION GUIDE — shown when profile incomplete or loading */}
+        {(profileLoading || pct < 100) && (
           <div className="dash-card" style={{marginBottom:'1.5rem',background:'#f0f9ff',border:'1px solid #bae6fd'}}>
             <div style={{fontWeight:700,fontSize:'0.95rem',color:'#0b1222',marginBottom:'0.75rem',display:'flex',alignItems:'center',gap:'0.5rem'}}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16.5"/></svg>

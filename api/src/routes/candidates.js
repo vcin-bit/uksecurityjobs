@@ -227,7 +227,18 @@ router.get('/me/full', async (req, res) => {
       .eq('clerk_user_id', req.userId)
       .single();
 
-    if (!candidate) return res.status(404).json({ error: 'Profile not found' });
+    // New user — return empty profile structure instead of 404
+    if (!candidate) return res.json({
+      candidate: null,
+      licences: [],
+      personal: null,
+      driving: null,
+      sectors: null,
+      qualifications: null,
+      background: null,
+      employment: [],
+      addresses: [],
+    });
 
     const [siaRes, personalRes, drivingRes, sectorsRes, qualsRes, bgRes, empRes, addrRes] = await Promise.all([
       supabase.from('sia_licences').select('*').eq('candidate_id', candidate.id),
