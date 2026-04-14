@@ -118,7 +118,7 @@ router.get('/public', async (req, res) => {
       .from('jobs')
       .select('*, employers(company_name, logo_url, sia_acs)')
       .eq('status', 'active')
-      .gt('expires_at', now)
+      .or(`expires_at.gt.${now},expires_at.is.null`)
       .order('created_at', { ascending: false });
     if (error) throw error;
     res.json({ jobs: data || [] });
