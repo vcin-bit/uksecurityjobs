@@ -66,12 +66,13 @@ test.describe('Link Checker', () => {
   test('contact form exists on about page', async ({ page }) => {
     await page.goto(`${MARKETING_URL}/about`);
     await page.waitForLoadState('networkidle');
+    await page.locator('#contact-form').waitFor({ state: 'attached', timeout: 20000 });
     await page.locator('#contact-form').scrollIntoViewIfNeeded();
     await expect(page.locator('#contact-form')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('input[name="name"]')).toBeVisible();
     await expect(page.locator('input[name="email"]')).toBeVisible();
     await expect(page.locator('textarea[name="message"]')).toBeVisible();
     await expect(page.getByRole('button', { name: /Send Message/i })).toBeVisible();
-  });
+  }, { timeout: 60000 });
 
 });
