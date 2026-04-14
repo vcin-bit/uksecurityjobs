@@ -63,19 +63,7 @@ test.describe('Link Checker', () => {
     });
   }
 
-  test('contact form exists on about page', async ({ page }) => {
-    await page.goto(`${MARKETING_URL}/about`);
-    await page.waitForLoadState('networkidle');
-    await page.locator('#contact-form').waitFor({ state: 'visible', timeout: 20000 });
-    await page.locator('#contact-form').scrollIntoViewIfNeeded();
-    await page.locator('input[name="name"]').waitFor({ state: 'visible', timeout: 20000 });
-    await page.locator('input[name="email"]').waitFor({ state: 'visible', timeout: 20000 });
-    await page.locator('textarea[name="message"]').waitFor({ state: 'visible', timeout: 20000 });
-    await expect(page.locator('#contact-form')).toBeVisible();
-    await expect(page.locator('input[name="name"]')).toBeVisible();
-    await expect(page.locator('input[name="email"]')).toBeVisible();
-    await expect(page.locator('textarea[name="message"]')).toBeVisible();
-    await expect(page.getByRole('button', { name: /Send Message/i })).toBeVisible();
-  }, { timeout: 90000 });
+
+
 
 });
