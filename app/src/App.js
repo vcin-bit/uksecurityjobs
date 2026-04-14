@@ -577,11 +577,11 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
       )}
 
       <div className="field-row">
-        <Field label="First Name *"><Input type="text" placeholder="John" value={form.firstName} onChange={v=>u('firstName',v)}/></Field>
-        <Field label="Last Name *"><Input type="text" placeholder="Smith" value={form.lastName} onChange={v=>u('lastName',v)}/></Field>
+        <Field label="First Name *"><Input type="text" placeholder="John" value={form.firstName} onChange={v=>u('firstName',fmt.titleCase(v))}/></Field>
+        <Field label="Last Name *"><Input type="text" placeholder="Smith" value={form.lastName} onChange={v=>u('lastName',fmt.titleCase(v))}/></Field>
       </div>
       <div className="field-row">
-        <Field label="Phone Number *"><Input type="tel" placeholder="07700 000000" value={form.phone} onChange={v=>u('phone',v)}/></Field>
+        <Field label="Phone Number *"><Input type="tel" placeholder="07700 000000" value={form.phone} onChange={v=>u('phone',fmt.phone(v))}/></Field>
         <Field label="Date of Birth *">
           <div className="field-row" style={{gap:'0.5rem',marginBottom:0}}>
             <Select value={form.dobDay} onChange={v=>u('dobDay',v)}>
@@ -637,7 +637,7 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
       {(form.right_to_work_status === 'skilled_worker_visa' || form.right_to_work_status === 'pre_settled' || form.right_to_work_status === 'other_visa') && (
         <div style={{marginTop:'0.5rem'}}>
           <Field label="Visa / Leave Type">
-            <Input type="text" placeholder="e.g. Skilled Worker Visa, Spouse Visa" value={form.visa_type} onChange={v=>u('visa_type',v)}/>
+            <Input type="text" placeholder="e.g. Skilled Worker Visa, Spouse Visa" value={form.visa_type} onChange={v=>u('visa_type',fmt.sentenceCase(v))}/>
           </Field>
           <Field label="Visa Expiry Date">
             <Input type="date" value={form.visa_expiry} onChange={v=>u('visa_expiry',v)}/>
@@ -658,12 +658,12 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
       <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.25rem'}}>Current Address</div>
       <div style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1rem'}}>We need your current address to verify your SIA licence and begin BS7858 checks.</div>
 
-      <Field label="Address Line 1 *"><Input type="text" placeholder="House number and street name" value={form.address1} onChange={v=>u('address1',v)}/></Field>
-      <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={form.address2} onChange={v=>u('address2',v)}/></Field>
+      <Field label="Address Line 1 *"><Input type="text" placeholder="House number and street name" value={form.address1} onChange={v=>u('address1',fmt.sentenceCase(v))}/></Field>
+      <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={form.address2} onChange={v=>u('address2',fmt.sentenceCase(v))}/></Field>
       <div className="field-row">
-        <Field label="Town / City *"><Input type="text" placeholder="London" value={form.town} onChange={v=>u('town',v)}/></Field>
-        <Field label="County"><Input type="text" placeholder="Greater London" value={form.county} onChange={v=>u('county',v)}/></Field>
-        <Field label="Postcode *"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={v=>u('postcode',v)}/></Field>
+        <Field label="Town / City *"><Input type="text" placeholder="London" value={form.town} onChange={v=>u('town',fmt.titleCase(v))}/></Field>
+        <Field label="County"><Input type="text" placeholder="Greater London" value={form.county} onChange={v=>u('county',fmt.titleCase(v))}/></Field>
+        <Field label="Postcode *"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={v=>u('postcode',fmt.postcode(v))}/></Field>
       </div>
 
       <Field label="Month moved in *">
@@ -738,12 +738,12 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
                 <span>Previous Address {i+1}</span>
                 <button className="btn-remove" onClick={()=>removePrevAddr(i)}>Remove</button>
               </div>
-              <Field label="Address Line 1"><Input type="text" placeholder="House number and street" value={addr.line1} onChange={v=>updatePrevAddr(i,'line1',v)}/></Field>
-              <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={addr.line2} onChange={v=>updatePrevAddr(i,'line2',v)}/></Field>
+              <Field label="Address Line 1"><Input type="text" placeholder="House number and street" value={addr.line1} onChange={v=>updatePrevAddr(i,'line1',fmt.sentenceCase(v))}/></Field>
+              <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={addr.line2} onChange={v=>updatePrevAddr(i,'line2',fmt.sentenceCase(v))}/></Field>
               <div className="field-row">
-                <Field label="Town / City"><Input type="text" value={addr.town} onChange={v=>updatePrevAddr(i,'town',v)}/></Field>
-                <Field label="County"><Input type="text" value={addr.county} onChange={v=>updatePrevAddr(i,'county',v)}/></Field>
-                <Field label="Postcode"><Input type="text" value={addr.postcode} onChange={v=>updatePrevAddr(i,'postcode',v)}/></Field>
+                <Field label="Town / City"><Input type="text" value={addr.town} onChange={v=>updatePrevAddr(i,'town',fmt.titleCase(v))}/></Field>
+                <Field label="County"><Input type="text" value={addr.county} onChange={v=>updatePrevAddr(i,'county',fmt.titleCase(v))}/></Field>
+                <Field label="Postcode"><Input type="text" value={addr.postcode} onChange={v=>updatePrevAddr(i,'postcode',fmt.postcode(v))}/></Field>
               </div>
               <div className="field-row">
                 <Field label="Month Moved In">
@@ -900,7 +900,7 @@ function StepDriving({ data, onChange, onBack, onNext, isComplete }) {
               <option value="">Select</option><option>Full UK</option><option>Provisional</option><option>EU</option><option>International</option><option>None</option>
             </Select>
           </Field>
-          <Field label="Licence Number"><Input type="text" placeholder="SMITH701234AB9CD" value={form.licenceNumber} onChange={v=>u('licenceNumber',v)}/></Field>
+          <Field label="Licence Number"><Input type="text" placeholder="SMITH701234AB9CD" value={form.licenceNumber} onChange={v=>u('licenceNumber',fmt.uppercase(v))}/></Field>
           <Field label="Years Held">
             <Select value={form.yearsHeld} onChange={v=>u('yearsHeld',v)}>
               <option value="">Select</option>
@@ -1187,10 +1187,10 @@ function StepQualifications({ data, onChange, onBack, onNext, isComplete }) {
               {['FREC Level 3','FREC Level 4','Emergency First Aid at Work (EFAW)','First Aid at Work (FAW)','BTEC First Aid','Other'].map(t=><option key={t}>{t}</option>)}
             </Select>
           </Field>
-          <Field label="Issuing Body"><Input type="text" placeholder="e.g. Qualsafe, Highfield" value={form.issuingBody} onChange={v=>u('issuingBody',v)}/></Field>
+          <Field label="Issuing Body"><Input type="text" placeholder="e.g. Qualsafe, Highfield" value={form.issuingBody} onChange={v=>u('issuingBody',fmt.titleCase(v))}/></Field>
         </div>
         <div className="field-row">
-          <Field label="Certificate Number"><Input type="text" value={form.certNumber} onChange={v=>u('certNumber',v)}/></Field>
+          <Field label="Certificate Number"><Input type="text" value={form.certNumber} onChange={v=>u('certNumber',fmt.uppercase(v))}/></Field>
           <Field label="Date Achieved"><div className="field-row" style={{gap:"0.5rem",marginBottom:0}}><Select value={form.dateAchievedMonth||""} onChange={v=>u("dateAchievedMonth",v)}><option value="">Month</option>{["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,"0")}>{m}</option>)}</Select><Input type="number" placeholder="Year" min="2000" max={new Date().getFullYear()} value={form.dateAchievedYear||""} onChange={v=>u("dateAchievedYear",v)} style={{width:"90px"}}/></div></Field>
           <Field label="Expiry Date"><div className="field-row" style={{gap:"0.5rem",marginBottom:0}}><Select value={form.expiryMonth||""} onChange={v=>u("expiryMonth",v)}><option value="">Month</option>{["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,"0")}>{m}</option>)}</Select><Input type="number" placeholder="Year" min={new Date().getFullYear()} max={new Date().getFullYear()+10} value={form.expiryYear||""} onChange={v=>u("expiryYear",v)} style={{width:"90px"}}/></div></Field>
         </div>
@@ -1278,7 +1278,7 @@ function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
             {['British Army','Royal Navy','Royal Air Force','Royal Marines','Police Service','Other'].map(b=><option key={b}>{b}</option>)}
           </Select>
         </Field>
-        <Field label="Rank / Grade"><Input type="text" placeholder="e.g. Sergeant, PC" value={form.forcesRank} onChange={v=>u('forcesRank',v)}/></Field>
+        <Field label="Rank / Grade"><Input type="text" placeholder="e.g. Sergeant, PC" value={form.forcesRank} onChange={v=>u('forcesRank',fmt.titleCase(v))}/></Field>
         <Field label="Years Served"><Input type="text" placeholder="e.g. 8" value={form.forcesYears} onChange={v=>u('forcesYears',v)}/></Field>
       </div>}
       {form.hasForces==='yes' && <Field label="Type of discharge / departure">
@@ -1539,8 +1539,8 @@ function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
           </div>
 
           <div className="field-row">
-            <Field label="Employer / Organisation Name *"><Input type="text" placeholder="Company name" value={job.employer} onChange={v=>update(i,'employer',v)}/></Field>
-            <Field label="Your Job Title *"><Input type="text" placeholder="e.g. Door Supervisor" value={job.role} onChange={v=>update(i,'role',v)}/></Field>
+            <Field label="Employer / Organisation Name *"><Input type="text" placeholder="Company name" value={job.employer} onChange={v=>update(i,'employer',fmt.titleCase(v))}/></Field>
+            <Field label="Your Job Title *"><Input type="text" placeholder="e.g. Door Supervisor" value={job.role} onChange={v=>update(i,'role',fmt.titleCase(v))}/></Field>
           </div>
           <Field label="Sector *">
             <Select value={job.sector||''} onChange={v=>update(i,'sector',v)}>
@@ -1555,29 +1555,29 @@ function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
 
           <div className="divider" style={{margin:'1rem 0 0.75rem'}}></div>
           <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.75rem'}}>Employer Address *</div>
-          <Field label="Address Line 1 *"><Input type="text" placeholder="Building/street" value={job.address1||''} onChange={v=>update(i,'address1',v)}/></Field>
-          <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={job.address2||''} onChange={v=>update(i,'address2',v)}/></Field>
+          <Field label="Address Line 1 *"><Input type="text" placeholder="Building/street" value={job.address1||''} onChange={v=>update(i,'address1',fmt.sentenceCase(v))}/></Field>
+          <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={job.address2||''} onChange={v=>update(i,'address2',fmt.sentenceCase(v))}/></Field>
           <div className="field-row">
-            <Field label="Town / City *"><Input type="text" value={job.town||''} onChange={v=>update(i,'town',v)}/></Field>
-            <Field label="County"><Input type="text" value={job.county||''} onChange={v=>update(i,'county',v)}/></Field>
-            <Field label="Postcode *"><Input type="text" value={job.postcode||''} onChange={v=>update(i,'postcode',v)}/></Field>
+            <Field label="Town / City *"><Input type="text" value={job.town||''} onChange={v=>update(i,'town',fmt.titleCase(v))}/></Field>
+            <Field label="County"><Input type="text" value={job.county||''} onChange={v=>update(i,'county',fmt.titleCase(v))}/></Field>
+            <Field label="Postcode *"><Input type="text" value={job.postcode||''} onChange={v=>update(i,'postcode',fmt.postcode(v))}/></Field>
           </div>
           <div className="field-row">
             <Field label="Company Website"><Input type="text" placeholder="www.company.com" value={job.website||''} onChange={v=>update(i,'website',v)}/></Field>
-            <Field label="Main Company Phone"><Input type="tel" placeholder="01234 567890" value={job.companyPhone||''} onChange={v=>update(i,'companyPhone',v)}/></Field>
+            <Field label="Main Company Phone"><Input type="tel" placeholder="01234 567890" value={job.companyPhone||''} onChange={v=>update(i,'companyPhone',fmt.phone(v))}/></Field>
           </div>
-          <Field label="Generic HR Email" hint="e.g. hr@company.com or info@company.com"><Input type="email" placeholder="hr@company.com" value={job.companyEmail||''} onChange={v=>update(i,'companyEmail',v)}/></Field>
+          <Field label="Generic HR Email" hint="e.g. hr@company.com or info@company.com"><Input type="email" placeholder="hr@company.com" value={job.companyEmail||''} onChange={v=>update(i,'companyEmail',fmt.lowercase(v))}/></Field>
 
           <div className="divider" style={{margin:'1rem 0 0.75rem'}}></div>
           <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.25rem'}}>Reference Contact *</div>
           <div style={{fontSize:'0.78rem',color:'#64748b',marginBottom:'0.75rem'}}>The HR manager, Operations manager or direct line manager who can verify your employment. This person will be contacted during vetting.</div>
           <div className="field-row">
-            <Field label="Contact Name *"><Input type="text" placeholder="Full name" value={job.contactName||''} onChange={v=>update(i,'contactName',v)}/></Field>
-            <Field label="Job Title"><Input type="text" placeholder="e.g. HR Manager" value={job.contactTitle||''} onChange={v=>update(i,'contactTitle',v)}/></Field>
+            <Field label="Contact Name *"><Input type="text" placeholder="Full name" value={job.contactName||''} onChange={v=>update(i,'contactName',fmt.titleCase(v))}/></Field>
+            <Field label="Job Title"><Input type="text" placeholder="e.g. HR Manager" value={job.contactTitle||''} onChange={v=>update(i,'contactTitle',fmt.titleCase(v))}/></Field>
           </div>
           <div className="field-row">
-            <Field label="Direct Phone Number *" hint="Mobile or direct line — not a switchboard"><Input type="tel" placeholder="01234 567890" value={job.contactPhone||''} onChange={v=>update(i,'contactPhone',v)}/></Field>
-            <Field label="Reference Email *"><Input type="email" placeholder="e.g. anna@company.com" value={job.contactEmail||''} onChange={v=>update(i,'contactEmail',v)}/></Field>
+            <Field label="Direct Phone Number *" hint="Mobile or direct line — not a switchboard"><Input type="tel" placeholder="01234 567890" value={job.contactPhone||''} onChange={v=>update(i,'contactPhone',fmt.phone(v))}/></Field>
+            <Field label="Reference Email *"><Input type="email" placeholder="e.g. anna@company.com" value={job.contactEmail||''} onChange={v=>update(i,'contactEmail',fmt.lowercase(v))}/></Field>
           </div>
 
           <div className="divider" style={{margin:'1rem 0 0.75rem'}}></div>
@@ -1750,12 +1750,12 @@ function StepAddress({ data, onChange, onBack, onNext, isComplete }) {
             {i>0 && <button className="btn-remove" onClick={()=>remove(i)}>Remove</button>}
           </div>
           <div className="field-row">
-            <Field label="Address Line 1"><Input type="text" placeholder="House number and street" value={addr.line1} onChange={v=>update(i,'line1',v)}/></Field>
-            <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={addr.line2} onChange={v=>update(i,'line2',v)}/></Field>
+            <Field label="Address Line 1"><Input type="text" placeholder="House number and street" value={addr.line1} onChange={v=>update(i,'line1',fmt.sentenceCase(v))}/></Field>
+            <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={addr.line2} onChange={v=>update(i,'line2',fmt.sentenceCase(v))}/></Field>
           </div>
           <div className="field-row">
-            <Field label="Town / City"><Input type="text" value={addr.town} onChange={v=>update(i,'town',v)}/></Field>
-            <Field label="Postcode"><Input type="text" value={addr.postcode} onChange={v=>update(i,'postcode',v)}/></Field>
+            <Field label="Town / City"><Input type="text" value={addr.town} onChange={v=>update(i,'town',fmt.titleCase(v))}/></Field>
+            <Field label="Postcode"><Input type="text" value={addr.postcode} onChange={v=>update(i,'postcode',fmt.postcode(v))}/></Field>
           </div>
           <div className="field-row">
             <Field label="Move-in Date">
@@ -3589,7 +3589,7 @@ function EmployerRegisterForm({ onSaved, getToken }) {
         <div style={{display:'grid',gap:'1rem'}}>
 
           <div style={{...rowStyle, gridTemplateColumns:'1fr 1fr'}}>
-            <Field label="Company Name *"><Input type="text" placeholder="e.g. Securitas UK Ltd" value={form.company_name} onChange={v=>u('company_name',v)}/></Field>
+            <Field label="Company Name *"><Input type="text" placeholder="e.g. Securitas UK Ltd" value={form.company_name} onChange={v=>u('company_name',fmt.titleCase(v))}/></Field>
             <Field label="Companies House Number *" hint="8-digit registration number"><Input type="text" placeholder="e.g. 12345678" value={form.company_number} onChange={v=>u('company_number',v)}/></Field>
           </div>
 
@@ -3598,14 +3598,14 @@ function EmployerRegisterForm({ onSaved, getToken }) {
           <div style={{fontSize:'0.78rem',color:'#64748b',marginBottom:'0.5rem'}}>The person responsible for this account and who candidates will be directed to.</div>
 
           <div style={{...rowStyle, gridTemplateColumns:'1fr 1fr'}}>
-            <Field label="Contact Name *"><Input type="text" placeholder="Full name" value={form.contact_name} onChange={v=>u('contact_name',v)}/></Field>
-            <Field label="Position / Job Title *"><Input type="text" placeholder="e.g. HR Manager, Operations Director" value={form.contact_position} onChange={v=>u('contact_position',v)}/></Field>
+            <Field label="Contact Name *"><Input type="text" placeholder="Full name" value={form.contact_name} onChange={v=>u('contact_name',fmt.titleCase(v))}/></Field>
+            <Field label="Position / Job Title *"><Input type="text" placeholder="e.g. HR Manager, Operations Director" value={form.contact_position} onChange={v=>u('contact_position',fmt.titleCase(v))}/></Field>
           </div>
-          <Field label="Contact Email *"><Input type="email" placeholder="name@company.com" value={form.contact_email} onChange={v=>u('contact_email',v)}/></Field>
+          <Field label="Contact Email *"><Input type="email" placeholder="name@company.com" value={form.contact_email} onChange={v=>u('contact_email',fmt.lowercase(v))}/></Field>
           <div style={{...rowStyle, gridTemplateColumns:'1fr 1fr 1fr'}}>
-            <Field label="Mobile Number *"><Input type="tel" placeholder="07700 000000" value={form.contact_mobile} onChange={v=>u('contact_mobile',v)}/></Field>
-            <Field label="Office Number *"><Input type="tel" placeholder="01234 567890" value={form.contact_office} onChange={v=>u('contact_office',v)}/></Field>
-            <Field label="Direct Dial (DD) *"><Input type="tel" placeholder="Direct line" value={form.contact_dd} onChange={v=>u('contact_dd',v)}/></Field>
+            <Field label="Mobile Number *"><Input type="tel" placeholder="07700 000000" value={form.contact_mobile} onChange={v=>u('contact_mobile',fmt.phone(v))}/></Field>
+            <Field label="Office Number *"><Input type="tel" placeholder="01234 567890" value={form.contact_office} onChange={v=>u('contact_office',fmt.phone(v))}/></Field>
+            <Field label="Direct Dial (DD) *"><Input type="tel" placeholder="Direct line" value={form.contact_dd} onChange={v=>u('contact_dd',fmt.phone(v))}/></Field>
           </div>
 
           <div className="divider"></div>
@@ -3614,9 +3614,9 @@ function EmployerRegisterForm({ onSaved, getToken }) {
           <Field label="Address Line 1 *"><Input type="text" placeholder="Building number and street" value={form.address_line1} onChange={v=>u('address_line1',v)}/></Field>
           <Field label="Address Line 2"><Input type="text" placeholder="Optional" value={form.address_line2} onChange={v=>u('address_line2',v)}/></Field>
           <div style={{...rowStyle, gridTemplateColumns:'1fr 1fr 1fr'}}>
-            <Field label="City *"><Input type="text" placeholder="e.g. London" value={form.city} onChange={v=>u('city',v)}/></Field>
-            <Field label="County"><Input type="text" placeholder="e.g. Greater London" value={form.county} onChange={v=>u('county',v)}/></Field>
-            <Field label="Postcode *"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={v=>u('postcode',v)}/></Field>
+            <Field label="City *"><Input type="text" placeholder="e.g. London" value={form.city} onChange={v=>u('city',fmt.titleCase(v))}/></Field>
+            <Field label="County"><Input type="text" placeholder="e.g. Greater London" value={form.county} onChange={v=>u('county',fmt.titleCase(v))}/></Field>
+            <Field label="Postcode *"><Input type="text" placeholder="SW1A 1AA" value={form.postcode} onChange={v=>u('postcode',fmt.postcode(v))}/></Field>
           </div>
           <Field label="Company Website *"><Input type="text" placeholder="www.company.com" value={form.website} onChange={v=>u('website',v)}/></Field>
 
@@ -3694,7 +3694,7 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"1rem",alignItems:"start"}}>
             <Field label="Job Title *"><Input type="text" placeholder="e.g. Door Supervisor" value={form.title} onChange={v=>u('title',v)}/></Field>
             <Field label="Location *" hint="Town or city"><Input type="text" placeholder="e.g. Central London" value={form.location} onChange={v=>u('location',v)}/></Field>
-            <Field label="Postcode Area *" hint="e.g. SW1, B1, M1"><Input type="text" placeholder="e.g. SW1" value={form.postcode} onChange={v=>u('postcode',v)}/></Field>
+            <Field label="Postcode Area *" hint="e.g. SW1, B1, M1"><Input type="text" placeholder="e.g. SW1" value={form.postcode} onChange={v=>u('postcode',fmt.postcode(v))}/></Field>
           </div>
 
           <Field label="Sector">
