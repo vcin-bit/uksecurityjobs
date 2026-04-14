@@ -74,6 +74,105 @@ router.get('/public', async (req, res) => {
   } catch(err) { res.status(500).json({ error: 'Failed to fetch jobs' }); }
 });
 
+// GET /api/employers/jobs/:id/applicants — get applicants for a job
+router.get('/jobs/:id/applicants', async (req, res) => {
+  try {
+    const employerId = await getEmployerId(req.userId);
+    if (!employerId) return res.status(403).json({ error: 'Not authorised' });
+
+    // Verify job belongs to this employer
+    const { data: job } = await supabase.from('jobs').select('id').eq('id', req.params.id).eq('employer_id', employerId).single();
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const { data, error } = await supabase
+      .from('job_applications')
+      .select(`
+        id, status, created_at, interview_date, employer_feedback,
+        candidates(id, clerk_user_id, sia_verified, profile_complete,
+          candidate_personal(first_name, last_name, phone, right_to_work_status, visa_expiry),
+          candidate_licences(licence_type, sia_number, expiry_date, verified)
+        )
+      `)
+      .eq('job_id', req.params.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json({ applicants: data || [] });
+  } catch(err) {
+    console.error('GET /employers/jobs/:id/applicants error:', err);
+    res.status(500).json({ error: 'Failed to fetch applicants' });
+  }
+});
+
+// PATCH /api/employers/applications/:id — update application status
+router.patch('/applications/:id', async (req, res) => {
+  try {
+    const employerId = await getEmployerId(req.userId);
+    if (!employerId) return res.status(403).json({ error: 'Not authorised' });
+
+    const { status, interview_date, employer_feedback, no_show } = req.body;
+
+    // Build update object
+    const update = { updated_at: new Date() };
+    if (status) update.status = status;
+    if (interview_date) update.interview_date = interview_date;
+    if (employer_feedback) update.employer_feedback = employer_feedback;
+
+    // Handle no-show — increment candidate strike count
+    if (no_show) {
+      update.status = 'no_show';
+      // Get candidate id from application
+      const { data: app } = await supabase.from('job_applications').select('candidate_id').eq('id', req.params.id).single();
+      if (app?.candidate_id) {
+        const { data: cand } = await supabase.from('candidates').select('no_show_count').eq('id', app.candidate_id).single();
+        const newCount = (cand?.no_show_count || 0) + 1;
+        const bannedUntil = newCount >= 3 ? '2099-12-31' : newCount === 2 ? new Date(Date.now() + 90*24*60*60*1000).toISOString() : new Date(Date.now() + 30*24*60*60*1000).toISOString();
+        await supabase.from('candidates').update({ no_show_count: newCount, banned_until: bannedUntil }).eq('id', app.candidate_id);
+      }
+    }
+
+    const { data, error } = await supabase.from('job_applications').update(update).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json({ success: true, application: data });
+  } catch(err) {
+    console.error('PATCH /employers/applications/:id error:', err);
+    res.status(500).json({ error: 'Failed to update application' });
+  }
+});
+
+// GET /api/employers/candidate/:id — get candidate full profile for employer
+router.get('/candidate/:id', async (req, res) => {
+  try {
+    const employerId = await getEmployerId(req.userId);
+    if (!employerId) return res.status(403).json({ error: 'Not authorised' });
+
+    // Verify this candidate has applied for one of their jobs
+    const { data: application } = await supabase
+      .from('job_applications')
+      .select('id, job_id, jobs!inner(employer_id)')
+      .eq('candidate_id', req.params.id)
+      .eq('jobs.employer_id', employerId)
+      .limit(1)
+      .single();
+
+    if (!application) return res.status(403).json({ error: 'Not authorised to view this candidate' });
+
+    // Get full candidate profile
+    const { data: candidate, error } = await supabase
+      .from('candidates')
+      .select(`*, candidate_personal(*), candidate_licences(*), candidate_employment(*), candidate_addresses(*), candidate_qualifications(*), candidate_sectors(*), candidate_driving(*)`)
+      .eq('id', req.params.id)
+      .single();
+
+    if (error) throw error;
+    await auditLog(req.userId, 'employer_view_candidate', { candidate_id: req.params.id, employer_id: employerId });
+    res.json({ candidate });
+  } catch(err) {
+    console.error('GET /employers/candidate/:id error:', err);
+    res.status(500).json({ error: 'Failed to fetch candidate' });
+  }
+});
+
 module.exports = router;
 
 // POST /api/jobs/apply — candidate applies for a job

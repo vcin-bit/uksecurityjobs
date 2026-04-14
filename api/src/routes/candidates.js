@@ -256,3 +256,26 @@ router.get('/me/full', async (req, res) => {
     res.status(500).json({ error: 'Failed to load profile' });
   }
 });
+
+// GET /api/candidates/me/applications — get candidate's job applications
+router.get('/me/applications', async (req, res) => {
+  try {
+    const { data: candidate } = await supabase.from('candidates').select('id').eq('clerk_user_id', req.userId).single();
+    if (!candidate) return res.json({ applications: [] });
+
+    const { data, error } = await supabase
+      .from('job_applications')
+      .select(`id, status, created_at, interview_date, employer_feedback,
+        jobs(id, title, location, rate_from, rate_to, rate_type, contract_type,
+          employers(company_name, logo_url)
+        )`)
+      .eq('candidate_id', candidate.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json({ applications: data || [] });
+  } catch(err) {
+    console.error('GET /candidates/me/applications error:', err);
+    res.status(500).json({ error: 'Failed to fetch applications' });
+  }
+});

@@ -391,7 +391,10 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
     dobMonth: raw?.date_of_birth ? raw.date_of_birth.split('-')[1] : raw?.dob ? raw.dob.split('-')[1] : '',
     dobYear: raw?.date_of_birth ? raw.date_of_birth.split('-')[0] : raw?.dob ? raw.dob.split('-')[0] : '',
     gender: raw?.gender || '',
-    ni: raw?.ni_number || raw?.ni || '',
+    right_to_work_status: raw?.right_to_work_status || '',
+    visa_type: raw?.visa_type || '',
+    visa_expiry: raw?.visa_expiry || '',
+    student_visa_hours: raw?.student_visa_hours || '',
     address1: raw?.address_line1 || raw?.address1 || '',
     address2: raw?.address_line2 || raw?.address2 || '',
     town: raw?.city || raw?.town || '',
@@ -526,7 +529,7 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
   if (!form.lastName?.trim()) missingFields.push('Last name');
   if (!form.phone?.trim()) missingFields.push('Phone number');
   if (!form.dobDay || !form.dobMonth || !form.dobYear) missingFields.push('Date of birth');
-  if (!form.ni?.trim()) missingFields.push('National Insurance number');
+  if (!form.right_to_work_status) missingFields.push('Right to work status');
   if (!form.address1?.trim()) missingFields.push('Address line 1');
   if (!form.town?.trim()) missingFields.push('Town / City');
   if (!form.postcode?.trim()) missingFields.push('Postcode');
@@ -550,7 +553,7 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
           { label:'Name', value: [d.first_name, d.last_name].filter(Boolean).join(' ') },
           { label:'Phone', value: d.phone || '' },
           { label:'Date of Birth', value: d.date_of_birth || '' },
-          { label:'NI Number', value: d.ni_number ? '••••••••' : '' },
+          { label:'Right to Work', value: d.right_to_work_status || '' },
           { label:'Address', value: [d.address_line1, d.city, d.postcode].filter(Boolean).join(', ') },
           { label:'SIA Address Match', value: d.sia_address_match === true ? 'Yes' : d.sia_address_match === false ? 'No — update needed' : '' },
         ]}
@@ -593,15 +596,63 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
           </div>
         </Field>
       </div>
-      <div className="field-row">
-        <Field label="National Insurance Number *"><Input type="text" placeholder="AB 12 34 56 C" value={form.ni} onChange={v=>u('ni',v)}/></Field>
-        <Field label="Gender" hint="Optional — equal opportunities monitoring only">
-          <Select value={form.gender} onChange={v=>u('gender',v)}>
-            <option value="">Prefer not to say</option>
-            <option>Male</option><option>Female</option><option>Non-binary</option><option>Other</option>
-          </Select>
-        </Field>
+      <Field label="Gender" hint="Optional — equal opportunities monitoring only">
+        <Select value={form.gender} onChange={v=>u('gender',v)}>
+          <option value="">Prefer not to say</option>
+          <option>Male</option><option>Female</option><option>Non-binary</option><option>Other</option>
+        </Select>
+      </Field>
+
+      <div className="divider"></div>
+      <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.25rem'}}>Right to Work in the UK</div>
+      <div style={{background:'#fef9c3',border:'1px solid #fde047',borderRadius:'8px',padding:'0.875rem 1rem',marginBottom:'1rem',fontSize:'0.8rem',color:'#854d0e',lineHeight:1.65}}>
+        <strong>Important:</strong> Employers are legally required to verify your right to work using original documents before you start work. Providing false information here is a criminal offence.
       </div>
+      <Field label="Right to Work Status *">
+        <Select value={form.right_to_work_status} onChange={v=>u('right_to_work_status',v)}>
+          <option value="">Select your status</option>
+          <option value="uk_irish_citizen">UK or Irish Citizen</option>
+          <option value="settled_status">EU Settled Status / Indefinite Leave to Remain</option>
+          <option value="pre_settled">EU Pre-Settled Status</option>
+          <option value="skilled_worker_visa">Skilled Worker Visa</option>
+          <option value="student_visa">Student Visa</option>
+          <option value="other_visa">Other Visa / Leave to Remain</option>
+          <option value="no_right_to_work">I do not have the right to work in the UK</option>
+        </Select>
+      </Field>
+
+      {form.right_to_work_status === 'student_visa' && (
+        <div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'1rem',marginTop:'0.5rem'}}>
+          <div style={{fontWeight:700,fontSize:'0.82rem',color:'#dc2626',marginBottom:'0.5rem'}}>Student Visa — Working Hour Restrictions</div>
+          <div style={{fontSize:'0.8rem',color:'#7f1d1d',lineHeight:1.7}}>
+            Student visa holders may only work <strong>up to 20 hours per week during term time</strong>. Working more than your permitted hours is a breach of your visa conditions and may result in deportation and a ban from the UK. Employers who knowingly employ you beyond your permitted hours face fines of up to £60,000 per worker.<br/><br/>
+            Your profile will clearly show your student visa status and hour restrictions to any employer who views it.
+          </div>
+          <Field label="Visa Expiry Date *" style={{marginTop:'0.875rem'}}>
+            <Input type="date" value={form.visa_expiry} onChange={v=>u('visa_expiry',v)}/>
+          </Field>
+        </div>
+      )}
+
+      {(form.right_to_work_status === 'skilled_worker_visa' || form.right_to_work_status === 'pre_settled' || form.right_to_work_status === 'other_visa') && (
+        <div style={{marginTop:'0.5rem'}}>
+          <Field label="Visa / Leave Type">
+            <Input type="text" placeholder="e.g. Skilled Worker Visa, Spouse Visa" value={form.visa_type} onChange={v=>u('visa_type',v)}/>
+          </Field>
+          <Field label="Visa Expiry Date">
+            <Input type="date" value={form.visa_expiry} onChange={v=>u('visa_expiry',v)}/>
+          </Field>
+        </div>
+      )}
+
+      {form.right_to_work_status === 'no_right_to_work' && (
+        <div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'1rem',marginTop:'0.5rem'}}>
+          <div style={{fontWeight:700,fontSize:'0.82rem',color:'#dc2626',marginBottom:'0.5rem'}}>Unable to Register</div>
+          <div style={{fontSize:'0.8rem',color:'#7f1d1d',lineHeight:1.7}}>
+            You must have the legal right to work in the United Kingdom to register as a candidate on this platform. If your immigration status changes in future, you are welcome to apply again.
+          </div>
+        </div>
+      )}
 
       <div className="divider"></div>
       <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.25rem'}}>Current Address</div>
@@ -2454,7 +2505,7 @@ function CVPanel({ profileData, userName, mobileOpen, onMobileClose }) {
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.4rem',fontSize:'0.73rem'}}>
           {phone && <div><span style={{color:'#94a3b8',fontWeight:600,display:'block',fontSize:'0.62rem',textTransform:'uppercase',letterSpacing:'0.06em'}}>Phone</span>{phone}</div>}
           {p.date_of_birth && <div><span style={{color:'#94a3b8',fontWeight:600,display:'block',fontSize:'0.62rem',textTransform:'uppercase',letterSpacing:'0.06em'}}>Date of Birth</span>{p.date_of_birth}</div>}
-          {p.ni_number && <div><span style={{color:'#94a3b8',fontWeight:600,display:'block',fontSize:'0.62rem',textTransform:'uppercase',letterSpacing:'0.06em'}}>NI Number</span>••••••••</div>}
+
           {postcode && <div><span style={{color:'#94a3b8',fontWeight:600,display:'block',fontSize:'0.62rem',textTransform:'uppercase',letterSpacing:'0.06em'}}>Postcode</span>{postcode}</div>}
         </div>
       </div>
@@ -2607,6 +2658,64 @@ const industryFacts = [
 ];
 
 // ── DASHBOARD ──
+function CandidateApplications({ getToken }) {
+  const [applications, setApplications] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    apiRequest('/api/candidates/me/applications', 'GET', null, getToken)
+      .then(r => { setApplications(r.applications || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return null;
+  if (applications.length === 0) return null;
+
+  const statusConfig = {
+    applied: { label: 'Applied', color: '#1d4ed8', bg: '#dbeafe' },
+    shortlisted: { label: 'Shortlisted', color: '#15803d', bg: '#dcfce7' },
+    interview_scheduled: { label: 'Interview Scheduled', color: '#854d0e', bg: '#fef9c3' },
+    rejected: { label: 'Unsuccessful', color: '#dc2626', bg: '#fee2e2' },
+    no_show: { label: 'No Show Recorded', color: '#7c3aed', bg: '#f3e8ff' },
+  };
+
+  return (
+    <div className="dash-card" style={{marginBottom:'1.5rem'}}>
+      <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'1.25rem'}}>My Applications</div>
+      <div style={{display:'flex',flexDirection:'column',gap:'0.625rem'}}>
+        {applications.map(app => {
+          const job = app.jobs || {};
+          const employer = job.employers || {};
+          const s = statusConfig[app.status] || { label: app.status, color: '#64748b', bg: '#f1f5f9' };
+          return (
+            <div key={app.id} style={{background:'#f8fafc',borderRadius:'10px',padding:'1rem 1.25rem',border:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:'0.9rem',color:'#0b1222'}}>{job.title || 'Security Role'}</div>
+                <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.15rem'}}>{employer.company_name || 'Employer'} · {job.location || ''}</div>
+                {job.rate_from && <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.15rem'}}>£{job.rate_from}{job.rate_to?'–£'+job.rate_to:''}/{job.rate_type||'hr'}</div>}
+                {app.interview_date && (
+                  <div style={{fontSize:'0.75rem',color:'#854d0e',marginTop:'0.25rem',fontWeight:600}}>
+                    Interview: {new Date(app.interview_date).toLocaleDateString('en-GB', {weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+                  </div>
+                )}
+              </div>
+              <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.3rem'}}>
+                <span style={{fontSize:'0.72rem',fontWeight:700,padding:'0.25rem 0.75rem',borderRadius:'999px',background:s.bg,color:s.color}}>{s.label}</span>
+                <div style={{fontSize:'0.68rem',color:'#94a3b8'}}>{new Date(app.created_at).toLocaleDateString('en-GB')}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {applications.length > 0 && (
+        <div style={{marginTop:'1rem',padding:'0.75rem',background:'#f0f9ff',borderRadius:'8px',fontSize:'0.75rem',color:'#0369a1',lineHeight:1.65}}>
+          <strong>Interview reminder:</strong> If you accept an interview and cannot attend, you must notify the employer in advance. No-shows without prior notice result in a platform ban.
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Dashboard() {
   const { user } = useUser();
   const { getToken } = useAuth();
@@ -2673,7 +2782,7 @@ function Dashboard() {
               {[
                 { svg:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>, title:'SIA Licence', desc:"Your 16-digit licence number and expiry date. Check it's registered to your current address." },
                 { svg:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" strokeWidth="1.8" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>, title:'Driving Licence', desc:'Licence number, type and any endorsement codes. Check your address is up to date with DVLA.' },
-                { svg:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" strokeWidth="1.8" strokeLinecap="round"><path d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/><path d="M2 22c0-5.523 4.477-10 10-10s10 4.477 10 10"/></svg>, title:'National Insurance Number', desc:'Your NI number in full. This is encrypted and used for identity verification only.' },
+                { svg:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" strokeWidth="1.8" strokeLinecap="round"><path d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/><path d="M2 22c0-5.523 4.477-10 10-10s10 4.477 10 10"/></svg>, title:'Right to Work Documents', desc:'Passport, biometric residence permit or share code. Your employer will verify these directly with you.' },
                 { svg:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" strokeWidth="1.8" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>, title:'5 Years Address History', desc:"Every address you've lived at for the last 5 years. Exact move-in and move-out dates." },
                 { svg:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>, title:'5 Years Work History', desc:'Every employer for the last 5 years including self-employment and gaps. HR contact details for each.' },
                 { svg:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" strokeWidth="1.8" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>, title:'Reference Contacts', desc:'Name, direct phone and email for a manager or HR contact at each employer.' },
@@ -2717,6 +2826,9 @@ function Dashboard() {
             Click <strong>Continue Profile</strong> above to edit any section.
           </div>
         </div>
+
+        {/* MY APPLICATIONS */}
+        <CandidateApplications getToken={getToken}/>
 
         {/* SUBTLE FACT */}
         <div className="dash-fact-subtle">
@@ -3075,6 +3187,133 @@ function LogoUpload({ currentUrl, getToken, onUploaded }) {
 }
 
 // ── EMPLOYER DASHBOARD ──
+function RtwBadge({ status }) {
+  const map = {
+    uk_irish_citizen: { label: 'UK/Irish Citizen', color: '#15803d', bg: '#dcfce7' },
+    settled_status: { label: 'ILR/Settled Status', color: '#15803d', bg: '#dcfce7' },
+    pre_settled: { label: 'Pre-Settled Status', color: '#854d0e', bg: '#fef9c3' },
+    skilled_worker_visa: { label: 'Skilled Worker Visa', color: '#1d4ed8', bg: '#dbeafe' },
+    student_visa: { label: 'Student Visa (20hr limit)', color: '#dc2626', bg: '#fee2e2' },
+    other_visa: { label: 'Other Visa', color: '#854d0e', bg: '#fef9c3' },
+  };
+  const s = map[status] || { label: 'Not declared', color: '#94a3b8', bg: '#f1f5f9' };
+  return <span style={{fontSize:'0.7rem',fontWeight:700,padding:'0.2rem 0.6rem',borderRadius:'999px',background:s.bg,color:s.color}}>{s.label}</span>;
+}
+
+function ApplicantModal({ applicationId, candidateId, jobTitle, getToken, onClose, onStatusUpdate }) {
+  const [candidate, setCandidate] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [updating, setUpdating] = React.useState(false);
+  const [interviewDate, setInterviewDate] = React.useState('');
+  const [feedback, setFeedback] = React.useState('');
+
+  React.useEffect(() => {
+    apiRequest(`/api/employers/candidate/${candidateId}`, 'GET', null, getToken)
+      .then(r => { setCandidate(r.candidate); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [candidateId]);
+
+  const updateStatus = async (status, extra = {}) => {
+    setUpdating(true);
+    try {
+      await apiRequest(`/api/employers/applications/${applicationId}`, 'PATCH', { status, ...extra }, getToken);
+      onStatusUpdate(applicationId, status);
+      onClose();
+    } catch(e) { alert('Failed to update. Please try again.'); }
+    setUpdating(false);
+  };
+
+  const p = candidate?.candidate_personal?.[0] || candidate?.candidate_personal || {};
+  const licences = candidate?.candidate_licences || [];
+  const employment = candidate?.candidate_employment || [];
+  const addresses = candidate?.candidate_addresses || [];
+
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:1000,overflowY:'auto',padding:'2rem 1rem'}}>
+      <div style={{background:'#fff',borderRadius:'16px',maxWidth:'680px',margin:'0 auto',padding:'2rem'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'1.5rem'}}>
+          <div>
+            <div style={{fontWeight:800,fontSize:'1.1rem',color:'#0b1222'}}>{p.first_name} {p.last_name}</div>
+            <div style={{fontSize:'0.82rem',color:'#64748b',marginTop:'0.2rem'}}>Applied for: {jobTitle}</div>
+          </div>
+          <button onClick={onClose} style={{background:'none',border:'none',fontSize:'1.5rem',color:'#94a3b8',cursor:'pointer',lineHeight:1}}>×</button>
+        </div>
+
+        {loading ? <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8'}}>Loading profile...</div> : (
+          <>
+            {/* Contact & RTW */}
+            <div style={{background:'#f8fafc',borderRadius:'10px',padding:'1rem',marginBottom:'1rem',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
+              <div><div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#94a3b8',marginBottom:'0.2rem'}}>Phone</div><div style={{fontSize:'0.88rem',fontWeight:600,color:'#0b1222'}}>{p.phone || '—'}</div></div>
+              <div><div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#94a3b8',marginBottom:'0.2rem'}}>Right to Work</div><RtwBadge status={p.right_to_work_status}/></div>
+              {p.right_to_work_status === 'student_visa' && (
+                <div style={{gridColumn:'1/-1',background:'#fee2e2',borderRadius:'8px',padding:'0.75rem',fontSize:'0.78rem',color:'#7f1d1d'}}>
+                  <strong>Student Visa:</strong> Maximum 20 hours per week during term time. You must verify right to work documents before engagement and ensure hours comply with visa conditions. Fines of up to £60,000 per worker apply.
+                </div>
+              )}
+              {p.visa_expiry && <div><div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#94a3b8',marginBottom:'0.2rem'}}>Visa Expiry</div><div style={{fontSize:'0.88rem',color:'#0b1222'}}>{new Date(p.visa_expiry).toLocaleDateString('en-GB')}</div></div>}
+            </div>
+
+            {/* SIA Licences */}
+            {licences.length > 0 && (
+              <div style={{marginBottom:'1rem'}}>
+                <div style={{fontSize:'0.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',color:'#94a3b8',marginBottom:'0.5rem'}}>SIA Licences</div>
+                {licences.map((l,i) => (
+                  <div key={i} style={{background:'#f8fafc',borderRadius:'8px',padding:'0.75rem 1rem',marginBottom:'0.4rem',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222'}}>{l.licence_type}</div>
+                      <div style={{fontSize:'0.75rem',color:'#64748b'}}>Expires: {l.expiry_date ? new Date(l.expiry_date).toLocaleDateString('en-GB') : '—'}</div>
+                    </div>
+                    <span style={{fontSize:'0.7rem',fontWeight:700,padding:'0.2rem 0.6rem',borderRadius:'999px',background:l.verified?'#dcfce7':'#fef9c3',color:l.verified?'#15803d':'#854d0e'}}>{l.verified?'SIA Verified':'Pending'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Employment History */}
+            {employment.length > 0 && (
+              <div style={{marginBottom:'1rem'}}>
+                <div style={{fontSize:'0.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',color:'#94a3b8',marginBottom:'0.5rem'}}>Employment History ({employment.length} roles)</div>
+                {employment.slice(0,3).map((e,i) => (
+                  <div key={i} style={{background:'#f8fafc',borderRadius:'8px',padding:'0.75rem 1rem',marginBottom:'0.4rem'}}>
+                    <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222'}}>{e.job_title} — {e.company_name}</div>
+                    <div style={{fontSize:'0.75rem',color:'#64748b'}}>{e.start_date} → {e.end_date || 'Present'}</div>
+                    {e.reference_name && <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.2rem'}}>Ref: {e.reference_name} · {e.reference_phone}</div>}
+                  </div>
+                ))}
+                {employment.length > 3 && <div style={{fontSize:'0.75rem',color:'#94a3b8',textAlign:'center',padding:'0.5rem'}}>+ {employment.length - 3} more roles</div>}
+              </div>
+            )}
+
+            {/* Legal disclaimer */}
+            <div style={{background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'0.875rem',marginBottom:'1.25rem',fontSize:'0.75rem',color:'#0369a1',lineHeight:1.65}}>
+              <strong>Right to Work Reminder:</strong> You must verify original right to work documents before this candidate starts work. UKSecurityJobs candidate self-declarations do not constitute a statutory right to work check. Fines of up to £60,000 per worker apply for non-compliance.
+            </div>
+
+            {/* Actions */}
+            <div style={{borderTop:'1px solid #e2e8f0',paddingTop:'1.25rem'}}>
+              <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.875rem'}}>Update Application Status</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem',marginBottom:'1rem'}}>
+                <button onClick={() => updateStatus('shortlisted')} disabled={updating} style={{background:'#f0fdf4',border:'1px solid #86efac',borderRadius:'8px',padding:'0.75rem',fontSize:'0.85rem',fontWeight:700,color:'#15803d',cursor:'pointer'}}>Shortlist</button>
+                <button onClick={() => updateStatus('rejected')} disabled={updating} style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'0.75rem',fontSize:'0.85rem',fontWeight:700,color:'#dc2626',cursor:'pointer'}}>Reject</button>
+              </div>
+              <div style={{background:'#f8fafc',borderRadius:'8px',padding:'1rem',border:'1px solid #e2e8f0',marginBottom:'0.75rem'}}>
+                <div style={{fontWeight:600,fontSize:'0.82rem',color:'#0b1222',marginBottom:'0.5rem'}}>Invite to Interview</div>
+                <input type="datetime-local" value={interviewDate} onChange={e=>setInterviewDate(e.target.value)} style={{width:'100%',padding:'0.6rem 0.875rem',border:'1.5px solid #e2e8f0',borderRadius:'7px',fontSize:'0.85rem',marginBottom:'0.5rem',fontFamily:'inherit'}}/>
+                <button onClick={() => updateStatus('interview_scheduled', {interview_date: interviewDate})} disabled={updating || !interviewDate} style={{background:'#0b1222',color:'#fff',border:'none',borderRadius:'8px',padding:'0.65rem 1.5rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',opacity:interviewDate?1:0.5}}>Confirm Interview</button>
+              </div>
+              <div style={{background:'#fef9c3',borderRadius:'8px',padding:'1rem',border:'1px solid #fde047'}}>
+                <div style={{fontWeight:600,fontSize:'0.82rem',color:'#854d0e',marginBottom:'0.5rem'}}>No-Show Report</div>
+                <div style={{fontSize:'0.75rem',color:'#854d0e',marginBottom:'0.5rem',lineHeight:1.6}}>Only use this if the candidate confirmed an interview and did not attend without prior notice. This will result in a platform ban.</div>
+                <button onClick={() => { if(window.confirm('Confirm no-show? This will ban the candidate from the platform temporarily.')) updateStatus('no_show', {no_show: true}); }} disabled={updating} style={{background:'#dc2626',color:'#fff',border:'none',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.82rem',fontWeight:700,cursor:'pointer'}}>Report No-Show</button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function EmployerDashboard() {
   const { user } = useUser();
   const { getToken } = useAuth();
@@ -3083,6 +3322,10 @@ function EmployerDashboard() {
   const [loading, setLoading] = React.useState(true);
   const [showPostJob, setShowPostJob] = React.useState(false);
   const [showRegister, setShowRegister] = React.useState(false);
+  const [selectedJob, setSelectedJob] = React.useState(null);
+  const [applicants, setApplicants] = React.useState({});
+  const [loadingApplicants, setLoadingApplicants] = React.useState(false);
+  const [viewingApplicant, setViewingApplicant] = React.useState(null);
 
   React.useEffect(() => {
     async function load() {
@@ -3098,6 +3341,27 @@ function EmployerDashboard() {
     }
     load();
   }, []);
+
+  const loadApplicants = async (jobId) => {
+    if (applicants[jobId]) { setSelectedJob(jobId); return; }
+    setLoadingApplicants(true);
+    setSelectedJob(jobId);
+    try {
+      const res = await apiRequest(`/api/employers/jobs/${jobId}/applicants`, 'GET', null, getToken);
+      setApplicants(prev => ({ ...prev, [jobId]: res.applicants || [] }));
+    } catch(e) { console.error(e); }
+    setLoadingApplicants(false);
+  };
+
+  const handleStatusUpdate = (applicationId, newStatus) => {
+    setApplicants(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(jobId => {
+        updated[jobId] = updated[jobId].map(a => a.id === applicationId ? { ...a, status: newStatus } : a);
+      });
+      return updated;
+    });
+  };
 
   if (loading) return <div style={{textAlign:'center',padding:'4rem',color:'#64748b'}}>Loading...</div>;
 
@@ -3145,7 +3409,7 @@ function EmployerDashboard() {
           />
         )}
 
-        {/* Job listings */}
+        {/* Job listings + applicants */}
         <div className="dash-card">
           <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'1.25rem'}}>Your Job Postings</div>
           {jobs.length === 0 ? (
@@ -3154,32 +3418,99 @@ function EmployerDashboard() {
             </div>
           ) : (
             <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
-              {jobs.map(job => (
-                <div key={job.id} style={{background:'#f8fafc',borderRadius:'10px',padding:'1rem 1.25rem',border:'1px solid #e2e8f0'}}>
-                  <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem'}}>
-                    <div>
-                      <div style={{fontWeight:700,fontSize:'0.95rem',color:'#0b1222'}}>{job.title}</div>
-                      <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.2rem'}}>
-                        {job.location} · {job.employment_type} · {job.rate_from && `£${job.rate_from}${job.rate_to?'–£'+job.rate_to:''}/hr`}
+              {jobs.map(job => {
+                const jobApplicants = applicants[job.id] || [];
+                const isSelected = selectedJob === job.id;
+                const statusColors = { applied:'#1d4ed8', shortlisted:'#15803d', interview_scheduled:'#854d0e', rejected:'#dc2626', no_show:'#7c3aed' };
+                return (
+                  <div key={job.id} style={{background:'#f8fafc',borderRadius:'10px',border:'1px solid #e2e8f0',overflow:'hidden'}}>
+                    <div style={{padding:'1rem 1.25rem'}}>
+                      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem'}}>
+                        <div style={{flex:1}}>
+                          <div style={{fontWeight:700,fontSize:'0.95rem',color:'#0b1222'}}>{job.title}</div>
+                          <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.2rem'}}>
+                            {job.location} · {job.employment_type} · {job.rate_from && `£${job.rate_from}${job.rate_to?'–£'+job.rate_to:''}/hr`}
+                          </div>
+                          <div style={{marginTop:'0.4rem',display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
+                            {(job.licences_required||[]).map(l => (
+                              <span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8'}}>{l}</span>
+                            ))}
+                          </div>
+                        </div>
+                        <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.4rem'}}>
+                          <span style={{fontSize:'0.72rem',fontWeight:700,padding:'0.25rem 0.625rem',borderRadius:'999px',background:job.status==='active'?'#dcfce7':'#f1f5f9',color:job.status==='active'?'#15803d':'#64748b'}}>{job.status}</span>
+                          <button onClick={() => isSelected ? setSelectedJob(null) : loadApplicants(job.id)} style={{background:isSelected?'#0b1222':'#eff6ff',color:isSelected?'#fff':'#1a52a8',border:'none',borderRadius:'7px',padding:'0.4rem 0.875rem',fontSize:'0.78rem',fontWeight:700,cursor:'pointer'}}>
+                            {isSelected ? 'Hide Applicants' : 'View Applicants'}
+                          </button>
+                        </div>
                       </div>
-                      <div style={{marginTop:'0.4rem',display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
-                        {(job.licences_required||[]).map(l => (
-                          <span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8'}}>{l}</span>
-                        ))}
+                      <div style={{fontSize:'0.72rem',color:'#94a3b8',marginTop:'0.5rem'}}>
+                        Posted {new Date(job.created_at).toLocaleDateString('en-GB')}
                       </div>
                     </div>
-                    <span style={{fontSize:'0.72rem',fontWeight:700,padding:'0.25rem 0.625rem',borderRadius:'999px',background:job.status==='active'?'#dcfce7':'#f1f5f9',color:job.status==='active'?'#15803d':'#64748b'}}>
-                      {job.status}
-                    </span>
+
+                    {isSelected && (
+                      <div style={{borderTop:'1px solid #e2e8f0',padding:'1rem 1.25rem',background:'#fff'}}>
+                        <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.875rem'}}>
+                          Applicants {loadingApplicants ? '...' : `(${jobApplicants.length})`}
+                        </div>
+                        {loadingApplicants ? (
+                          <div style={{textAlign:'center',padding:'1rem',color:'#94a3b8',fontSize:'0.85rem'}}>Loading...</div>
+                        ) : jobApplicants.length === 0 ? (
+                          <div style={{textAlign:'center',padding:'1rem',color:'#94a3b8',fontSize:'0.85rem'}}>No applications yet.</div>
+                        ) : (
+                          <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+                            {jobApplicants.map(app => {
+                              const p = app.candidates?.candidate_personal?.[0] || app.candidates?.candidate_personal || {};
+                              const licences = app.candidates?.candidate_licences || [];
+                              return (
+                                <div key={app.id} style={{background:'#f8fafc',borderRadius:'8px',padding:'0.875rem 1rem',border:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
+                                  <div style={{flex:1}}>
+                                    <div style={{fontWeight:700,fontSize:'0.88rem',color:'#0b1222'}}>{p.first_name || 'Candidate'} {p.last_name || ''}</div>
+                                    <div style={{display:'flex',gap:'0.4rem',flexWrap:'wrap',marginTop:'0.3rem'}}>
+                                      {licences.slice(0,2).map((l,i) => (
+                                        <span key={i} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:l.verified?'#dcfce7':'#fef9c3',color:l.verified?'#15803d':'#854d0e'}}>{l.licence_type} {l.verified?'✓':''}</span>
+                                      ))}
+                                      {p.right_to_work_status && <RtwBadge status={p.right_to_work_status}/>}
+                                    </div>
+                                    <div style={{fontSize:'0.72rem',color:'#94a3b8',marginTop:'0.25rem'}}>Applied {new Date(app.created_at).toLocaleDateString('en-GB')}</div>
+                                  </div>
+                                  <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
+                                    <span style={{fontSize:'0.7rem',fontWeight:700,padding:'0.2rem 0.6rem',borderRadius:'999px',background:'#f1f5f9',color:statusColors[app.status]||'#64748b',textTransform:'capitalize'}}>{app.status?.replace('_',' ')}</span>
+                                    <button onClick={() => setViewingApplicant({applicationId:app.id, candidateId:app.candidates?.id, jobTitle:job.title})} style={{background:'#0b1222',color:'#fff',border:'none',borderRadius:'7px',padding:'0.4rem 0.875rem',fontSize:'0.78rem',fontWeight:700,cursor:'pointer'}}>View Profile</button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div style={{fontSize:'0.72rem',color:'#94a3b8',marginTop:'0.5rem'}}>
-                    Posted {new Date(job.created_at).toLocaleDateString('en-GB')}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
+
+        {/* Right to work legal notice */}
+        <div style={{background:'#fef9c3',border:'1px solid #fde047',borderRadius:'10px',padding:'1rem 1.25rem',marginTop:'0.5rem'}}>
+          <div style={{fontWeight:700,fontSize:'0.82rem',color:'#854d0e',marginBottom:'0.3rem'}}>Right to Work — Employer Responsibility</div>
+          <div style={{fontSize:'0.78rem',color:'#854d0e',lineHeight:1.65}}>
+            You must check and verify original right to work documents for every candidate before they start work. UKSecurityJobs candidate declarations are not a substitute for a statutory right to work check. Fines of up to £60,000 per illegal worker apply. <a href="https://www.gov.uk/check-job-applicant-right-to-work" target="_blank" rel="noopener" style={{color:'#854d0e',fontWeight:700}}>Use the Home Office online service →</a>
+          </div>
+        </div>
+
+        {viewingApplicant && (
+          <ApplicantModal
+            applicationId={viewingApplicant.applicationId}
+            candidateId={viewingApplicant.candidateId}
+            jobTitle={viewingApplicant.jobTitle}
+            getToken={getToken}
+            onClose={() => setViewingApplicant(null)}
+            onStatusUpdate={handleStatusUpdate}
+          />
+        )}
       </div>
     </div>
   );
