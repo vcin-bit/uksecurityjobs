@@ -16,11 +16,10 @@ test.describe('Authentication', () => {
   test('sign up page loads with GDPR consent box', async ({ page }) => {
     await page.goto('/sign-up');
     await expect(page.getByText('Create your profile')).toBeVisible();
-    // Button disabled until consent box ticked
     const btn = page.getByRole('button', { name: /Create My Profile/i });
     await expect(btn).toBeDisabled();
-    // Tick consent box by clicking it
-    await page.locator('[style*="f0f9ff"]').click();
+    // Click the consent area containing the privacy policy text
+    await page.getByText('I agree to the').click();
     await expect(btn).toBeEnabled();
   });
 
