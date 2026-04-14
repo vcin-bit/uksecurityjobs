@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase, auditLog } = require('../lib/supabase');
+const email = require('../lib/email');
 
 // Helper
 async function getEmployerId(userId) {
@@ -26,6 +27,14 @@ router.post('/me', async (req, res) => {
       clerk_user_id: req.userId, company_name, company_number, contact_name, contact_position, contact_email, contact_mobile, contact_office, contact_dd, website, address, postcode, sia_acs
     }, { onConflict: 'clerk_user_id' }).select().single();
     if (error) throw error;
+    // Send welcome email
+    if (data) {
+      email.sendEmployerWelcome({
+        toEmail: data.contact_email,
+        companyName: data.company_name,
+        contactName: data.contact_name,
+      }).catch(err => console.error('Welcome email failed:', err));
+    }
     res.json({ success: true, employer: data });
   } catch(err) { console.error('POST /employers/me error:', err); res.status(500).json({ error: 'Failed to save employer' }); }
 });
@@ -133,6 +142,23 @@ router.patch('/applications/:id', async (req, res) => {
 
     const { data, error } = await supabase.from('job_applications').update(update).eq('id', req.params.id).select().single();
     if (error) throw error;
+
+    // Send status emails
+    if (status && data) {
+      const { data: job } = await supabase.from('jobs').select('title, employers(company_name)').eq('id', data.job_id).single();
+      const { data: cand } = await supabase.from('candidates').select('email, candidate_personal(first_name)').eq('id', data.candidate_id).single();
+      if (cand?.email && job) {
+        const firstName = cand.candidate_personal?.[0]?.first_name || cand.candidate_personal?.first_name || 'Officer';
+        const jobTitle = job.title;
+        const companyName = job.employers?.company_name || 'Employer';
+        if (status === 'interview_scheduled') {
+          email.sendInterviewScheduled({ toEmail: cand.email, firstName, jobTitle, companyName, interviewDate: interview_date }).catch(e => console.error('Interview email failed:', e));
+        } else if (status === 'rejected') {
+          email.sendApplicationUnsuccessful({ toEmail: cand.email, firstName, jobTitle, companyName }).catch(e => console.error('Rejection email failed:', e));
+        }
+      }
+    }
+
     res.json({ success: true, application: data });
   } catch(err) {
     console.error('PATCH /employers/applications/:id error:', err);
@@ -252,6 +278,33 @@ router.post('/apply', async (req, res) => {
 
     if (error && error.code === '23505') return res.status(400).json({ error: 'Already applied' });
     if (error) throw error;
+
+    // Get job and employer details for emails
+    const { data: job } = await supabase.from('jobs').select('title, location, employer_id, employers(contact_email, company_name)').eq('id', job_id).single();
+    const { data: candPersonal } = await supabase.from('candidate_personal').select('first_name, last_name').eq('candidate_id', candidate.id).single();
+    const { data: candMain } = await supabase.from('candidates').select('email').eq('id', candidate.id).single();
+
+    if (job && candMain?.email) {
+      // Email candidate confirmation
+      email.sendApplicationConfirmation({
+        toEmail: candMain.email,
+        firstName: candPersonal?.first_name || 'Officer',
+        jobTitle: job.title,
+        companyName: job.employers?.company_name || 'Employer',
+        location: job.location || '',
+      }).catch(e => console.error('Application email failed:', e));
+
+      // Email employer new applicant
+      if (job.employers?.contact_email) {
+        email.sendNewApplicant({
+          toEmail: job.employers.contact_email,
+          companyName: job.employers.company_name,
+          jobTitle: job.title,
+          candidateFirstName: candPersonal?.first_name || 'Candidate',
+        }).catch(e => console.error('New applicant email failed:', e));
+      }
+    }
+
     res.json({ success: true, application: data });
   } catch(err) {
     console.error('POST /jobs/apply error:', err);

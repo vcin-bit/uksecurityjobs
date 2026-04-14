@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const email = require('../lib/email');
 const { supabase, decrypt, auditLog } = require('../lib/supabase');
 
 // GET /admin/candidates — list all candidates with profile status

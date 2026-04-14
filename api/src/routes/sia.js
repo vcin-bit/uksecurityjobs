@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase, encrypt, decrypt, auditLog } = require('../lib/supabase');
+const email = require('../lib/email');
 
 // GET /api/sia
 router.get('/', async (req, res) => {
@@ -57,6 +58,19 @@ router.put('/', async (req, res) => {
     }
 
     await auditLog({ tableName: 'sia_licences', recordId: candidate.id, action: 'UPDATE', performedBy: req.userId, ipAddress: req.ip });
+
+    // Notify admin of new verification requests
+    if (licences.length > 0) {
+      const { data: personal } = await supabase.from('candidate_personal').select('first_name, last_name').eq('candidate_id', candidate.id).single();
+      const candidateName = personal ? `${personal.first_name || ''} ${personal.last_name || ''}`.trim() : 'Unknown';
+      const firstLicence = licences[0];
+      email.sendAdminSiaRequest({
+        candidateName,
+        licenceType: firstLicence.licence_type || firstLicence.type || 'Unknown',
+        licenceNumber: firstLicence.licence_number || firstLicence.number || 'Not provided',
+      }).catch(e => console.error('Admin SIA email failed:', e));
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error('PUT /sia error:', err);
