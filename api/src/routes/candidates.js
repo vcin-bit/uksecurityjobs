@@ -216,8 +216,6 @@ router.put('/me/interview', async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // GET /api/candidates/me/full — returns all profile data in one call
 router.get('/me/full', async (req, res) => {
   try {
@@ -290,3 +288,58 @@ router.get('/me/applications', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch applications' });
   }
 });
+
+// PATCH /api/candidates/me/availability
+router.patch('/me/availability', async (req, res) => {
+  try {
+    const { availability_status, available_from } = req.body;
+    const valid = ['available', 'available_from', 'not_available'];
+    if (!valid.includes(availability_status)) return res.status(400).json({ error: 'Invalid status' });
+
+    const { data: candidate } = await supabase.from('candidates').select('id').eq('clerk_user_id', req.userId).single();
+    if (!candidate) return res.status(404).json({ error: 'Profile not found' });
+
+    const { error } = await supabase.from('candidates').update({
+      availability_status,
+      available_from: availability_status === 'available_from' ? available_from : null,
+      updated_at: new Date().toISOString()
+    }).eq('id', candidate.id);
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch(err) {
+    console.error('PATCH /candidates/me/availability error:', err);
+    res.status(500).json({ error: 'Failed to update availability' });
+  }
+});
+
+// DELETE /api/candidates/me — GDPR right to erasure
+router.delete('/me', async (req, res) => {
+  try {
+    const { data: candidate } = await supabase.from('candidates').select('id').eq('clerk_user_id', req.userId).single();
+    if (!candidate) return res.status(404).json({ error: 'Profile not found' });
+
+    const id = candidate.id;
+
+    // Delete all candidate data in order (child tables first)
+    await supabase.from('job_applications').delete().eq('candidate_id', id);
+    await supabase.from('sia_licences').delete().eq('candidate_id', id);
+    await supabase.from('candidate_personal').delete().eq('candidate_id', id);
+    await supabase.from('candidate_employment').delete().eq('candidate_id', id);
+    await supabase.from('candidate_addresses').delete().eq('candidate_id', id);
+    await supabase.from('candidate_qualifications').delete().eq('candidate_id', id);
+    await supabase.from('candidate_sectors').delete().eq('candidate_id', id);
+    await supabase.from('candidate_driving').delete().eq('candidate_id', id);
+    await supabase.from('candidates').delete().eq('id', id);
+
+    // Log the deletion for GDPR audit trail
+    console.log(`GDPR deletion completed for clerk_user_id: ${req.userId} candidate_id: ${id} at ${new Date().toISOString()}`);
+
+    res.json({ success: true });
+  } catch(err) {
+    console.error('DELETE /candidates/me error:', err);
+    res.status(500).json({ error: 'Failed to delete account' });
+  }
+});
+
+module.exports = router;

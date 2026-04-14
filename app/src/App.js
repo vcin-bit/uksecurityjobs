@@ -2726,6 +2726,154 @@ function CandidateApplications({ getToken }) {
   );
 }
 
+// ── AVAILABILITY WIDGET ──
+function AvailabilityWidget({ getToken }) {
+  const [status, setStatus] = useState('');
+  const [availableFrom, setAvailableFrom] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const API = 'https://uksecurityjobs-api.onrender.com';
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const token = await getToken();
+        const res = await fetch(`${API}/api/candidates/me`, { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json();
+        if (data.candidate) {
+          setStatus(data.candidate.availability_status || 'available');
+          setAvailableFrom(data.candidate.available_from || '');
+        }
+      } catch(e) {}
+    }
+    load();
+  }, []);
+
+  async function save() {
+    setSaving(true);
+    try {
+      const token = await getToken();
+      await fetch(`${API}/api/candidates/me/availability`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ availability_status: status, available_from: availableFrom || null })
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch(e) {}
+    setSaving(false);
+  }
+
+  const statusConfig = {
+    available: { label: 'Available now', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+    available_from: { label: 'Available from date', color: '#854d0e', bg: '#fefce8', border: '#fde68a' },
+    not_available: { label: 'Not available', color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+  };
+
+  const cfg = statusConfig[status] || statusConfig.available;
+
+  return (
+    <div className="dash-card" style={{marginBottom:'1.5rem'}}>
+      <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222',marginBottom:'1rem'}}>Availability Status</div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:'0.5rem',marginBottom:'1rem'}}>
+        {Object.entries(statusConfig).map(([key, cfg]) => (
+          <button key={key} onClick={() => setStatus(key)}
+            style={{padding:'0.45rem 1rem',borderRadius:'999px',border:`1px solid ${status===key ? cfg.border : '#e2e8f0'}`,background:status===key ? cfg.bg : '#f8fafc',color:status===key ? cfg.color : '#64748b',fontWeight:600,fontSize:'0.82rem',cursor:'pointer',fontFamily:'inherit'}}>
+            {cfg.label}
+          </button>
+        ))}
+      </div>
+      {status === 'available_from' && (
+        <div style={{marginBottom:'1rem'}}>
+          <label style={{fontSize:'0.82rem',fontWeight:600,color:'#334155',display:'block',marginBottom:'0.4rem'}}>Available from date</label>
+          <input type="date" value={availableFrom} onChange={e=>setAvailableFrom(e.target.value)}
+            min={new Date().toISOString().split('T')[0]}
+            style={{padding:'0.5rem 0.75rem',borderRadius:'8px',border:'1px solid #e2e8f0',fontSize:'0.88rem',fontFamily:'inherit'}}/>
+        </div>
+      )}
+      <div style={{display:'flex',alignItems:'center',gap:'1rem'}}>
+        <button className="btn-next" onClick={save} disabled={saving} style={{padding:'0.5rem 1.5rem',fontSize:'0.85rem'}}>
+          {saving ? 'Saving...' : 'Update Status'}
+        </button>
+        {saved && <span style={{fontSize:'0.82rem',color:'#15803d',fontWeight:600}}>Saved</span>}
+      </div>
+      <div style={{marginTop:'0.75rem',fontSize:'0.78rem',color:'#64748b',lineHeight:1.6}}>
+        Employers can see your availability status. Keep it up to date — candidates marked as available get more views.
+      </div>
+    </div>
+  );
+}
+
+// ── ACCOUNT DELETION ──
+function AccountDeletion({ getToken }) {
+  const [open, setOpen] = useState(false);
+  const [confirm, setConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState('');
+  const { signOut } = useClerk();
+  const API = 'https://uksecurityjobs-api.onrender.com';
+
+  async function deleteAccount() {
+    if (confirm.toLowerCase() !== 'delete my account') {
+      setError('Please type exactly: delete my account');
+      return;
+    }
+    setDeleting(true);
+    setError('');
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API}/api/candidates/me`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        await signOut();
+      } else {
+        setError('Deletion failed. Please contact admin@uksecurityjobs.co.uk');
+      }
+    } catch(e) {
+      setError('Deletion failed. Please contact admin@uksecurityjobs.co.uk');
+    }
+    setDeleting(false);
+  }
+
+  return (
+    <div className="dash-card" style={{marginBottom:'1.5rem',borderColor:'#fecaca'}}>
+      <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222',marginBottom:'0.5rem'}}>Delete Account</div>
+      <p style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1rem',lineHeight:1.6}}>
+        Permanently delete your account and all associated data. This cannot be undone and complies with your right to erasure under UK GDPR.
+      </p>
+      {!open ? (
+        <button onClick={()=>setOpen(true)}
+          style={{padding:'0.45rem 1.25rem',borderRadius:'8px',border:'1px solid #fecaca',background:'#fef2f2',color:'#b91c1c',fontWeight:700,fontSize:'0.82rem',cursor:'pointer',fontFamily:'inherit'}}>
+          Delete My Account
+        </button>
+      ) : (
+        <div style={{background:'#fef2f2',borderRadius:'10px',padding:'1.25rem',border:'1px solid #fecaca'}}>
+          <p style={{fontSize:'0.85rem',fontWeight:700,color:'#7f1d1d',marginBottom:'0.75rem'}}>
+            This will permanently delete all your profile data, employment history, address history, SIA licence records and application history.
+          </p>
+          <p style={{fontSize:'0.82rem',color:'#991b1b',marginBottom:'0.75rem'}}>Type <strong>delete my account</strong> to confirm:</p>
+          <input type="text" value={confirm} onChange={e=>setConfirm(e.target.value)}
+            placeholder="delete my account"
+            style={{width:'100%',padding:'0.5rem 0.75rem',borderRadius:'8px',border:'1px solid #fecaca',fontSize:'0.88rem',marginBottom:'0.75rem',fontFamily:'inherit'}}/>
+          {error && <p style={{fontSize:'0.8rem',color:'#b91c1c',marginBottom:'0.75rem'}}>{error}</p>}
+          <div style={{display:'flex',gap:'0.75rem'}}>
+            <button onClick={deleteAccount} disabled={deleting}
+              style={{padding:'0.5rem 1.25rem',borderRadius:'8px',background:'#b91c1c',color:'#fff',fontWeight:700,fontSize:'0.82rem',border:'none',cursor:'pointer',fontFamily:'inherit'}}>
+              {deleting ? 'Deleting...' : 'Permanently Delete'}
+            </button>
+            <button onClick={()=>{setOpen(false);setConfirm('');setError('');}}
+              style={{padding:'0.5rem 1.25rem',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',color:'#64748b',fontWeight:600,fontSize:'0.82rem',cursor:'pointer',fontFamily:'inherit'}}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Dashboard() {
   const { user } = useUser();
   const { getToken } = useAuth();
@@ -2869,6 +3017,12 @@ function Dashboard() {
 
         {/* MY APPLICATIONS */}
         <CandidateApplications getToken={getToken}/>
+
+        {/* AVAILABILITY STATUS */}
+        <AvailabilityWidget getToken={getToken}/>
+
+        {/* ACCOUNT DELETION */}
+        <AccountDeletion getToken={getToken}/>
 
         {/* SUBTLE FACT */}
         <div className="dash-fact-subtle">
