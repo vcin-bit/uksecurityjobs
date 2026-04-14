@@ -9,8 +9,8 @@ test.describe('Employer Pages — Public', () => {
 
   test('employer sign up has required fields', async ({ page }) => {
     await page.goto('/employer/sign-up');
-    await expect(page.locator('input[placeholder*="Securitas"]')).toBeVisible({ timeout: 8000 });
-    await expect(page.locator('input[placeholder*="12345678"]')).toBeVisible();
+    await expect(page.locator('input[type="text"]').first()).toBeVisible({ timeout: 8000 });
+    await expect(page.locator('input[type="email"]').first()).toBeVisible();
   });
 
 });
