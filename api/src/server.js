@@ -93,3 +93,70 @@ app.listen(PORT, () => {
 });
 
 
+
+// Public waitlist signup — no auth required
+const sgMailWaitlist = require('@sendgrid/mail');
+app.post('/api/waitlist', async (req, res) => {
+  try {
+    const { first_name, email, licence_type, region } = req.body;
+    if (!first_name || !email || !licence_type || !region) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    // Store in Supabase
+    const { createClient } = require('@supabase/supabase-js');
+    const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+
+    // Upsert — prevent duplicate emails
+    const { error } = await sb.from('waitlist').upsert({
+      first_name,
+      email: email.toLowerCase().trim(),
+      licence_type,
+      region,
+      created_at: new Date().toISOString()
+    }, { onConflict: 'email' });
+
+    if (error) throw error;
+
+    // Get total count for confirmation
+    const { count } = await sb.from('waitlist').select('*', { count: 'exact', head: true });
+
+    // Send confirmation email
+    sgMailWaitlist.setApiKey(process.env.SENDGRID_API_KEY);
+    await sgMailWaitlist.send({
+      from: { email: 'admin@uksecurityjobs.co.uk', name: 'UKSecurityJobs' },
+      to: email,
+      subject: "You're on the list — UKSecurityJobs",
+      html: `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#f9fafb;margin:0;padding:0;">
+<div style="max-width:560px;margin:0 auto;padding:2rem 1rem;">
+  <div style="text-align:center;padding:1.5rem 0;">
+    <a href="https://www.uksecurityjobs.co.uk" style="font-size:1.25rem;font-weight:800;text-decoration:none;">
+      <span style="color:#1a52a8;">UK</span><span style="color:#0b1222;">Security</span><span style="color:#1a52a8;">Jobs</span>
+    </a>
+  </div>
+  <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:2rem;">
+    <h1 style="font-size:1.25rem;font-weight:800;color:#0b1222;margin:0 0 0.75rem;">You're on the list, ${first_name}.</h1>
+    <p style="font-size:0.92rem;color:#4a5568;line-height:1.75;margin:0 0 1rem;">
+      When UKSecurityJobs launches, you'll be among the first to know. We'll verify your SIA licence before launch so you're ready to apply from day one — no delays.
+    </p>
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:1rem;margin:1.25rem 0;font-size:0.88rem;color:#0369a1;">
+      <strong>What happens next:</strong><br/>
+      We're building the UK's first platform where every candidate is SIA verified and BS7858 ready before they apply. No agencies. No unverified candidates. Employers get quality. Officers get respect.
+    </div>
+    <p style="font-size:0.85rem;color:#94a3b8;margin:0;">
+      Questions? Reply to this email or contact <a href="mailto:admin@uksecurityjobs.co.uk" style="color:#1a52a8;">admin@uksecurityjobs.co.uk</a>
+    </p>
+  </div>
+  <div style="text-align:center;padding:1.5rem 0;font-size:0.75rem;color:#94a3b8;">
+    &copy; 2026 UKSecurityJobs.co.uk &mdash; Digital Software Group Ltd
+  </div>
+</div>
+</body></html>`
+    });
+
+    res.json({ success: true, position: count || 1 });
+  } catch(err) {
+    console.error('Waitlist error:', err?.response?.body || err.message);
+    res.status(500).json({ error: 'Failed to join waitlist' });
+  }
+});

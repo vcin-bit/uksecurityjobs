@@ -175,6 +175,7 @@ tr:hover td{background:#fafbfc;}
         <div class="page-sub" id="todayDate"></div>
       </div>
       <div class="stats">
+        <div class="stat"><div class="stat-label">Waitlist Signups</div><div class="stat-val blue" id="sWaitlist">—</div></div>
         <div class="stat"><div class="stat-label">Total Candidates</div><div class="stat-val blue" id="sTotal">—</div></div>
         <div class="stat"><div class="stat-label">Verified Licences</div><div class="stat-val green" id="sVerified">—</div></div>
         <div class="stat"><div class="stat-label">Pending Verification</div><div class="stat-val red" id="sPending">—</div></div>
@@ -270,6 +271,7 @@ async function loadStats() {
   try {
     const d = await req('/admin/api/stats');
     document.getElementById('sTotal').textContent = d.total_candidates ?? 0;
+    document.getElementById('sWaitlist').textContent = d.waitlist_signups ?? 0;
     document.getElementById('sVerified').textContent = d.verified_licences ?? 0;
     document.getElementById('sPending').textContent = d.pending_verification ?? 0;
     document.getElementById('sComplete').textContent = d.complete_profiles ?? 0;

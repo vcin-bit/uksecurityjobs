@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Early Access — UKSecurityJobs | The UK's Verified Security Jobs Platform</title>
+<meta name="description" content="Register your interest in UKSecurityJobs — the UK's first verified security jobs platform. SIA licensed candidates only. BS7858 ready. Launching soon."/>
+<meta name="robots" content="noindex"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--blue:#1a52a8;--navy:#0b1222;--border:#e2e8f0;--mid:#4a5568;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#0b1222;color:#fff;min-height:100vh;-webkit-font-smoothing:antialiased;}
+a{color:var(--blue);}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:3rem 2rem;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 60% 50%, rgba(26,82,168,0.15) 0%, transparent 70%);pointer-events:none;}
+.hero-inner{max-width:1100px;margin:0 auto;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;position:relative;z-index:1;}
+
+/* LEFT */
+.hero-left{}
+.badge{display:inline-flex;align-items:center;gap:0.5rem;background:rgba(26,82,168,0.2);border:1px solid rgba(26,82,168,0.4);border-radius:999px;padding:0.35rem 1rem;font-size:0.75rem;font-weight:700;color:#93c5fd;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1.75rem;}
+.badge-dot{width:6px;height:6px;background:#60a5fa;border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+h1{font-size:3rem;font-weight:900;line-height:1.05;letter-spacing:-0.03em;margin-bottom:1.25rem;}
+h1 span{color:#1a52a8;}
+.hero-sub{font-size:1.05rem;color:#94a3b8;line-height:1.75;margin-bottom:2rem;max-width:500px;}
+.proof-row{display:flex;flex-wrap:wrap;gap:1.5rem;margin-top:2rem;}
+.proof-item{display:flex;align-items:center;gap:0.5rem;font-size:0.82rem;color:#64748b;}
+.proof-check{width:18px;height:18px;background:#1a52a8;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.proof-check svg{width:10px;height:10px;}
+
+/* RIGHT — FORM */
+.form-card{background:#fff;border-radius:20px;padding:2.25rem;color:#0b1222;}
+.form-title{font-size:1.2rem;font-weight:800;color:#0b1222;margin-bottom:0.35rem;}
+.form-sub{font-size:0.85rem;color:#64748b;margin-bottom:1.5rem;line-height:1.6;}
+.field{margin-bottom:1rem;}
+.field label{display:block;font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:0.4rem;}
+.field input,.field select{width:100%;padding:0.75rem 1rem;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.92rem;font-family:inherit;color:#0b1222;background:#fff;transition:border-color 0.15s;}
+.field input:focus,.field select:focus{outline:none;border-color:#1a52a8;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;}
+.submit-btn{width:100%;padding:0.875rem;background:#0b1222;color:#fff;border:none;border-radius:10px;font-size:0.95rem;font-weight:800;cursor:pointer;font-family:inherit;margin-top:0.5rem;transition:opacity 0.15s;}
+.submit-btn:hover{opacity:0.9;}
+.submit-btn:disabled{opacity:0.6;cursor:not-allowed;}
+.form-legal{font-size:0.72rem;color:#94a3b8;margin-top:0.75rem;line-height:1.6;text-align:center;}
+.success-state{display:none;text-align:center;padding:1rem 0;}
+.success-icon{width:56px;height:56px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;}
+.success-title{font-size:1.1rem;font-weight:800;color:#0b1222;margin-bottom:0.5rem;}
+.success-sub{font-size:0.88rem;color:#64748b;line-height:1.65;}
+.error-msg{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:0.75rem 1rem;font-size:0.82rem;color:#dc2626;margin-bottom:1rem;display:none;}
+
+/* FOOTER */
+.footer{text-align:center;padding:2rem;font-size:0.75rem;color:#475569;}
+.footer a{color:#475569;}
+.logo{font-size:1.1rem;font-weight:800;text-decoration:none;display:inline-block;margin-bottom:0.5rem;}
+.logo .uk{color:#1a52a8;}.logo .sec{color:#fff;}.logo .job{color:#1a52a8;}
+
+@media(max-width:768px){
+  .hero-inner{grid-template-columns:1fr;gap:2.5rem;}
+  h1{font-size:2.25rem;}
+  .field-row{grid-template-columns:1fr;}
+  .hero{padding:2rem 1.25rem;}
+}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="badge">
+        <div class="badge-dot"></div>
+        Launching Soon
+      </div>
+      <h1>Security jobs.<br/>Done <span>properly</span>.</h1>
+      <p class="hero-sub">The UK's first verified security jobs platform. Every candidate SIA licensed. Every profile BS7858 ready. No agencies. No unverified applicants.</p>
+      <div class="proof-row">
+        <div class="proof-item">
+          <div class="proof-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          SIA licence verified before you apply
+        </div>
+        <div class="proof-item">
+          <div class="proof-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          BS7858 profile built once, used everywhere
+        </div>
+        <div class="proof-item">
+          <div class="proof-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          Apply with one click — no CV needed
+        </div>
+        <div class="proof-item">
+          <div class="proof-check"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          Verified employers only — no time wasters
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="form-card">
+        <div class="form-title">Register your interest</div>
+        <p class="form-sub">Join the waiting list. We'll verify your SIA licence before launch so you're ready to apply from day one.</p>
+
+        <div class="error-msg" id="error-msg"></div>
+
+        <form id="waitlist-form">
+          <div class="field">
+            <label>First Name</label>
+            <input type="text" name="first_name" placeholder="Your first name" required autocomplete="given-name"/>
+          </div>
+          <div class="field">
+            <label>Email Address</label>
+            <input type="email" name="email" placeholder="your@email.com" required autocomplete="email"/>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>SIA Licence Type</label>
+              <select name="licence_type" required>
+                <option value="">Select</option>
+                <option>Door Supervisor</option>
+                <option>Security Guard</option>
+                <option>CCTV Operator</option>
+                <option>Close Protection</option>
+                <option>Key Holding</option>
+                <option>Cash in Transit</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Region</label>
+              <select name="region" required>
+                <option value="">Select</option>
+                <option>London</option>
+                <option>South East</option>
+                <option>South West</option>
+                <option>Midlands</option>
+                <option>North West</option>
+                <option>North East</option>
+                <option>Yorkshire</option>
+                <option>East of England</option>
+                <option>Scotland</option>
+                <option>Wales</option>
+                <option>Northern Ireland</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="submit-btn" id="submit-btn">Join the Waiting List →</button>
+          <p class="form-legal">By registering you agree to our <a href="/privacy">Privacy Policy</a>. We will only contact you about UKSecurityJobs.</p>
+        </form>
+
+        <div class="success-state" id="success-state">
+          <div class="success-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7" stroke="#15803d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="success-title">You're on the list.</div>
+          <p class="success-sub">Check your email for confirmation. We'll be in touch before launch to verify your SIA licence — so you're ready to apply from day one.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <a href="/" class="logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a><br/>
+  <a href="/privacy">Privacy Policy</a> &middot; <a href="/terms">Terms</a> &middot; <a href="/about#contact">Contact</a><br/>
+  &copy; 2026 UKSecurityJobs.co.uk &mdash; Digital Software Group Ltd
+</footer>
+
+<script>
+document.getElementById('waitlist-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  const errEl = document.getElementById('error-msg');
+  btn.disabled = true;
+  btn.textContent = 'Joining...';
+  errEl.style.display = 'none';
+
+  const data = Object.fromEntries(new FormData(this));
+  try {
+    const res = await fetch('https://uksecurityjobs-api.onrender.com/api/waitlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (res.ok) {
+      document.getElementById('waitlist-form').style.display = 'none';
+      document.getElementById('success-state').style.display = 'block';
+    } else {
+      errEl.textContent = json.error || 'Something went wrong. Please try again.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Join the Waiting List →';
+    }
+  } catch(err) {
+    errEl.textContent = 'Could not connect. Please try again or email admin@uksecurityjobs.co.uk';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Join the Waiting List →';
+  }
+});
+</script>
+</body>
+</html>

@@ -183,11 +183,12 @@ router.get('/candidate/:id', async (req, res) => {
 // GET /admin/stats — dashboard stats
 router.get('/stats', async (req, res) => {
   try {
-    const [totalRes, verifiedRes, pendingRes, completeRes] = await Promise.allSettled([
+    const [totalRes, verifiedRes, pendingRes, completeRes, waitlistRes] = await Promise.allSettled([
       supabase.from('candidates').select('*', { count: 'exact', head: true }),
       supabase.from('sia_licences').select('*', { count: 'exact', head: true }).eq('verified', true),
       supabase.from('sia_licences').select('*', { count: 'exact', head: true }).eq('verified', false),
       supabase.from('candidates').select('*', { count: 'exact', head: true }).eq('profile_complete', true),
+      supabase.from('waitlist').select('*', { count: 'exact', head: true }),
     ]);
 
     res.json({
@@ -195,6 +196,7 @@ router.get('/stats', async (req, res) => {
       verified_licences: verifiedRes.status === 'fulfilled' ? verifiedRes.value.count : 0,
       pending_verification: pendingRes.status === 'fulfilled' ? pendingRes.value.count : 0,
       complete_profiles: completeRes.status === 'fulfilled' ? completeRes.value.count : 0,
+      waitlist_signups: waitlistRes.status === 'fulfilled' ? waitlistRes.value.count : 0,
     });
   } catch (err) {
     console.error('Admin GET /stats error:', err);
