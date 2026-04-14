@@ -1,7 +1,5 @@
 const sgMail = require('@sendgrid/mail');
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
 const FROM = {
   email: 'admin@uksecurityjobs.co.uk',
   name: 'UKSecurityJobs'
@@ -53,6 +51,7 @@ p:last-child{margin-bottom:0;}
 // ── SEND HELPER ──
 async function send(to, subject, html) {
   try {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
     await sgMail.send({ from: FROM, to, subject, html });
     console.log(`Email sent: ${subject} → ${to}`);
     return true;
