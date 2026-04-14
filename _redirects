@@ -1,0 +1,5 @@
+# Redirect old job URLs from previous site owner
+/job/*     /     301
+/jobs/*    /     301
+/info/*    /     301
+/category/* /blog 301
