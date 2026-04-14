@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>About UKSecurityJobs — Built by the Industry, for the Industry</title>
+<meta name="description" content="UKSecurityJobs was founded by a security industry veteran with 30 years experience. Built to fix a broken recruitment process and raise the standard of the UK licensed security industry."/>
+<link rel="canonical" href="https://www.uksecurityjobs.co.uk/about"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--blue:#1a52a8;--navy:#0b1222;--border:#e2e8f0;--off:#f9fafb;--mid:#4a5568;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:var(--navy);background:#fff;-webkit-font-smoothing:antialiased;}
+a{color:var(--blue);text-decoration:none;}
+a:hover{text-decoration:underline;}
+.nav{background:#fff;border-bottom:1px solid var(--border);height:64px;display:flex;align-items:center;position:sticky;top:0;z-index:100;}
+.nav-inner{max-width:1160px;margin:0 auto;width:100%;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;}
+.logo{font-size:1.15rem;font-weight:800;letter-spacing:0.01em;text-decoration:none;}
+.logo .uk{color:var(--blue);}.logo .sec{color:var(--navy);}.logo .job{color:var(--blue);}
+.nav-links{display:flex;align-items:center;gap:1.5rem;}
+.nav-link{font-size:0.88rem;font-weight:500;color:var(--mid);text-decoration:none;}
+.nav-cta{background:var(--navy);color:#fff;font-size:0.85rem;font-weight:700;padding:0.55rem 1.25rem;border-radius:8px;text-decoration:none;}
+
+/* HERO */
+.hero{background:var(--navy);padding:5rem 2rem;color:#fff;}
+.hero-inner{max-width:860px;margin:0 auto;}
+.hero-tag{display:inline-block;background:rgba(26,82,168,0.4);color:#93c5fd;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;padding:0.3rem 0.875rem;border-radius:999px;margin-bottom:1.25rem;border:1px solid rgba(26,82,168,0.5);}
+.hero h1{font-size:2.75rem;font-weight:900;line-height:1.12;letter-spacing:-0.03em;margin-bottom:1.25rem;}
+.hero h1 em{font-style:normal;color:#93c5fd;}
+.hero-lead{font-size:1.1rem;color:#94a3b8;line-height:1.75;max-width:680px;}
+
+/* CONTENT */
+.section{padding:4.5rem 2rem;}
+.section-inner{max-width:860px;margin:0 auto;}
+.section-inner.wide{max-width:1160px;}
+.section-tag{font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.15em;color:var(--blue);margin-bottom:0.75rem;}
+.section h2{font-size:1.85rem;font-weight:900;letter-spacing:-0.02em;margin-bottom:1.25rem;line-height:1.2;}
+.section p{font-size:0.95rem;color:var(--mid);line-height:1.85;margin-bottom:1rem;}
+.section p:last-child{margin-bottom:0;}
+.section p strong{color:var(--navy);font-weight:700;}
+
+/* FOUNDER */
+.founder{background:var(--off);padding:4.5rem 2rem;}
+.founder-inner{max-width:860px;margin:0 auto;display:grid;grid-template-columns:1fr 340px;gap:4rem;align-items:start;}
+.founder-card{background:var(--navy);border-radius:16px;padding:2rem;color:#fff;}
+.founder-name{font-size:1.1rem;font-weight:800;margin-bottom:0.25rem;}
+.founder-title{font-size:0.78rem;color:#64748b;margin-bottom:1.25rem;}
+.founder-stat{margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid #1e293b;}
+.founder-stat:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.founder-stat-n{font-size:1.5rem;font-weight:900;color:#93c5fd;}
+.founder-stat-l{font-size:0.75rem;color:#64748b;margin-top:0.1rem;}
+
+/* PILLARS */
+.pillars{padding:4.5rem 2rem;background:#fff;}
+.pillars-inner{max-width:1160px;margin:0 auto;}
+.pillars-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:2.5rem;}
+.pillar{background:var(--off);border-radius:14px;padding:1.75rem;border:1px solid var(--border);}
+.pillar-icon{width:44px;height:44px;background:#eff6ff;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:1.1rem;}
+.pillar h3{font-size:1rem;font-weight:800;margin-bottom:0.5rem;color:var(--navy);}
+.pillar p{font-size:0.82rem;color:var(--mid);line-height:1.7;margin:0;}
+
+/* QUOTE */
+.quote{background:var(--navy);padding:4.5rem 2rem;text-align:center;}
+.quote-inner{max-width:760px;margin:0 auto;}
+.quote-text{font-size:1.5rem;font-weight:800;color:#fff;line-height:1.5;letter-spacing:-0.02em;margin-bottom:1.5rem;}
+.quote-text em{font-style:normal;color:#93c5fd;}
+.quote-by{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.16em;color:#475569;}
+
+/* SECURITY */
+.security{padding:4.5rem 2rem;background:var(--off);}
+
+/* CONTACT */
+.contact{padding:4.5rem 2rem;background:#fff;}
+.contact-inner{max-width:760px;margin:0 auto;}
+.contact h2{font-size:1.75rem;font-weight:900;letter-spacing:-0.02em;margin-bottom:0.5rem;}
+.contact-sub{font-size:0.95rem;color:var(--mid);margin-bottom:2.5rem;line-height:1.7;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
+.field label{display:block;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--navy);margin-bottom:0.4rem;}
+.field input,.field textarea,.field select{width:100%;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.9rem;font-family:inherit;color:var(--navy);background:#fff;outline:none;transition:border-color 0.15s;}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--blue);}
+.field textarea{resize:vertical;min-height:120px;}
+.field-full{grid-column:1/-1;}
+.btn-submit{background:var(--blue);color:#fff;font-size:0.95rem;font-weight:700;padding:0.875rem 2.5rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:background 0.15s;}
+.btn-submit:hover{background:#1344a0;}
+.contact-alt{margin-top:1.5rem;font-size:0.85rem;color:var(--mid);}
+.contact-alt a{color:var(--blue);font-weight:600;}
+
+/* FOOTER */
+footer{background:#0b1222;padding:4rem 2rem 2rem;}
+footer *{box-sizing:border-box;}
+.foot-wrap{max-width:1160px;margin:0 auto;}
+.foot-top{display:grid;grid-template-columns:240px 1fr;gap:4rem;padding-bottom:3rem;border-bottom:1px solid #1e293b;margin-bottom:2rem;}
+.foot-brand p{font-size:0.8rem;color:#475569;line-height:1.75;margin-top:0.75rem;max-width:210px;}
+.foot-logo{font-size:1.1rem;font-weight:800;text-decoration:none;display:inline-block;}
+.foot-logo .uk{color:#1a52a8;}.foot-logo .sec{color:#fff;}.foot-logo .job{color:#1a52a8;}
+footer nav{background:transparent;border:none;height:auto;position:static;backdrop-filter:none;display:block;}
+.foot-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;align-items:start;}
+.foot-col h4{font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.16em;color:#334155;margin-bottom:0.875rem;display:block;}
+.foot-col a{display:block;font-size:0.82rem;color:#64748b;margin-bottom:0.5rem;text-decoration:none;transition:color 0.15s;}
+.foot-col a:hover{color:#fff;}
+.foot-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;}
+.foot-copy{font-size:0.72rem;color:#334155;}
+.foot-legal{display:flex;gap:1.25rem;}
+.foot-legal a{font-size:0.72rem;color:#334155;text-decoration:none;}
+.foot-legal a:hover{color:#94a3b8;}
+
+@media(max-width:900px){
+  .hero h1{font-size:2rem;}
+  .founder-inner{grid-template-columns:1fr;}
+  .pillars-grid{grid-template-columns:1fr 1fr;}
+  .form-grid{grid-template-columns:1fr;}
+  .foot-top{grid-template-columns:1fr;gap:2rem;}
+  .foot-nav{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:600px){
+  .pillars-grid{grid-template-columns:1fr;}
+  .foot-nav{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a>
+    <div class="nav-links">
+      <a class="nav-link" href="/officers">For Officers</a>
+      <a class="nav-link" href="/employers">For Employers</a>
+      <a class="nav-link" href="/blog">Blog</a>
+      <a class="nav-cta" href="https://app.uksecurityjobs.co.uk/sign-up">Register Free</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <span class="hero-tag">About UKSecurityJobs</span>
+    <h1>Built by Someone Who Has <em>Lived</em> This Industry</h1>
+    <p class="hero-lead">UKSecurityJobs was not built in a tech incubator by people who have never worked a door or managed a security contract. It was built by someone who has — and who got tired of watching a professional industry being let down by a broken recruitment process.</p>
+  </div>
+</section>
+
+<!-- THE STORY -->
+<section class="section">
+  <div class="section-inner">
+    <div class="section-tag">The Story</div>
+    <h2>Thirty Years. Every Level. One Platform.</h2>
+    <p>The founder of UKSecurityJobs began his career in the British military before entering the UK licensed security industry in 1995 — starting on the ground floor with Pinkertons Security and progressing through every operational and management level to Director positions at national and international security companies. He has also founded and operated his own security businesses.</p>
+    <p>That career spans the introduction of SIA licensing, the rise of the internet job board, the decline of industry-specific recruitment platforms, and thirty years of watching the same avoidable problem repeat itself: <strong>good employers wasting time on unsuitable candidates, and good officers waiting too long to be placed in the right role.</strong></p>
+    <p>The industry changed. The recruitment process largely did not.</p>
+    <p>Generic job boards — Indeed, Reed, Totaljobs — were never built for the licensed security sector. They have no mechanism to verify an SIA licence, no understanding of BS7858 vetting requirements, no way to filter by licence type, and no interest in the professional standards the industry is supposed to uphold. The result is hundreds of unsuitable applications for every genuine vacancy, and a vetting process that starts from scratch every single time.</p>
+    <p>UKSecurityJobs exists to fix that.</p>
+  </div>
+</section>
+
+<!-- QUOTE -->
+<section class="quote">
+  <div class="quote-inner">
+    <div class="quote-text">"The SIA introduced licensing but missed the opportunity to introduce a complete professional identity for every officer. <em>We built that instead.</em>"</div>
+    <div class="quote-by">David Foster — Founder, UKSecurityJobs</div>
+  </div>
+</section>
+
+<!-- FOUNDER -->
+<section class="founder">
+  <div class="founder-inner">
+    <div>
+      <div class="section-tag">The Founder</div>
+      <h2>David Foster</h2>
+      <p>David's career began in the British military before transitioning into the UK private security industry in 1995. Over three decades he has worked in and led security operations across retail, corporate, events, close protection and national contract environments — and has represented the industry in direct dialogue with the SIA at a strategic level.</p>
+      <p>His frustration with the state of security recruitment is not theoretical. It is the product of thirty years watching talented, licensed professionals underserved by platforms built for a different industry, and security companies haemorrhaging time and money on recruitment processes that should have been solved a decade ago.</p>
+      <p>UKSecurityJobs is independently owned and operated by Digital Software Group Ltd, registered in England and Wales. There are no investors to answer to, no volume targets, and no incentive to compromise on quality in favour of revenue. The platform will be policed accordingly.</p>
+    </div>
+    <div class="founder-card">
+      <div class="founder-name">David Foster</div>
+      <div class="founder-title">Founder &amp; Director — UKSecurityJobs</div>
+      <div class="founder-stat">
+        <div class="founder-stat-n">30+</div>
+        <div class="founder-stat-l">Years in the UK licensed security industry</div>
+      </div>
+      <div class="founder-stat">
+        <div class="founder-stat-n">1995</div>
+        <div class="founder-stat-l">Started with Pinkertons Security</div>
+      </div>
+      <div class="founder-stat">
+        <div class="founder-stat-n">Every rank</div>
+        <div class="founder-stat-l">Officer to Director, national &amp; international</div>
+      </div>
+      <div class="founder-stat">
+        <div class="founder-stat-n">SIA</div>
+        <div class="founder-stat-l">Direct engagement at SIA HQ on licensing policy</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PILLARS -->
+<section class="pillars">
+  <div class="pillars-inner">
+    <div style="max-width:760px;margin:0 auto 0;">
+      <div class="section-tag">How We Are Different</div>
+      <h2>What UKSecurityJobs Actually Does</h2>
+    </div>
+    <div class="pillars-grid">
+      <div class="pillar">
+        <div class="pillar-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+        <h3>SIA Licence Verified</h3>
+        <p>Every candidate's SIA licence is checked against the public register before their profile goes live. No licence, no access. Simple.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" stroke-width="2" stroke-linecap="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg></div>
+        <h3>BS7858 Ready Before They Apply</h3>
+        <p>Candidates complete a full BS7858-ready profile — 5-year address history, full employment history, reference contacts — before they can apply for a single role.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <h3>No Time Wasters</h3>
+        <p>Incomplete profiles cannot apply. Candidates who accept an interview and do not attend without good reason are banned — three strikes and they are off the platform permanently.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg></div>
+        <h3>Interview Preparation</h3>
+        <p>Candidates are prepared before every interview — document checklist, scenario-based written assessment, and a video screening to confirm communication skills. Employers know what they are getting before they pick up the phone.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg></div>
+        <h3>Post-Placement Follow-Up</h3>
+        <p>We check in on every placement one month after they start. Feedback from both candidate and employer. We step in if something is not right. This is not a transaction — it is a professional relationship.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" stroke-width="2" stroke-linecap="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg></div>
+        <h3>Member Benefits</h3>
+        <p>Verified candidates gain access to exclusive discounts and benefits from partner brands — a genuine investment in the professionals who maintain the standards this industry is supposed to uphold.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NEW TO INDUSTRY -->
+<section class="section" style="background:var(--off);">
+  <div class="section-inner">
+    <div class="section-tag">New to the Industry</div>
+    <h2>Thinking About a Career in Security?</h2>
+    <p>UKSecurityJobs is not only for experienced officers. We provide honest, accurate information for anyone considering a career in the UK licensed security industry — what the work actually involves, what licences you need, how to find a reputable training provider, and how to avoid the companies that will sign you up on zero hours and leave you there.</p>
+    <p>The industry needs good people. If you are willing to work to the standard this platform requires, we will support you from your first licence to your first role and beyond.</p>
+    <a href="/officers" style="display:inline-block;margin-top:1rem;background:var(--navy);color:#fff;font-size:0.9rem;font-weight:700;padding:0.75rem 1.75rem;border-radius:9px;text-decoration:none;">Find Out More →</a>
+  </div>
+</section>
+
+<!-- PLATFORM SECURITY -->
+<section class="security section" style="background:#fff;">
+  <div class="section-inner">
+    <div class="section-tag">Platform Security</div>
+    <h2>How We Protect Your Data</h2>
+    <p>UKSecurityJobs handles some of the most sensitive personal data in the employment sector — National Insurance numbers, SIA licence details, criminal disclosures and full address histories. We take that responsibility seriously.</p>
+    <p><strong>Data is stored in the European Union</strong> in compliance with UK GDPR and the Data Protection Act 2018. Sensitive fields are encrypted at the field level — meaning even within our own infrastructure, the raw values of NI numbers and criminal disclosures are never stored in plain text.</p>
+    <p><strong>Authentication</strong> is handled by an industry-leading provider with multi-factor authentication, session management and bot protection built in. Passwords are never stored by us.</p>
+    <p><strong>The platform sits behind enterprise-grade security infrastructure</strong> including DDoS protection, a web application firewall and bot management. All data in transit is encrypted.</p>
+    <p>We are registered with the Information Commissioner's Office (ICO) and are actively pursuing Cyber Essentials certification. A formal penetration test will be commissioned prior to full public launch.</p>
+    <p>For full details of how we collect, store and use your data, see our <a href="/privacy">Privacy Policy</a>.</p>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact">
+  <div class="contact-inner">
+    <div class="section-tag">Get in Touch</div>
+    <h2>We Want to Hear From You</h2>
+    <p class="contact-sub">Feedback — positive and negative — is how this platform improves. If you have a suggestion, a complaint, a question about the platform or a proposal for a partnership, use the form below or email us directly. We read everything.</p>
+
+    <form action="https://formspree.io/f/placeholder" method="POST">
+      <div class="form-grid">
+        <div class="field">
+          <label>Your Name</label>
+          <input type="text" name="name" placeholder="Full name" required/>
+        </div>
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" name="email" placeholder="your@email.com" required/>
+        </div>
+        <div class="field">
+          <label>I am a</label>
+          <select name="type">
+            <option value="">Select</option>
+            <option>Security Officer / Candidate</option>
+            <option>Security Employer</option>
+            <option>New to the industry</option>
+            <option>Press / Media</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Subject</label>
+          <input type="text" name="subject" placeholder="What is this about?"/>
+        </div>
+        <div class="field field-full">
+          <label>Message</label>
+          <textarea name="message" placeholder="Your message..." required></textarea>
+        </div>
+      </div>
+      <button type="submit" class="btn-submit">Send Message →</button>
+    </form>
+
+    <div class="contact-alt">
+      Prefer email? Write to us at <a href="mailto:support@uksecurityjobs.co.uk">support@uksecurityjobs.co.uk</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <a href="/" class="foot-logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a>
+        <p>The UK's only verified security jobs platform. Built by the industry, for the industry.</p>
+        <p style="margin-top:0.5rem;font-size:0.75rem;color:#334155;">Digital Software Group Ltd<br>Registered in England &amp; Wales</p>
+      </div>
+      <nav class="foot-nav">
+        <div class="foot-col">
+          <h4>Security Officers</h4>
+          <a href="/officers">For Security Officers</a>
+          <a href="https://app.uksecurityjobs.co.uk/sign-up">Register Free</a>
+          <a href="https://app.uksecurityjobs.co.uk/jobs">Security Jobs</a>
+          <a href="https://app.uksecurityjobs.co.uk/sign-in">Sign In</a>
+        </div>
+        <div class="foot-col">
+          <h4>Security Companies</h4>
+          <a href="/employers">For Employers</a>
+          <a href="https://app.uksecurityjobs.co.uk/employer/sign-up">Register a Company</a>
+          <a href="https://app.uksecurityjobs.co.uk/sign-in">Employer Sign In</a>
+        </div>
+        <div class="foot-col">
+          <h4>SIA Job Types</h4>
+          <a href="/door-supervisor-jobs">Door Supervisor Jobs</a>
+          <a href="/cctv-jobs">CCTV Operator Jobs</a>
+          <a href="/close-protection-jobs">Close Protection Jobs</a>
+          <a href="/security-guard-jobs">Security Guard Jobs</a>
+        </div>
+        <div class="foot-col">
+          <h4>Company</h4>
+          <a href="/blog">Blog</a>
+          <a href="/about">About</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms &amp; Conditions</a>
+          <a href="mailto:support@uksecurityjobs.co.uk">Contact Us</a>
+        </div>
+      </nav>
+    </div>
+    <div class="foot-bottom">
+      <p class="foot-copy">&copy; 2026 UKSecurityJobs.co.uk &mdash; Digital Software Group Ltd. All rights reserved.</p>
+      <div class="foot-legal">
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/cookies">Cookies</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
