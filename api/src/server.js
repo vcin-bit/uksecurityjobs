@@ -70,3 +70,26 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`UKSecurityJobs API running on port ${PORT}`);
 });
+
+// Public contact form — no auth required
+const email = require('./lib/email');
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email: fromEmail, type, subject, message } = req.body;
+    if (!name || !fromEmail || !message) return res.status(400).json({ error: 'Name, email and message are required' });
+
+    const sgMail = require('@sendgrid/mail');
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    await sgMail.send({
+      from: { email: 'admin@uksecurityjobs.co.uk', name: 'UKSecurityJobs' },
+      to: 'admin@uksecurityjobs.co.uk',
+      replyTo: fromEmail,
+      subject: `Contact Form — ${subject || 'General Enquiry'}`,
+      html: `<p><strong>From:</strong> ${name} (${fromEmail})</p><p><strong>Type:</strong> ${type || 'Not specified'}</p><p><strong>Subject:</strong> ${subject || 'Not specified'}</p><p><strong>Message:</strong></p><p>${message.replace(/\n/g,'<br>')}</p>`
+    });
+    res.json({ success: true });
+  } catch(err) {
+    console.error('Contact form error:', err);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});

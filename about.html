@@ -379,7 +379,10 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
     <h2>We Want to Hear From You</h2>
     <p class="contact-sub">Feedback — positive and negative — is how this platform improves. If you have a suggestion, a complaint, a question about the platform or a proposal for a partnership, use the form below or email us directly. We read everything.</p>
 
-    <form action="https://formspree.io/f/placeholder" method="POST">
+    <div id="contact-success" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:1.25rem;margin-bottom:1.5rem;color:#15803d;font-size:0.92rem;font-weight:600;">Message sent — we will be in touch within one working day.</div>
+    <div id="contact-error" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:1.25rem;margin-bottom:1.5rem;color:#dc2626;font-size:0.92rem;">Something went wrong. Please email us directly at <a href="mailto:admin@uksecurityjobs.co.uk" style="color:#dc2626;font-weight:700;">admin@uksecurityjobs.co.uk</a></div>
+
+    <form id="contact-form">
       <div class="form-grid">
         <div class="field">
           <label>Your Name</label>
@@ -409,7 +412,7 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
           <textarea name="message" placeholder="Your message..." required></textarea>
         </div>
       </div>
-      <button type="submit" class="btn-submit">Send Message →</button>
+      <button type="submit" class="btn-submit" id="contact-btn">Send Message →</button>
     </form>
 
     <div class="contact-alt">
@@ -417,6 +420,37 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
     </div>
   </div>
 </section>
+
+<script>
+document.getElementById('contact-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('contact-btn');
+  const success = document.getElementById('contact-success');
+  const error = document.getElementById('contact-error');
+  btn.textContent = 'Sending...';
+  btn.disabled = true;
+  success.style.display = 'none';
+  error.style.display = 'none';
+  try {
+    const data = Object.fromEntries(new FormData(this));
+    const res = await fetch('https://uksecurityjobs-api.onrender.com/api/contact', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      success.style.display = 'block';
+      this.reset();
+    } else {
+      error.style.display = 'block';
+    }
+  } catch(err) {
+    error.style.display = 'block';
+  }
+  btn.textContent = 'Send Message →';
+  btn.disabled = false;
+});
+</script>
 
 <footer>
   <div class="foot-wrap">
