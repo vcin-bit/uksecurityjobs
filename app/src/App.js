@@ -2902,13 +2902,15 @@ function SignUpPage() {
               <div className="field"><label className="field-label">Email Address</label><input className="f-input" type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="your@email.com"/></div>
               <div className="field"><label className="field-label">Password</label><input className="f-input" type="password" required value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Min. 8 characters"/></div>
               <div className="field" style={{marginTop:'0.5rem'}}>
-                <label style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',cursor:'pointer',fontSize:'0.85rem',color:'#374151',lineHeight:'1.5',background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'0.875rem'}}>
-                  <input type="checkbox" checked={form.gdprConsent} onChange={e=>setForm({...form,gdprConsent:e.target.checked})} style={{marginTop:'2px',flexShrink:0,width:'18px',height:'18px',cursor:'pointer',accentColor:'#1a52a8'}}/>
-                  <span>I agree to the <a href="https://www.uksecurityjobs.co.uk/privacy" target="_blank" rel="noopener noreferrer" style={{color:'#1a52a8',fontWeight:600}}>Privacy Policy</a> and consent to UKSecurityJobs storing my personal data securely for the purpose of matching me with security employment opportunities. I understand I can withdraw consent at any time.</span>
-                </label>
+                <div style={{background:'#f0f9ff',border: form.gdprConsent ? '1.5px solid #1a52a8' : '1.5px solid #bae6fd',borderRadius:'8px',padding:'0.875rem',display:'flex',alignItems:'flex-start',gap:'0.75rem',cursor:'pointer'}} onClick={()=>setForm({...form,gdprConsent:!form.gdprConsent})}>
+                  <div style={{width:'20px',height:'20px',flexShrink:0,marginTop:'1px',border:'2px solid',borderColor:form.gdprConsent?'#1a52a8':'#94a3b8',borderRadius:'4px',background:form.gdprConsent?'#1a52a8':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                    {form.gdprConsent && <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                  <span style={{fontSize:'0.85rem',color:'#374151',lineHeight:'1.5'}}>I agree to the <a href="https://www.uksecurityjobs.co.uk/privacy" target="_blank" rel="noopener noreferrer" style={{color:'#1a52a8',fontWeight:600}} onClick={e=>e.stopPropagation()}>Privacy Policy</a> and consent to UKSecurityJobs storing my personal data securely for the purpose of matching me with security employment opportunities. I understand I can withdraw consent at any time.</span>
+                </div>
                 {!form.gdprConsent && <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.4rem',paddingLeft:'0.25rem'}}>You must tick this box to continue.</div>}
               </div>
-              <button className="btn-full" type="button" disabled={loading || !form.gdprConsent} onClick={handleRegister} style={{opacity: form.gdprConsent ? 1 : 0.5}}>{loading?'Creating account...':'Create My Profile →'}</button>
+              <button className="btn-full" type="button" disabled={loading || !form.gdprConsent} onClick={handleRegister} style={{opacity: form.gdprConsent ? 1 : 0.5, marginTop:'0.5rem'}}>{loading?'Creating account...':'Create My Profile →'}</button>
             </form>
             <div className="auth-footer">Already registered? <a href="/sign-in">Sign in</a></div>
           </> : <>
