@@ -140,6 +140,25 @@ app.post('/api/waitlist', async (req, res) => {
 app.use('/admin/api', requireAdmin);
 app.use('/admin/api', adminRoutes);
 
+// Public job listings — no auth required
+app.get('/api/jobs/public', async (req, res) => {
+  try {
+    const { createClient } = require('@supabase/supabase-js');
+    const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+    const now = new Date().toISOString();
+    const { data, error } = await sb.from('jobs')
+      .select('*, employers(company_name, logo_url, sia_acs)')
+      .eq('status', 'active')
+      .or(`expires_at.gt.${now},expires_at.is.null`)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ jobs: data || [] });
+  } catch(err) {
+    console.error('Public jobs error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch jobs' });
+  }
+});
+
 // All candidate routes require a valid Clerk token
 app.use('/api', requireAuth);
 app.use('/api/candidates', candidateRoutes);
@@ -147,7 +166,6 @@ app.use('/api/sia', siaRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/employers', requireAuth, employerRoutes);
-app.use('/api/jobs/public', employerRoutes); // no auth needed
 app.use('/api/jobs', requireAuth, employerRoutes);
 
 // Global error handler
