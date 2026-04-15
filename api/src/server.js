@@ -68,32 +68,6 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
-// Admin routes — require admin secret key only, no Clerk token needed
-app.use('/admin/api', requireAdmin);
-app.use('/admin/api', adminRoutes);
-
-// All candidate routes require a valid Clerk token
-app.use('/api', requireAuth);
-app.use('/api/candidates', candidateRoutes);
-app.use('/api/sia', siaRoutes);
-app.use('/api/profile', profileRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/employers', requireAuth, employerRoutes);
-app.use('/api/jobs/public', employerRoutes); // no auth needed
-app.use('/api/jobs', requireAuth, employerRoutes);
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-app.listen(PORT, () => {
-  console.log(`UKSecurityJobs API running on port ${PORT}`);
-});
-
-
-
 // Public waitlist signup — no auth required
 const sgMailWaitlist = require('@sendgrid/mail');
 app.post('/api/waitlist', async (req, res) => {
@@ -160,3 +134,31 @@ app.post('/api/waitlist', async (req, res) => {
     res.status(500).json({ error: 'Failed to join waitlist' });
   }
 });
+
+// Admin routes — require admin secret key only, no Clerk token needed
+app.use('/admin/api', requireAdmin);
+app.use('/admin/api', adminRoutes);
+
+// All candidate routes require a valid Clerk token
+app.use('/api', requireAuth);
+app.use('/api/candidates', candidateRoutes);
+app.use('/api/sia', siaRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/employers', requireAuth, employerRoutes);
+app.use('/api/jobs/public', employerRoutes); // no auth needed
+app.use('/api/jobs', requireAuth, employerRoutes);
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+app.listen(PORT, () => {
+  console.log(`UKSecurityJobs API running on port ${PORT}`);
+});
+
+
+
+
