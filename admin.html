@@ -155,6 +155,7 @@ tr:hover td{background:#fafbfc;}
         <button class="topnav-tab active" onclick="showSection('overview',this)">Overview</button>
         <button class="topnav-tab" onclick="showSection('verification',this)">SIA Verification</button>
         <button class="topnav-tab" onclick="showSection('candidates',this)">Candidates</button>
+        <button class="topnav-tab" onclick="showSection('waitlist',this)">Waitlist</button>
       </div>
       <div class="topnav-right">
         <a href="https://app.uksecurityjobs.co.uk/dashboard" target="_blank" style="font-size:0.78rem;color:#64748b;text-decoration:none;margin-right:1rem;font-weight:500;">Officer App ↗</a>
@@ -202,8 +203,42 @@ tr:hover td{background:#fafbfc;}
     </div>
 
     <!-- CANDIDATES -->
-    <div class="section" id="section-candidates">
+    <div class="section" id="section-waitlist">
       <div class="page-hd">
+        <div class="page-title">Early Access Waitlist</div>
+        <div class="page-sub">Officers who registered interest before launch.</div>
+      </div>
+      <div class="card">
+        <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+          <div>
+            <span id="waitlistCount" style="font-weight:700;font-size:1.1rem;color:#0b1222;">—</span>
+            <span style="font-size:0.85rem;color:#64748b;margin-left:0.5rem;">registrations</span>
+          </div>
+          <div style="display:flex;gap:0.5rem;">
+            <a href="/admin/api/waitlist/export" style="display:inline-block;padding:0.5rem 1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:0.82rem;font-weight:600;color:#0b1222;text-decoration:none;">Export CSV</a>
+            <button onclick="sendLaunchEmail()" id="launchEmailBtn" style="padding:0.5rem 1rem;background:#0b1222;border:none;border-radius:7px;font-size:0.82rem;font-weight:700;color:#fff;cursor:pointer;">Send Launch Email</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+            <thead>
+              <tr style="border-bottom:2px solid #e2e8f0;">
+                <th style="text-align:left;padding:0.6rem 0.875rem;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;">Name</th>
+                <th style="text-align:left;padding:0.6rem 0.875rem;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;">Email</th>
+                <th style="text-align:left;padding:0.6rem 0.875rem;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;">Licence</th>
+                <th style="text-align:left;padding:0.6rem 0.875rem;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;">Region</th>
+                <th style="text-align:left;padding:0.6rem 0.875rem;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;">Registered</th>
+              </tr>
+            </thead>
+            <tbody id="waitlistBody">
+              <tr><td colspan="5" style="padding:2rem;text-align:center;color:#94a3b8;">Click Waitlist tab to load</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="section-candidates">      <div class="page-hd">
         <div class="page-title">All Candidates</div>
         <div class="page-sub">Every registered candidate on the platform.</div>
       </div>
@@ -452,6 +487,46 @@ function showSection(name, el) {
   el.classList.add('active');
   if (name === 'candidates') loadCandidates();
   if (name === 'verification') loadQueue();
+  if (name === 'waitlist') loadWaitlist();
+}
+
+async function loadWaitlist() {
+  try {
+    const data = await req('/admin/api/waitlist');
+    const list = data.waitlist || [];
+    document.getElementById('waitlistCount').textContent = list.length;
+    const tbody = document.getElementById('waitlistBody');
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="padding:2rem;text-align:center;color:#94a3b8;">No registrations yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(r => `
+      <tr style="border-bottom:1px solid #f1f5f9;">
+        <td style="padding:0.75rem 0.875rem;font-weight:600;color:#0b1222;">${r.first_name} ${r.last_name||''}</td>
+        <td style="padding:0.75rem 0.875rem;color:#475569;">${r.email}</td>
+        <td style="padding:0.75rem 0.875rem;"><span style="background:#eff6ff;color:#1a52a8;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.72rem;font-weight:700;">${r.licence_type}</span></td>
+        <td style="padding:0.75rem 0.875rem;color:#64748b;">${r.region}</td>
+        <td style="padding:0.75rem 0.875rem;color:#94a3b8;font-size:0.82rem;">${new Date(r.created_at).toLocaleDateString('en-GB')}</td>
+      </tr>`).join('');
+  } catch(e) {
+    document.getElementById('waitlistBody').innerHTML = '<tr><td colspan="5" style="padding:2rem;text-align:center;color:#dc2626;">Failed to load</td></tr>';
+  }
+}
+
+async function sendLaunchEmail() {
+  const count = document.getElementById('waitlistCount').textContent;
+  if (!confirm('Send launch email to all ' + count + ' waitlist registrations? This cannot be undone.')) return;
+  const btn = document.getElementById('launchEmailBtn');
+  btn.textContent = 'Sending...';
+  btn.disabled = true;
+  try {
+    const data = await req('/admin/api/waitlist/launch-email', 'POST', {});
+    alert('Done. Sent: ' + data.sent + ', Failed: ' + data.failed);
+  } catch(e) {
+    alert('Failed. Check Render logs.');
+  }
+  btn.textContent = 'Send Launch Email';
+  btn.disabled = false;
 }
 
 function getName(q) {
