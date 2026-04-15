@@ -215,7 +215,7 @@ tr:hover td{background:#fafbfc;}
             <span style="font-size:0.85rem;color:#64748b;margin-left:0.5rem;">registrations</span>
           </div>
           <div style="display:flex;gap:0.5rem;">
-            <a href="/admin/api/waitlist/export" style="display:inline-block;padding:0.5rem 1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:0.82rem;font-weight:600;color:#0b1222;text-decoration:none;">Export CSV</a>
+            <a id="waitlistExportLink" href="#" style="display:inline-block;padding:0.5rem 1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:0.82rem;font-weight:600;color:#0b1222;text-decoration:none;">Export CSV</a>
             <button onclick="sendLaunchEmail()" id="launchEmailBtn" style="padding:0.5rem 1rem;background:#0b1222;border:none;border-radius:7px;font-size:0.82rem;font-weight:700;color:#fff;cursor:pointer;">Send Launch Email</button>
           </div>
         </div>
@@ -495,6 +495,8 @@ async function loadWaitlist() {
     const data = await req('/admin/api/waitlist');
     const list = data.waitlist || [];
     document.getElementById('waitlistCount').textContent = list.length;
+    // Update CSV export link with auth key in query param
+    document.getElementById('waitlistExportLink').href = API + '/admin/api/waitlist/export?key=' + encodeURIComponent(KEY);
     const tbody = document.getElementById('waitlistBody');
     if (list.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5" style="padding:2rem;text-align:center;color:#94a3b8;">No registrations yet.</td></tr>';
