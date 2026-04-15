@@ -72,8 +72,8 @@ app.post('/api/contact', async (req, res) => {
 const sgMailWaitlist = require('@sendgrid/mail');
 app.post('/api/waitlist', async (req, res) => {
   try {
-    const { first_name, email, licence_type, region } = req.body;
-    if (!first_name || !email || !licence_type || !region) {
+    const { first_name, last_name, email, licence_type, region } = req.body;
+    if (!first_name || !last_name || !email || !licence_type || !region) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
@@ -84,6 +84,7 @@ app.post('/api/waitlist', async (req, res) => {
     // Upsert — prevent duplicate emails
     const { error } = await sb.from('waitlist').upsert({
       first_name,
+      last_name,
       email: email.toLowerCase().trim(),
       licence_type,
       region,

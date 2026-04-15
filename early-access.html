@@ -102,9 +102,15 @@ h1 span{color:#1a52a8;}
         <div class="error-msg" id="error-msg"></div>
 
         <form id="waitlist-form">
-          <div class="field">
-            <label>First Name</label>
-            <input type="text" name="first_name" placeholder="Your first name" required autocomplete="given-name"/>
+          <div class="field-row">
+            <div class="field">
+              <label>First Name</label>
+              <input type="text" name="first_name" placeholder="First name" required autocomplete="given-name"/>
+            </div>
+            <div class="field">
+              <label>Last Name</label>
+              <input type="text" name="last_name" placeholder="Last name" required autocomplete="family-name"/>
+            </div>
           </div>
           <div class="field">
             <label>Email Address</label>
