@@ -655,6 +655,24 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
       )}
 
       <div className="divider"></div>
+      <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.25rem'}}>National Insurance Number</div>
+      <div style={{background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'0.875rem 1rem',marginBottom:'1rem',fontSize:'0.8rem',color:'#0369a1',lineHeight:1.65}}>
+        We do not store your National Insurance number. You will provide it directly to your employer or their BS7858 vetting provider when you start work. We simply need to know whether you have one.
+      </div>
+      <Field label="Do you have a National Insurance number? *">
+        <Select value={form.has_ni_number===true?'yes':form.has_ni_number===false?'no':''} onChange={v=>u('has_ni_number', v==='yes' ? true : v==='no' ? false : null)}>
+          <option value="">Select</option>
+          <option value="yes">Yes — I have a National Insurance number</option>
+          <option value="no">No — I do not have a National Insurance number</option>
+        </Select>
+      </Field>
+      {form.has_ni_number === false && (
+        <div style={{background:'#fff7ed',border:'1px solid #fed7aa',borderRadius:'8px',padding:'0.875rem 1rem',fontSize:'0.8rem',color:'#9a3412',lineHeight:1.65}}>
+          You will need a National Insurance number to work legally in the UK. You can apply at <a href="https://www.gov.uk/apply-national-insurance-number" target="_blank" rel="noopener" style={{color:'#9a3412',fontWeight:700}}>GOV.UK →</a>. Some employers may require one before offering you a role.
+        </div>
+      )}
+
+      <div className="divider"></div>
       <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.25rem'}}>Current Address</div>
       <div style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1rem'}}>We need your current address to verify your SIA licence and begin BS7858 checks.</div>
 
@@ -2187,7 +2205,7 @@ function ProfileBuilder() {
           county: p.county || null,
           postcode: p.postcode || '',
           move_in_date: movedIn || null,
-          ni_number: p.ni_number || p.ni || null,
+          has_ni_number: p.has_ni_number !== undefined ? p.has_ni_number : null,
           sia_address_match: p.siaAddress === 'yes' || p.sia_address_match === true,
           dvla_address_match: p.dvlaAddress === 'yes' || p.dvla_address_match === true,
         }, getToken); } catch(e) { console.error("Failed to save personal details:", e.message); }
@@ -3717,7 +3735,7 @@ function ApplicantModal({ applicationId, candidateId, jobTitle, getToken, onClos
                   <div style={{background:'#f8fafc',borderRadius:'8px',padding:'1rem',border:'1px solid #e2e8f0',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem',fontSize:'0.85rem'}}>
                     <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Full name</span><div style={{fontWeight:700,color:'#0b1222'}}>{p.first_name||'—'} {p.last_name||''}</div></div>
                     <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Date of birth</span><div style={{fontWeight:600,color:'#0b1222'}}>{p.date_of_birth ? new Date(p.date_of_birth).toLocaleDateString('en-GB') : '—'}</div></div>
-                    <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>National Insurance</span><div style={{fontWeight:600,color:'#0b1222'}}>{p.ni_number || 'Not provided'}</div></div>
+                    <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>National Insurance</span><div style={{fontWeight:600,color:p.has_ni_number===true?'#15803d':p.has_ni_number===false?'#dc2626':'#94a3b8'}}>{p.has_ni_number===true?'Confirmed held — will provide at vetting':p.has_ni_number===false?'No NI number — candidate to clarify':'Not declared'}</div></div>
                     <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Right to work</span><div><RtwBadge status={p.right_to_work_status}/></div></div>
                     <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Phone</span><div style={{fontWeight:600,color:'#0b1222'}}>{p.phone||'—'}</div></div>
                     <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>SIA address match</span><div style={{fontWeight:600,color:p.sia_address_match?'#15803d':'#dc2626'}}>{p.sia_address_match?'Yes — declared match':'Not confirmed'}</div></div>

@@ -126,9 +126,8 @@ router.get('/me/personal', async (req, res) => {
     }
     if (error) throw error;
 
-    // Decrypt NI number before sending
+    // Remove encrypted NI if present (legacy field — no longer used)
     if (personal.ni_number_encrypted) {
-      personal.ni_number = await decrypt(personal.ni_number_encrypted);
       delete personal.ni_number_encrypted;
     }
 
@@ -161,19 +160,16 @@ router.put('/me/personal', async (req, res) => {
     const {
       first_name, last_name, date_of_birth, phone,
       address_line1, address_line2, city, county, postcode, move_in_date,
-      ni_number,
+      has_ni_number,
       bs7858_5yr_eligible, sia_address_match, dvla_address_match
     } = req.body;
-
-    // Encrypt the NI number
-    const ni_number_encrypted = ni_number ? await encrypt(ni_number) : undefined;
 
     const payload = {
       candidate_id: candidate.id,
       first_name, last_name, date_of_birth, phone,
       address_line1, address_line2, city, county, postcode, move_in_date,
+      has_ni_number: has_ni_number !== undefined ? has_ni_number : null,
       bs7858_5yr_eligible, sia_address_match, dvla_address_match,
-      ...(ni_number_encrypted && { ni_number_encrypted })
     };
 
     const { data: personal, error } = await supabase
