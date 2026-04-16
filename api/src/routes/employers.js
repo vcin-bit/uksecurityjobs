@@ -330,7 +330,7 @@ module.exports = router;
 // POST /api/jobs/apply — candidate applies for a job
 router.post('/apply', async (req, res) => {
   try {
-    const { job_id } = req.body;
+    const { job_id, cover_note } = req.body;
     if (!job_id) return res.status(400).json({ error: 'job_id required' });
 
     // Get candidate id
@@ -339,7 +339,10 @@ router.post('/apply', async (req, res) => {
     if (!candidate) return res.status(404).json({ error: 'Candidate profile not found' });
 
     const { data, error } = await supabase.from('job_applications').insert({
-      job_id, candidate_id: candidate.id, status: 'applied'
+      job_id,
+      candidate_id: candidate.id,
+      status: 'applied',
+      cover_note: cover_note || null,
     }).select().single();
 
     if (error && error.code === '23505') return res.status(400).json({ error: 'Already applied' });

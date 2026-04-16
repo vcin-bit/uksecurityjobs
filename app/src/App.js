@@ -4465,13 +4465,32 @@ function JobListingsPage() {
     return true;
   });
 
-  const applyForJob = async (jobId) => {
+  const [confirmJob, setConfirmJob] = React.useState(null);
+  const [coverNote, setCoverNote] = React.useState('');
+
+  const applyForJob = (job) => {
     if (!isSignedIn) { window.location.href = '/sign-in'; return; }
-    setApplying(jobId);
+    if (applied.has(job.id)) return;
+    setConfirmJob(job);
+    setCoverNote('');
+  };
+
+  const submitApplication = async () => {
+    if (!confirmJob) return;
+    setApplying(confirmJob.id);
     try {
-      await apiRequest('/api/jobs/apply', 'POST', { job_id: jobId }, getToken);
-      setApplied(prev => new Set([...prev, jobId]));
-    } catch(e) { alert('Failed to apply. Please try again.'); }
+      await apiRequest('/api/jobs/apply', 'POST', { job_id: confirmJob.id, cover_note: coverNote.trim() || null }, getToken);
+      setApplied(prev => new Set([...prev, confirmJob.id]));
+      setConfirmJob(null);
+    } catch(e) {
+      const msg = e?.message || '';
+      if (msg.includes('already applied') || msg.includes('duplicate')) {
+        setApplied(prev => new Set([...prev, confirmJob.id]));
+        setConfirmJob(null);
+      } else {
+        alert('Failed to apply. Please try again.');
+      }
+    }
     setApplying(null);
   };
 
@@ -4540,14 +4559,14 @@ function JobListingsPage() {
                         </div>
                       </div>
                       <div style={{fontSize:'0.8rem',color:'#64748b',display:'flex',flexWrap:'wrap',gap:'0.75rem',marginBottom:'0.75rem'}}>
-                        <span>📍 {job.location}{job.postcode?' · '+job.postcode:''}</span>
-                        {job.rate_from && <span>💷 £{job.rate_from}{job.rate_to?'–£'+job.rate_to:''}/hr</span>}
-                        {job.employment_type && <span>🕐 {job.employment_type}</span>}
-                        {job.contract_type && <span>📋 {job.contract_type}</span>}
-                        {job.min_hours && <span>⏱ Min {job.min_hours}hrs/wk</span>}
-                        {job.sector && <span>🏢 {job.sector}</span>}
-                        {job.start_date && <span>🗓 {job.start_date}</span>}
-                        {job.parking && job.parking!=='No parking available' && <span>🅿 {job.parking}</span>}
+                        <span>{job.location}{job.postcode?' · '+job.postcode:''}</span>
+                        {job.rate_from && <span>£{job.rate_from}{job.rate_to?'–£'+job.rate_to:''}/hr</span>}
+                        {job.employment_type && <span>{job.employment_type}</span>}
+                        {job.contract_type && <span>{job.contract_type}</span>}
+                        {job.min_hours && <span>Min {job.min_hours}hrs/wk</span>}
+                        {job.sector && <span>{job.sector}</span>}
+                        {job.start_date && <span>Start: {job.start_date}</span>}
+                        {job.parking && job.parking!=='No parking available' && <span>{job.parking}</span>}
                       </div>
                       {job.description && <div style={{fontSize:'0.78rem',color:'#374151',lineHeight:'1.6',marginBottom:'0.5rem'}}>{job.description}</div>}
                       {job.duties && <div style={{fontSize:'0.75rem',color:'#475569',lineHeight:'1.6',marginBottom:'0.5rem',background:'#f8fafc',borderRadius:'6px',padding:'0.5rem 0.75rem'}}><span style={{fontWeight:700,color:'#0b1222'}}>Key duties: </span>{job.duties}</div>}
@@ -4563,7 +4582,7 @@ function JobListingsPage() {
                       <div style={{fontSize:'0.68rem',color:'#94a3b8'}}>{new Date(job.created_at).toLocaleDateString('en-GB')}</div>
                       {applied.has(job.id)
                         ? <div style={{background:'#dcfce7',color:'#15803d',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.85rem',fontWeight:700}}>✓ Applied</div>
-                        : <button onClick={()=>applyForJob(job.id)} disabled={applying===job.id} style={{background:'#1a52a8',color:'#fff',border:'none',borderRadius:'8px',padding:'0.65rem 1.5rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
+                        : <button onClick={()=>applyForJob(job)} disabled={applying===job.id} style={{background:'#1a52a8',color:'#fff',border:'none',borderRadius:'8px',padding:'0.65rem 1.5rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
                             {applying===job.id?'Applying...':isSignedIn?'Apply Now':'Sign in to Apply'}
                           </button>
                       }
@@ -4667,6 +4686,36 @@ function JobListingsPage() {
           </div>
         </div>
       </div>
+    {/* Application confirmation modal */}
+      {confirmJob && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem'}}>
+          <div style={{background:'#fff',borderRadius:'16px',padding:'2rem',width:'100%',maxWidth:'480px'}}>
+            <div style={{fontWeight:800,fontSize:'1.05rem',color:'#0b1222',marginBottom:'0.25rem'}}>Confirm Application</div>
+            <div style={{fontSize:'0.85rem',color:'#64748b',marginBottom:'1.25rem'}}>{confirmJob.title} — {confirmJob.company_name || confirmJob.employers?.company_name}</div>
+            <div style={{background:'#f8fafc',borderRadius:'8px',padding:'0.875rem 1rem',marginBottom:'1.25rem',fontSize:'0.82rem',color:'#475569',lineHeight:1.65}}>
+              By applying you confirm you hold the required SIA licence and have the legal right to work in the UK. Your verified profile will be shared with this employer.
+            </div>
+            <div style={{marginBottom:'1.25rem'}}>
+              <label style={{fontSize:'0.82rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.4rem'}}>Cover note <span style={{fontWeight:400,color:'#94a3b8'}}>(optional — 200 characters max)</span></label>
+              <textarea value={coverNote} onChange={e=>setCoverNote(e.target.value.slice(0,200))} rows={3}
+                placeholder="e.g. I have 4 years door supervision experience at city centre venues and am available immediately..."
+                style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.85rem',fontFamily:'inherit',resize:'vertical'}}/>
+              <div style={{fontSize:'0.72rem',color:'#94a3b8',textAlign:'right',marginTop:'0.2rem'}}>{coverNote.length}/200</div>
+            </div>
+            <div style={{display:'flex',gap:'0.75rem'}}>
+              <button onClick={submitApplication} disabled={applying===confirmJob.id}
+                style={{flex:2,padding:'0.75rem',borderRadius:'8px',background:'#1a52a8',color:'#fff',fontWeight:700,fontSize:'0.88rem',border:'none',cursor:'pointer',fontFamily:'inherit'}}>
+                {applying===confirmJob.id ? 'Submitting...' : 'Submit Application'}
+              </button>
+              <button onClick={()=>setConfirmJob(null)}
+                style={{flex:1,padding:'0.75rem',borderRadius:'8px',background:'#f8fafc',color:'#475569',fontWeight:600,fontSize:'0.88rem',border:'1px solid #e2e8f0',cursor:'pointer',fontFamily:'inherit'}}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
