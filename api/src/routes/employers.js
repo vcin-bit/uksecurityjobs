@@ -54,11 +54,27 @@ router.get('/jobs', async (req, res) => {
   } catch(err) { res.status(500).json({ error: 'Failed to fetch jobs' }); }
 });
 
-// POST /api/employers/jobs — post a job (sets 60-day expiry, status=active)
+// POST /api/employers/jobs — post a job (first job free, subsequent require payment)
 router.post('/jobs', async (req, res) => {
   try {
     const employerId = await getEmployerId(req.userId);
     if (!employerId) return res.status(404).json({ error: 'Employer profile not found' });
+
+    // Check how many jobs this employer has posted
+    const { count } = await supabase
+      .from('jobs')
+      .select('*', { count: 'exact', head: true })
+      .eq('employer_id', employerId);
+
+    // Gate: first job free, subsequent jobs require payment
+    if (count > 0) {
+      return res.status(402).json({
+        error: 'payment_required',
+        message: 'Your free job posting has been used. Contact us to post additional jobs.',
+        jobs_posted: count,
+      });
+    }
+
     const expires_at = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
     const { data, error } = await supabase.from('jobs').insert({
       ...req.body,
@@ -69,7 +85,7 @@ router.post('/jobs', async (req, res) => {
     }).select().single();
     if (error) throw error;
     await auditLog(req.userId, 'job_posted', { job_id: data.id, title: data.title });
-    res.json({ success: true, job: data });
+    res.json({ success: true, job: data, free_job_used: true });
   } catch(err) { console.error('POST /employers/jobs error:', err); res.status(500).json({ error: 'Failed to post job' }); }
 });
 

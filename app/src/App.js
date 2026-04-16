@@ -3841,6 +3841,7 @@ function EmployerDashboard() {
   const [jobs, setJobs] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [showPostJob, setShowPostJob] = React.useState(false);
+  const [showPaywall, setShowPaywall] = React.useState(false);
   const [selectedJob, setSelectedJob] = React.useState(null);
   const [applicants, setApplicants] = React.useState({});
   const [loadingApplicants, setLoadingApplicants] = React.useState(false);
@@ -3966,12 +3967,29 @@ function EmployerDashboard() {
           </div>
         </div>
 
+        {showPaywall && (
+          <div style={{background:'#fff',border:'2px solid #1a52a8',borderRadius:'14px',padding:'2rem',marginBottom:'1.5rem',textAlign:'center'}}>
+            <div style={{fontWeight:900,fontSize:'1.15rem',color:'#0b1222',marginBottom:'0.5rem'}}>Post More Jobs</div>
+            <div style={{fontSize:'0.9rem',color:'#64748b',marginBottom:'1.5rem',lineHeight:1.7,maxWidth:'480px',margin:'0 auto 1.5rem'}}>
+              Your free job posting is in use. To post additional verified security jobs, contact us and we will set up your account.
+            </div>
+            <div style={{display:'flex',gap:'0.75rem',justifyContent:'center',flexWrap:'wrap'}}>
+              <a href="mailto:admin@uksecurityjobs.co.uk?subject=Additional Job Postings" style={{display:'inline-block',background:'#0b1222',color:'#fff',fontWeight:700,fontSize:'0.9rem',padding:'0.75rem 2rem',borderRadius:'8px',textDecoration:'none'}}>
+                Contact Us to Post More →
+              </a>
+              <button onClick={()=>setShowPaywall(false)} style={{padding:'0.75rem 1.5rem',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',color:'#475569',fontWeight:600,fontSize:'0.9rem',cursor:'pointer',fontFamily:'inherit'}}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
         {showPostJob && (
           <PostJobForm
             employerName={employer.company_name}
             getToken={getToken}
             onSaved={(job) => { setJobs([job, ...jobs]); setShowPostJob(false); }}
             onCancel={() => setShowPostJob(false)}
+            onPaymentRequired={() => { setShowPostJob(false); setShowPaywall(true); }}
           />
         )}
 
@@ -4250,7 +4268,7 @@ function EmployerRegisterForm({ onSaved, getToken }) {
 }
 
 // ── POST JOB FORM ──
-function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
+function PostJobForm({ employerName, getToken, onSaved, onCancel, onPaymentRequired }) {
   const [form, setForm] = React.useState({
     title:'', company_name: employerName, location:'', postcode:'',
     sector:'', description:'', duties:'',
@@ -4281,7 +4299,13 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel }) {
       const payload = { ...form, rate_from: form.rate_from ? parseFloat(form.rate_from) : null, rate_to: form.rate_to ? parseFloat(form.rate_to) : null };
       const res = await apiRequest('/api/employers/jobs', 'POST', payload, getToken);
       onSaved(res.job);
-    } catch(err) { setError('Failed to post job. Please try again.'); }
+    } catch(err) {
+      if (err?.message === 'payment_required') {
+        onPaymentRequired && onPaymentRequired();
+      } else {
+        setError('Failed to post job. Please try again.');
+      }
+    }
     setSaving(false);
   };
 
