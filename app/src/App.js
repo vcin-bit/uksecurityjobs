@@ -3480,11 +3480,18 @@ function RtwBadge({ status }) {
   return <span style={{fontSize:'0.7rem',fontWeight:700,padding:'0.2rem 0.6rem',borderRadius:'999px',background:s.bg,color:s.color}}>{s.label}</span>;
 }
 
-function ApplicantModal({ applicationId, candidateId, jobTitle, getToken, onClose, onStatusUpdate }) {
+function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken, onClose, onStatusUpdate }) {
   const [candidate, setCandidate] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [updating, setUpdating] = React.useState(false);
   const [tab, setTab] = React.useState('profile'); // profile | interview | scorecard | vetting
+  // Slot scheduling state
+  const [slots, setSlots] = React.useState([{datetime:''}]);
+  const [intName, setIntName] = React.useState('');
+  const [intPhone, setIntPhone] = React.useState('');
+  const [intEmail, setIntEmail] = React.useState('');
+  const [slotsSending, setSlotsSending] = React.useState(false);
+  const [slotsResult, setSlotsResult] = React.useState(null);
   // Interview fields
   const [intDate, setIntDate] = React.useState('');
   const [intLocation, setIntLocation] = React.useState('');
@@ -3613,7 +3620,7 @@ function ApplicantModal({ applicationId, candidateId, jobTitle, getToken, onClos
                 <div style={{marginTop:'0.75rem',background:'#fef9c3',borderRadius:'8px',padding:'1rem',border:'1px solid #fde047'}}>
                   <div style={{fontWeight:600,fontSize:'0.82rem',color:'#854d0e',marginBottom:'0.4rem'}}>No-Show Report</div>
                   <div style={{fontSize:'0.75rem',color:'#854d0e',marginBottom:'0.5rem',lineHeight:1.6}}>Only if the candidate confirmed and did not attend without notice. Results in a platform ban.</div>
-                  <button onClick={()=>{ if(window.confirm('Report no-show? This will ban the candidate temporarily.')) updateStatus('no_show',{no_show:true}); }} disabled={updating} style={{background:'#dc2626',color:'#fff',border:'none',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.82rem',fontWeight:700,cursor:'pointer'}}>Report No-Show</button>
+                  <button onClick={async()=>{ if(window.confirm('Report no-show? This will be recorded against the candidate\'s profile. A second no-show results in automatic suspension.')) { try { await apiRequest(`/api/employers/applications/${applicationId}/no-show`, 'POST', {}, getToken); onStatusUpdate(applicationId, 'no_show'); onClose(); } catch(e) { alert('Failed to report no-show.'); } } }} disabled={updating} style={{background:'#dc2626',color:'#fff',border:'none',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.82rem',fontWeight:700,cursor:'pointer'}}>Report No-Show</button>
                 </div>
               </>
             )}
@@ -3621,43 +3628,111 @@ function ApplicantModal({ applicationId, candidateId, jobTitle, getToken, onClos
             {/* INTERVIEW SCHEDULING TAB */}
             {tab === 'interview' && (
               <div>
-                <div style={{background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'0.875rem',marginBottom:'1.25rem',fontSize:'0.78rem',color:'#0369a1',lineHeight:1.65}}>
-                  Propose an interview date and time. The candidate will be notified immediately by email. Security workers often work shift patterns — be flexible on timing where possible.
-                </div>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.875rem',marginBottom:'0.875rem'}}>
-                  <div style={{gridColumn:'1/-1'}}>
-                    <label style={{fontSize:'0.82rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.4rem'}}>Date and time *</label>
-                    <input type="datetime-local" value={intDate} onChange={e=>setIntDate(e.target.value)}
-                      min={new Date().toISOString().slice(0,16)}
-                      style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.88rem',fontFamily:'inherit'}}/>
+                {slotsResult ? (
+                  <div style={{background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:'10px',padding:'1.5rem',textAlign:'center'}}>
+                    <div style={{fontWeight:800,fontSize:'1rem',color:'#15803d',marginBottom:'0.5rem'}}>Interview invitations sent</div>
+                    <div style={{fontSize:'0.88rem',color:'#166534'}}>{slotsResult.slots_created} time slots created &middot; {slotsResult.emails_sent} candidates emailed</div>
+                    <div style={{fontSize:'0.82rem',color:'#64748b',marginTop:'0.5rem'}}>Candidates will click a slot to confirm. You will be notified when each one books.</div>
+                    <button onClick={()=>setSlotsResult(null)} style={{marginTop:'1rem',padding:'0.5rem 1.25rem',borderRadius:'7px',border:'1px solid #e2e8f0',background:'#fff',color:'#475569',fontWeight:600,fontSize:'0.82rem',cursor:'pointer',fontFamily:'inherit'}}>Send another round</button>
                   </div>
-                  <div>
-                    <label style={{fontSize:'0.82rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.4rem'}}>Format *</label>
-                    <select value={intFormat} onChange={e=>setIntFormat(e.target.value)}
-                      style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.88rem',fontFamily:'inherit',background:'#fff'}}>
-                      <option value="in_person">In person</option>
-                      <option value="video">Video call</option>
-                      <option value="phone">Phone call</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{fontSize:'0.82rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.4rem'}}>Location {intFormat==='in_person'?'*':''}</label>
-                    <input type="text" value={intLocation} onChange={e=>setIntLocation(e.target.value)}
-                      placeholder={intFormat==='in_person'?'Address or postcode':'e.g. Google Meet link'}
-                      style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.88rem',fontFamily:'inherit'}}/>
-                  </div>
-                </div>
-                <div style={{marginBottom:'1.25rem'}}>
-                  <label style={{fontSize:'0.82rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.4rem'}}>Notes for candidate (optional)</label>
-                  <textarea value={intNotes} onChange={e=>setIntNotes(e.target.value)} rows={3}
-                    placeholder="e.g. Please bring your SIA licence and proof of address. Ask for reception on arrival. Parking available on site."
-                    style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.88rem',fontFamily:'inherit',resize:'vertical'}}/>
-                </div>
-                <button onClick={()=>updateStatus('interview_proposed',{interview_date:intDate,interview_location:intLocation,interview_format:intFormat,interview_notes:intNotes})}
-                  disabled={updating||!intDate||(intFormat==='in_person'&&!intLocation)}
-                  style={{background:'#0b1222',color:'#fff',border:'none',borderRadius:'8px',padding:'0.75rem 2rem',fontSize:'0.88rem',fontWeight:700,cursor:'pointer',width:'100%',opacity:(intDate&&(intFormat!=='in_person'||intLocation))?1:0.5}}>
-                  {updating?'Sending...':'Propose Interview'}
-                </button>
+                ) : (
+                  <>
+                    <div style={{background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'0.875rem',marginBottom:'1.25rem',fontSize:'0.78rem',color:'#0369a1',lineHeight:1.65}}>
+                      Offer multiple time slots. Candidates click one to confirm — no back and forth. Slots are exclusive: once booked by one candidate, that time is removed from other candidates' options. A professional conduct warning is included in every invitation.
+                    </div>
+
+                    <div style={{marginBottom:'1rem'}}>
+                      <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.75rem'}}>Your interviewer details</div>
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
+                        <div>
+                          <label style={{fontSize:'0.78rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.3rem'}}>Interviewer name *</label>
+                          <input type="text" value={intName} onChange={e=>setIntName(e.target.value)} placeholder="Full name"
+                            style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.85rem',fontFamily:'inherit'}}/>
+                        </div>
+                        <div>
+                          <label style={{fontSize:'0.78rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.3rem'}}>Phone (for emergencies only) *</label>
+                          <input type="tel" value={intPhone} onChange={e=>setIntPhone(e.target.value)} placeholder="07700 000000"
+                            style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.85rem',fontFamily:'inherit'}}/>
+                        </div>
+                        <div style={{gridColumn:'1/-1'}}>
+                          <label style={{fontSize:'0.78rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.3rem'}}>Format</label>
+                          <select value={intFormat} onChange={e=>setIntFormat(e.target.value)}
+                            style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.85rem',fontFamily:'inherit',background:'#fff'}}>
+                            <option value="in_person">In person</option>
+                            <option value="video">Video call</option>
+                            <option value="phone">Phone call</option>
+                          </select>
+                        </div>
+                        <div style={{gridColumn:'1/-1'}}>
+                          <label style={{fontSize:'0.78rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.3rem'}}>{intFormat==='in_person'?'Address / location *':'Video / phone link or number'}</label>
+                          <input type="text" value={intLocation} onChange={e=>setIntLocation(e.target.value)}
+                            placeholder={intFormat==='in_person'?'Full address or postcode':'e.g. teams.microsoft.com/join/...'}
+                            style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.85rem',fontFamily:'inherit'}}/>
+                        </div>
+                        <div style={{gridColumn:'1/-1'}}>
+                          <label style={{fontSize:'0.78rem',fontWeight:700,color:'#334155',display:'block',marginBottom:'0.3rem'}}>Notes for candidate (optional)</label>
+                          <textarea value={intNotes} onChange={e=>setIntNotes(e.target.value)} rows={2}
+                            placeholder="e.g. Ask for reception, bring SIA licence, parking available on site"
+                            style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.85rem',fontFamily:'inherit',resize:'vertical'}}/>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{marginBottom:'1.25rem'}}>
+                      <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.75rem'}}>Available time slots</div>
+                      {slots.map((slot, i) => (
+                        <div key={i} style={{display:'flex',gap:'0.5rem',alignItems:'center',marginBottom:'0.5rem'}}>
+                          <input type="datetime-local" value={slot.datetime}
+                            min={new Date().toISOString().slice(0,16)}
+                            onChange={e=>{ const s=[...slots]; s[i]={datetime:e.target.value}; setSlots(s); }}
+                            style={{flex:1,padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.85rem',fontFamily:'inherit'}}/>
+                          {slots.length > 1 && (
+                            <button onClick={()=>setSlots(slots.filter((_,idx)=>idx!==i))}
+                              style={{padding:'0.6rem',borderRadius:'8px',border:'1px solid #fecaca',background:'#fef2f2',color:'#dc2626',cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:'0.85rem'}}>
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      {slots.length < 6 && (
+                        <button onClick={()=>setSlots([...slots,{datetime:''}])}
+                          style={{width:'100%',padding:'0.6rem',borderRadius:'8px',border:'1px dashed #e2e8f0',background:'#f8fafc',color:'#64748b',cursor:'pointer',fontFamily:'inherit',fontSize:'0.82rem',fontWeight:600}}>
+                          + Add another slot
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{background:'#fef9c3',border:'1px solid #fde047',borderRadius:'8px',padding:'0.875rem',marginBottom:'1.25rem',fontSize:'0.78rem',color:'#854d0e',lineHeight:1.7}}>
+                      Candidates will receive a firm professional conduct warning. Failure to attend without 24 hours notice will result in a no-show recorded against their profile and potential suspension. You can report no-shows directly from the applicant list.
+                    </div>
+
+                    <button
+                      onClick={async()=>{
+                        const validSlots = slots.filter(s=>s.datetime);
+                        if (!intName || !intPhone) { alert('Interviewer name and phone are required'); return; }
+                        if (!validSlots.length) { alert('Add at least one time slot'); return; }
+                        setSlotsSending(true);
+                        try {
+                          const result = await apiRequest(`/api/employers/jobs/${jobId}/interview-slots`, 'POST', {
+                            slots: validSlots,
+                            interviewer_name: intName,
+                            interviewer_phone: intPhone,
+                            interviewer_email: intEmail,
+                            location: intLocation,
+                            format: intFormat,
+                            notes_for_candidate: intNotes,
+                            application_ids: [applicationId],
+                          }, getToken);
+                          setSlotsResult(result);
+                        } catch(e) { alert('Failed to send. Please try again.'); }
+                        setSlotsSending(false);
+                      }}
+                      disabled={slotsSending}
+                      style={{background:'#0b1222',color:'#fff',border:'none',borderRadius:'8px',padding:'0.75rem 2rem',fontSize:'0.88rem',fontWeight:700,cursor:'pointer',width:'100%'}}>
+                      {slotsSending ? 'Sending...' : `Send Interview Invitation with ${slots.filter(s=>s.datetime).length} slot${slots.filter(s=>s.datetime).length!==1?'s':''}`}
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
@@ -4093,7 +4168,7 @@ function EmployerDashboard() {
                                   </div>
                                   <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
                                     <span style={{fontSize:'0.7rem',fontWeight:700,padding:'0.2rem 0.6rem',borderRadius:'999px',background:'#f1f5f9',color:statusColors[app.status]||'#64748b',textTransform:'capitalize'}}>{app.status?.replace('_',' ')}</span>
-                                    <button onClick={() => setViewingApplicant({applicationId:app.id, candidateId:app.candidates?.id, jobTitle:job.title})} style={{background:'#0b1222',color:'#fff',border:'none',borderRadius:'7px',padding:'0.4rem 0.875rem',fontSize:'0.78rem',fontWeight:700,cursor:'pointer'}}>View Profile</button>
+                                    <button onClick={() => setViewingApplicant({applicationId:app.id, candidateId:app.candidates?.id, jobId:job.id, jobTitle:job.title})} style={{background:'#0b1222',color:'#fff',border:'none',borderRadius:'7px',padding:'0.4rem 0.875rem',fontSize:'0.78rem',fontWeight:700,cursor:'pointer'}}>View Profile</button>
                                   </div>
                                 </div>
                               );
@@ -4164,6 +4239,7 @@ function EmployerDashboard() {
           <ApplicantModal
             applicationId={viewingApplicant.applicationId}
             candidateId={viewingApplicant.candidateId}
+            jobId={viewingApplicant.jobId}
             jobTitle={viewingApplicant.jobTitle}
             getToken={getToken}
             onClose={() => setViewingApplicant(null)}
