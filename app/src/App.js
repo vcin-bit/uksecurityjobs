@@ -2764,12 +2764,38 @@ const fmt = {
 function CandidateApplications({ getToken }) {
   const [applications, setApplications] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  const [openThread, setOpenThread] = React.useState(null);
+  const [messages, setMessages] = React.useState([]);
+  const [msgText, setMsgText] = React.useState('');
+  const [msgSending, setMsgSending] = React.useState(false);
+  const [msgLoading, setMsgLoading] = React.useState(false);
+  const [ratingApp, setRatingApp] = React.useState(null);
+  const [empRating, setEmpRating] = React.useState({ role_as_described:null, professional_interview:null, feedback_given:true, would_recommend:true, overall:null, notes:'' });
+  const [empRatingSaved, setEmpRatingSaved] = React.useState(false);
 
   React.useEffect(() => {
     apiRequest('/api/candidates/me/applications', 'GET', null, getToken)
       .then(r => { setApplications(r.applications || []); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  const loadThread = async (appId) => {
+    setOpenThread(appId); setMsgLoading(true);
+    try { const r = await apiRequest(`/api/messages/${appId}?as=candidate`, 'GET', null, getToken); setMessages(r.messages || []); }
+    catch(e) {}
+    setMsgLoading(false);
+  };
+
+  const sendMsg = async () => {
+    if (!msgText.trim()) return; setMsgSending(true);
+    try { await apiRequest(`/api/messages/${openThread}`, 'POST', { content: msgText, message_type: 'general', sender_type: 'candidate' }, getToken); setMsgText(''); loadThread(openThread); }
+    catch(e) { alert('Failed to send.'); } setMsgSending(false);
+  };
+
+  const submitEmpRating = async () => {
+    try { await apiRequest(`/api/messages/${ratingApp}/rate-employer`, 'POST', empRating, getToken); setEmpRatingSaved(true); }
+    catch(e) { alert('Failed to save rating.'); }
+  };
 
   if (loading) return null;
   if (applications.length === 0) return null;
@@ -2789,36 +2815,137 @@ function CandidateApplications({ getToken }) {
   return (
     <div className="dash-card" style={{marginBottom:'1.5rem'}}>
       <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'1.25rem'}}>My Applications</div>
-      <div style={{display:'flex',flexDirection:'column',gap:'0.625rem'}}>
+      <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
         {applications.map(app => {
           const job = app.jobs || {};
           const employer = job.employers || {};
           const s = statusConfig[app.status] || { label: app.status, color: '#64748b', bg: '#f1f5f9' };
+          const canMessage = ['shortlisted','interview_proposed','interview_confirmed','interview_completed','offered'].includes(app.status);
+          const canRate = ['interview_completed','offered','rejected'].includes(app.status);
+          const isOpen = openThread === app.id;
+          const isRating = ratingApp === app.id;
           return (
-            <div key={app.id} style={{background:'#f8fafc',borderRadius:'10px',padding:'1rem 1.25rem',border:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:700,fontSize:'0.9rem',color:'#0b1222'}}>{job.title || 'Security Role'}</div>
-                <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.15rem'}}>{employer.company_name || 'Employer'} · {job.location || ''}</div>
-                {job.rate_from && <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.15rem'}}>£{job.rate_from}{job.rate_to?'–£'+job.rate_to:''}/{job.rate_type||'hr'}</div>}
-                {app.interview_date && (
-                  <div style={{fontSize:'0.75rem',color:'#854d0e',marginTop:'0.25rem',fontWeight:600}}>
-                    Interview: {new Date(app.interview_date).toLocaleDateString('en-GB', {weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+            <div key={app.id} style={{background:'#f8fafc',borderRadius:'10px',border:'1px solid #e2e8f0',overflow:'hidden'}}>
+              <div style={{padding:'1rem 1.25rem',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:'0.9rem',color:'#0b1222'}}>{job.title || 'Security Role'}</div>
+                  <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.15rem'}}>{employer.company_name || 'Employer'}{employer.reputation_score ? <span style={{marginLeft:'0.5rem',color:'#1a52a8',fontWeight:700}}>★ {employer.reputation_score}</span> : ''} · {job.location || ''}</div>
+                  {job.rate_from && <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.15rem'}}>£{job.rate_from}{job.rate_to?'–£'+job.rate_to:''}/hr</div>}
+                  {app.interview_date && (
+                    <div style={{fontSize:'0.75rem',color:'#854d0e',marginTop:'0.3rem',fontWeight:700,background:'#fef9c3',display:'inline-block',padding:'0.15rem 0.5rem',borderRadius:'5px'}}>
+                      Interview: {new Date(app.interview_date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+                    </div>
+                  )}
+                </div>
+                <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.4rem'}}>
+                  <span style={{fontSize:'0.72rem',fontWeight:700,padding:'0.25rem 0.75rem',borderRadius:'999px',background:s.bg,color:s.color}}>{s.label}</span>
+                  <div style={{fontSize:'0.68rem',color:'#94a3b8'}}>{new Date(app.created_at).toLocaleDateString('en-GB')}</div>
+                  <div style={{display:'flex',gap:'0.35rem',marginTop:'0.15rem'}}>
+                    {canMessage && (
+                      <button onClick={()=>isOpen?setOpenThread(null):loadThread(app.id)}
+                        style={{fontSize:'0.72rem',fontWeight:700,padding:'0.25rem 0.625rem',borderRadius:'6px',border:'1px solid #bfdbfe',background:isOpen?'#1a52a8':'#eff6ff',color:isOpen?'#fff':'#1a52a8',cursor:'pointer',fontFamily:'inherit'}}>
+                        {isOpen ? 'Close' : 'Messages'}
+                      </button>
+                    )}
+                    {canRate && !isRating && (
+                      <button onClick={()=>{setRatingApp(app.id);setEmpRatingSaved(false);setEmpRating({role_as_described:null,professional_interview:null,feedback_given:true,would_recommend:true,overall:null,notes:''});}}
+                        style={{fontSize:'0.72rem',fontWeight:700,padding:'0.25rem 0.625rem',borderRadius:'6px',border:'1px solid #bbf7d0',background:'#f0fdf4',color:'#15803d',cursor:'pointer',fontFamily:'inherit'}}>
+                        Rate Employer
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
-              <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.3rem'}}>
-                <span style={{fontSize:'0.72rem',fontWeight:700,padding:'0.25rem 0.75rem',borderRadius:'999px',background:s.bg,color:s.color}}>{s.label}</span>
-                <div style={{fontSize:'0.68rem',color:'#94a3b8'}}>{new Date(app.created_at).toLocaleDateString('en-GB')}</div>
-              </div>
+
+              {/* Message thread */}
+              {isOpen && (
+                <div style={{borderTop:'1px solid #e2e8f0',background:'#fff',padding:'1rem 1.25rem'}}>
+                  <div style={{fontSize:'0.72rem',color:'#94a3b8',marginBottom:'0.75rem',lineHeight:1.6}}>
+                    All messages are monitored. Keep all communication professional. Do not share personal contact details or negotiate outside this platform.
+                  </div>
+                  <div style={{minHeight:'120px',maxHeight:'280px',overflowY:'auto',display:'flex',flexDirection:'column',gap:'0.5rem',marginBottom:'0.75rem'}}>
+                    {msgLoading ? <div style={{textAlign:'center',padding:'1.5rem',color:'#94a3b8',fontSize:'0.82rem'}}>Loading...</div>
+                    : messages.length === 0 ? <div style={{textAlign:'center',padding:'1.5rem',color:'#94a3b8',fontSize:'0.82rem'}}>No messages yet.</div>
+                    : messages.map(msg => (
+                      <div key={msg.id} style={{display:'flex',flexDirection:'column',alignItems:msg.sender_type==='candidate'?'flex-end':'flex-start'}}>
+                        <div style={{maxWidth:'88%',background:msg.sender_type==='candidate'?'#0b1222':'#f1f5f9',color:msg.sender_type==='candidate'?'#fff':'#0b1222',borderRadius:'8px',padding:'0.5rem 0.75rem',fontSize:'0.82rem',lineHeight:1.65}}>
+                          {msg.content}
+                        </div>
+                        <div style={{fontSize:'0.65rem',color:'#94a3b8',marginTop:'0.15rem',padding:'0 0.25rem'}}>
+                          {msg.sender_type==='employer'?employer.company_name:'You'} · {new Date(msg.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+                          {msg.read_at && msg.sender_type==='candidate' && ' · Read'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{display:'flex',gap:'0.5rem'}}>
+                    <textarea value={msgText} onChange={e=>setMsgText(e.target.value)} rows={2}
+                      placeholder="Write a professional message..."
+                      style={{flex:1,padding:'0.5rem 0.75rem',border:'1px solid #e2e8f0',borderRadius:'7px',fontSize:'0.82rem',fontFamily:'inherit',resize:'none'}}/>
+                    <button onClick={sendMsg} disabled={msgSending||!msgText.trim()}
+                      style={{padding:'0.5rem 1rem',background:'#0b1222',color:'#fff',border:'none',borderRadius:'7px',fontSize:'0.82rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',opacity:msgText.trim()?1:0.5,alignSelf:'flex-end'}}>
+                      {msgSending?'...':'Send'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Rate employer panel */}
+              {isRating && (
+                <div style={{borderTop:'1px solid #e2e8f0',background:'#fff',padding:'1rem 1.25rem'}}>
+                  {empRatingSaved ? (
+                    <div style={{textAlign:'center',padding:'1rem',color:'#15803d',fontWeight:700,fontSize:'0.88rem'}}>Thank you — your feedback helps keep the platform accountable.</div>
+                  ) : (
+                    <>
+                      <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.75rem'}}>Rate your experience with {employer.company_name}</div>
+                      {[
+                        {key:'role_as_described', label:'The role was accurately described in the job posting', type:'score'},
+                        {key:'professional_interview', label:'The interview was conducted professionally', type:'score'},
+                        {key:'feedback_given', label:'Feedback was provided after the interview', type:'bool'},
+                        {key:'would_recommend', label:'Would you recommend this employer to other officers?', type:'bool'},
+                        {key:'overall', label:'Overall experience', type:'score'},
+                      ].map(({key,label,type}) => (
+                        <div key={key} style={{marginBottom:'0.875rem'}}>
+                          <div style={{fontSize:'0.82rem',color:'#334155',marginBottom:'0.35rem',fontWeight:600}}>{label}</div>
+                          {type==='bool' ? (
+                            <div style={{display:'flex',gap:'0.4rem'}}>
+                              {[['Yes',true],['No',false]].map(([lbl,val])=>(
+                                <button key={lbl} onClick={()=>setEmpRating(r=>({...r,[key]:val}))}
+                                  style={{padding:'0.3rem 1rem',borderRadius:'6px',border:`1px solid ${empRating[key]===val?'#0b1222':'#e2e8f0'}`,background:empRating[key]===val?'#0b1222':'#f8fafc',color:empRating[key]===val?'#fff':'#475569',fontWeight:700,fontSize:'0.78rem',cursor:'pointer',fontFamily:'inherit'}}>
+                                  {lbl}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{display:'flex',gap:'0.3rem'}}>
+                              {[1,2,3,4,5].map(n=>(
+                                <button key={n} onClick={()=>setEmpRating(r=>({...r,[key]:n}))}
+                                  style={{flex:1,padding:'0.4rem',borderRadius:'5px',border:`1px solid ${(empRating[key]||0)>=n?'#1a52a8':'#e2e8f0'}`,background:(empRating[key]||0)>=n?'#eff6ff':'#f8fafc',color:(empRating[key]||0)>=n?'#1a52a8':'#94a3b8',fontWeight:700,fontSize:'0.78rem',cursor:'pointer',fontFamily:'inherit'}}>
+                                  {n}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      <textarea value={empRating.notes} onChange={e=>setEmpRating(r=>({...r,notes:e.target.value}))} rows={2}
+                        placeholder="Any additional comments (optional)..."
+                        style={{width:'100%',padding:'0.5rem 0.75rem',border:'1px solid #e2e8f0',borderRadius:'7px',fontSize:'0.82rem',fontFamily:'inherit',resize:'vertical',marginBottom:'0.625rem'}}/>
+                      <div style={{display:'flex',gap:'0.5rem'}}>
+                        <button onClick={submitEmpRating} style={{flex:1,padding:'0.6rem',background:'#0b1222',color:'#fff',border:'none',borderRadius:'7px',fontWeight:700,fontSize:'0.82rem',cursor:'pointer',fontFamily:'inherit'}}>Submit Rating</button>
+                        <button onClick={()=>setRatingApp(null)} style={{padding:'0.6rem 1rem',background:'#f8fafc',color:'#475569',border:'1px solid #e2e8f0',borderRadius:'7px',fontWeight:600,fontSize:'0.82rem',cursor:'pointer',fontFamily:'inherit'}}>Cancel</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
-      {applications.length > 0 && (
-        <div style={{marginTop:'1rem',padding:'0.75rem',background:'#f0f9ff',borderRadius:'8px',fontSize:'0.75rem',color:'#0369a1',lineHeight:1.65}}>
-          <strong>Interview reminder:</strong> If you accept an interview and cannot attend, you must notify the employer in advance. No-shows without prior notice result in a platform ban.
-        </div>
-      )}
+      <div style={{marginTop:'1rem',padding:'0.75rem',background:'#fef9c3',borderRadius:'8px',fontSize:'0.75rem',color:'#854d0e',lineHeight:1.65}}>
+        <strong>Professional conduct:</strong> Confirmed interviews are a firm commitment. No-shows without 24 hours notice result in a strike against your profile. Two no-shows result in account suspension.
+      </div>
     </div>
   );
 }
@@ -3485,6 +3612,15 @@ function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken,
   const [loading, setLoading] = React.useState(true);
   const [updating, setUpdating] = React.useState(false);
   const [tab, setTab] = React.useState('profile'); // profile | interview | scorecard | vetting
+  // Messaging state
+  const [messages, setMessages] = React.useState([]);
+  const [msgLoading, setMsgLoading] = React.useState(false);
+  const [msgText, setMsgText] = React.useState('');
+  const [msgType, setMsgType] = React.useState('general');
+  const [msgSending, setMsgSending] = React.useState(false);
+  // Rating state
+  const [rating, setRating] = React.useState({ turned_up:true, punctual:null, professional_presentation:null, profile_accuracy:null, communication_quality:null, would_recommend:true, notes:'' });
+  const [ratingSaved, setRatingSaved] = React.useState(false);
   // Slot scheduling state
   const [slots, setSlots] = React.useState([{datetime:''}]);
   const [intName, setIntName] = React.useState('');
@@ -3507,6 +3643,36 @@ function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken,
       .then(r => { setCandidate(r.candidate); setLoading(false); })
       .catch(() => setLoading(false));
   }, [candidateId]);
+
+  const loadMessages = React.useCallback(() => {
+    if (!applicationId) return;
+    setMsgLoading(true);
+    apiRequest(`/api/messages/${applicationId}?as=employer`, 'GET', null, getToken)
+      .then(r => { setMessages(r.messages || []); setMsgLoading(false); })
+      .catch(() => setMsgLoading(false));
+  }, [applicationId]);
+
+  React.useEffect(() => {
+    if (tab === 'messages') loadMessages();
+  }, [tab]);
+
+  const sendMessage = async () => {
+    if (!msgText.trim()) return;
+    setMsgSending(true);
+    try {
+      await apiRequest(`/api/messages/${applicationId}`, 'POST', { content: msgText, message_type: msgType, sender_type: 'employer' }, getToken);
+      setMsgText('');
+      loadMessages();
+    } catch(e) { alert('Failed to send message.'); }
+    setMsgSending(false);
+  };
+
+  const saveRating = async () => {
+    try {
+      await apiRequest(`/api/messages/${applicationId}/rate-candidate`, 'POST', rating, getToken);
+      setRatingSaved(true);
+    } catch(e) { alert('Failed to save rating.'); }
+  };
 
   const updateStatus = async (status, extra = {}) => {
     setUpdating(true);
@@ -3562,6 +3728,8 @@ function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken,
           <TabBtn id="interview" label="Schedule Interview"/>
           <TabBtn id="scorecard" label="Interview Scorecard"/>
           <TabBtn id="vetting" label="Vetting Summary"/>
+          <TabBtn id="messages" label="Messages"/>
+          <TabBtn id="rate" label="Rate Candidate"/>
         </div>
 
         {loading ? <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8'}}>Loading profile...</div> : (
@@ -3902,6 +4070,125 @@ function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken,
                 </div>
               </div>
             )}
+
+            {/* MESSAGES TAB */}
+            {tab === 'messages' && (
+              <div>
+                <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'8px',padding:'0.75rem 1rem',marginBottom:'1rem',fontSize:'0.75rem',color:'#64748b',lineHeight:1.65}}>
+                  All messages are monitored for professional conduct. Unprofessional language or harassment will result in account suspension. Messages are tied to this specific application and are visible to UKSecurityJobs admin.
+                </div>
+
+                {/* Message thread */}
+                <div style={{minHeight:'200px',maxHeight:'360px',overflowY:'auto',display:'flex',flexDirection:'column',gap:'0.625rem',marginBottom:'1rem',padding:'0.25rem'}}>
+                  {msgLoading ? (
+                    <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.85rem'}}>Loading messages...</div>
+                  ) : messages.length === 0 ? (
+                    <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.85rem'}}>No messages yet. Send the first message below.</div>
+                  ) : messages.map(msg => (
+                    <div key={msg.id} style={{display:'flex',flexDirection:'column',alignItems:msg.sender_type==='employer'?'flex-end':'flex-start'}}>
+                      <div style={{maxWidth:'85%',background:msg.sender_type==='employer'?'#0b1222':'#f1f5f9',color:msg.sender_type==='employer'?'#fff':'#0b1222',borderRadius:'10px',padding:'0.625rem 0.875rem',fontSize:'0.85rem',lineHeight:1.65}}>
+                        {msg.flagged_for_review && <div style={{fontSize:'0.68rem',color:'#fca5a5',marginBottom:'0.25rem',fontWeight:700}}>Flagged for moderation</div>}
+                        <div style={{fontSize:'0.68rem',color:msg.sender_type==='employer'?'rgba(255,255,255,0.6)':'#94a3b8',marginBottom:'0.2rem',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.06em'}}>{msg.message_type}</div>
+                        {msg.content}
+                      </div>
+                      <div style={{fontSize:'0.68rem',color:'#94a3b8',marginTop:'0.2rem',padding:'0 0.25rem'}}>
+                        {new Date(msg.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+                        {msg.read_at && msg.sender_type==='employer' && <span style={{marginLeft:'0.4rem'}}>Read</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Message composer */}
+                <div style={{borderTop:'1px solid #e2e8f0',paddingTop:'1rem'}}>
+                  <div style={{display:'flex',gap:'0.5rem',marginBottom:'0.5rem'}}>
+                    <select value={msgType} onChange={e=>setMsgType(e.target.value)}
+                      style={{padding:'0.4rem 0.625rem',border:'1px solid #e2e8f0',borderRadius:'7px',fontSize:'0.78rem',fontFamily:'inherit',background:'#fff',color:'#334155'}}>
+                      <option value="general">General</option>
+                      <option value="request_info">Request information</option>
+                      <option value="schedule_update">Schedule update</option>
+                      <option value="offer">Offer</option>
+                      <option value="outcome">Outcome / feedback</option>
+                    </select>
+                  </div>
+                  <textarea
+                    value={msgText}
+                    onChange={e=>setMsgText(e.target.value)}
+                    rows={3}
+                    placeholder="Write a professional message..."
+                    style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.85rem',fontFamily:'inherit',resize:'vertical',marginBottom:'0.5rem'}}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={msgSending||!msgText.trim()}
+                    style={{background:'#0b1222',color:'#fff',border:'none',borderRadius:'8px',padding:'0.6rem 1.5rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',opacity:msgText.trim()?1:0.5}}>
+                    {msgSending?'Sending...':'Send Message'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* RATE CANDIDATE TAB */}
+            {tab === 'rate' && (
+              <div>
+                {ratingSaved ? (
+                  <div style={{background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:'10px',padding:'1.5rem',textAlign:'center'}}>
+                    <div style={{fontWeight:800,fontSize:'1rem',color:'#15803d',marginBottom:'0.5rem'}}>Rating saved</div>
+                    <div style={{fontSize:'0.85rem',color:'#166534'}}>This feedback contributes to the candidate's reputation score on the platform. It is not shared directly with the candidate.</div>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'8px',padding:'0.875rem 1rem',marginBottom:'1.25rem',fontSize:'0.78rem',color:'#64748b',lineHeight:1.65}}>
+                      Your rating contributes to the candidate's platform reputation score. It is not shared directly with the candidate but is visible to UKSecurityJobs admin and informs future employers' decisions. Rate honestly.
+                    </div>
+
+                    {[
+                      { key:'turned_up', label:'Candidate attended the interview', type:'bool' },
+                      { key:'punctual', label:'Arrived on time', type:'bool' },
+                      { key:'professional_presentation', label:'Professional presentation and dress', type:'score' },
+                      { key:'profile_accuracy', label:'Profile accurately reflected their experience', type:'score' },
+                      { key:'communication_quality', label:'Quality of communication during interview', type:'score' },
+                      { key:'would_recommend', label:'Would you shortlist this candidate for another suitable role?', type:'bool' },
+                    ].map(({ key, label, type }) => (
+                      <div key={key} style={{marginBottom:'1rem',paddingBottom:'1rem',borderBottom:'1px solid #f1f5f9'}}>
+                        <div style={{fontSize:'0.85rem',fontWeight:600,color:'#334155',marginBottom:'0.5rem'}}>{label}</div>
+                        {type === 'bool' ? (
+                          <div style={{display:'flex',gap:'0.5rem'}}>
+                            {[['Yes',true],['No',false]].map(([lbl,val])=>(
+                              <button key={lbl} onClick={()=>setRating(r=>({...r,[key]:val}))}
+                                style={{padding:'0.4rem 1.25rem',borderRadius:'7px',border:`1px solid ${rating[key]===val?'#0b1222':'#e2e8f0'}`,background:rating[key]===val?'#0b1222':'#f8fafc',color:rating[key]===val?'#fff':'#475569',fontWeight:700,fontSize:'0.82rem',cursor:'pointer',fontFamily:'inherit'}}>
+                                {lbl}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{display:'flex',gap:'0.4rem'}}>
+                            {[1,2,3,4,5].map(n=>(
+                              <button key={n} onClick={()=>setRating(r=>({...r,[key]:n}))}
+                                style={{flex:1,padding:'0.5rem',borderRadius:'6px',border:`1px solid ${(rating[key]||0)>=n?'#1a52a8':'#e2e8f0'}`,background:(rating[key]||0)>=n?'#eff6ff':'#f8fafc',color:(rating[key]||0)>=n?'#1a52a8':'#94a3b8',fontWeight:700,fontSize:'0.82rem',cursor:'pointer',fontFamily:'inherit'}}>
+                                {n}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    <div style={{marginBottom:'1.25rem'}}>
+                      <label style={{fontSize:'0.82rem',fontWeight:600,color:'#334155',display:'block',marginBottom:'0.4rem'}}>Additional notes (internal only)</label>
+                      <textarea value={rating.notes} onChange={e=>setRating(r=>({...r,notes:e.target.value}))} rows={3}
+                        placeholder="Any additional observations for the platform record..."
+                        style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.85rem',fontFamily:'inherit',resize:'vertical'}}/>
+                    </div>
+
+                    <button onClick={saveRating}
+                      style={{background:'#0b1222',color:'#fff',border:'none',borderRadius:'8px',padding:'0.75rem 2rem',fontSize:'0.88rem',fontWeight:700,cursor:'pointer',width:'100%',fontFamily:'inherit'}}>
+                      Submit Rating
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -4157,7 +4444,12 @@ function EmployerDashboard() {
                               return (
                                 <div key={app.id} style={{background:'#f8fafc',borderRadius:'8px',padding:'0.875rem 1rem',border:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
                                   <div style={{flex:1}}>
-                                    <div style={{fontWeight:700,fontSize:'0.88rem',color:'#0b1222'}}>{p.first_name || 'Candidate'} {p.last_name || ''}</div>
+                                    <div style={{fontWeight:700,fontSize:'0.88rem',color:'#0b1222',display:'flex',alignItems:'center',gap:'0.4rem'}}>
+                                      {p.first_name || 'Candidate'} {p.last_name || ''}
+                                      {app.candidates?.reputation_score && (
+                                        <span style={{fontSize:'0.65rem',fontWeight:700,color:'#15803d',background:'#f0fdf4',border:'1px solid #bbf7d0',padding:'0.1rem 0.4rem',borderRadius:'4px'}}>★ {app.candidates.reputation_score}</span>
+                                      )}
+                                    </div>
                                     <div style={{display:'flex',gap:'0.4rem',flexWrap:'wrap',marginTop:'0.3rem'}}>
                                       {licences.slice(0,2).map((l,i) => (
                                         <span key={i} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:l.verified?'#dcfce7':'#fef9c3',color:l.verified?'#15803d':'#854d0e'}}>{l.licence_type} {l.verified?'✓':''}</span>
@@ -4655,7 +4947,14 @@ function JobListingsPage() {
                         {job.logo_url && <img src={job.logo_url} alt={job.company_name} style={{width:'44px',height:'44px',borderRadius:'8px',objectFit:'contain',border:'1px solid #e2e8f0',background:'#f8fafc',padding:'3px',flexShrink:0}}/>}
                         <div>
                           <div style={{fontWeight:800,fontSize:'1.05rem',color:'#0b1222',marginBottom:'0.1rem'}}>{job.title}</div>
-                          <div style={{fontWeight:600,fontSize:'0.85rem',color:'#1a52a8'}}>{job.company_name}</div>
+                          <div style={{fontWeight:600,fontSize:'0.85rem',color:'#1a52a8',display:'flex',alignItems:'center',gap:'0.4rem'}}>
+                            {job.company_name}
+                            {job.employers?.reputation_score && (
+                              <span style={{fontSize:'0.7rem',fontWeight:700,color:'#15803d',background:'#f0fdf4',padding:'0.1rem 0.4rem',borderRadius:'4px'}}>
+                                ★ {job.employers.reputation_score}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div style={{fontSize:'0.8rem',color:'#64748b',display:'flex',flexWrap:'wrap',gap:'0.75rem',marginBottom:'0.75rem'}}>

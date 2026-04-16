@@ -235,7 +235,22 @@ router.patch('/applications/:id', async (req, res) => {
         } else if (effectiveStatus === 'rejected') {
           email.sendApplicationUnsuccessful({ toEmail: cand.email, firstName, jobTitle, companyName }).catch(e => console.error('Rejection email failed:', e));
         } else if (effectiveStatus === 'shortlisted') {
-          email.sendShortlisted({ toEmail: cand.email, firstName, jobTitle, companyName }).catch(e => console.error('Shortlist email failed:', e));
+          // Build profile gap warnings for personalised shortlist email
+          const profileGaps = [];
+          const { data: licences } = await supabase.from('sia_licences').select('verified').eq('candidate_id', cand.id);
+          const licencePending = licences?.some(l => !l.verified);
+          if (licencePending) profileGaps.push('Your SIA licence is pending platform verification — bring your physical licence card');
+          const { data: addrs } = await supabase.from('candidate_addresses').select('proof_types,electoral_roll').eq('candidate_id', cand.id);
+          if (addrs?.some(a => !a.proof_types?.length)) profileGaps.push('Some addresses have no evidence declared — bring additional proof of address documents');
+          if (addrs?.some(a => a.electoral_roll === false)) profileGaps.push('One or more addresses not on electoral roll — bring alternative proof (bank statement, utility bill)');
+          const { data: personal } = await supabase.from('personal_details').select('right_to_work_status,has_ni_number').eq('candidate_id', cand.id).single();
+          if (!personal?.has_ni_number) profileGaps.push('You indicated you may not have an NI number — clarify your status before the interview');
+          email.sendShortlisted({
+            toEmail: cand.email, firstName, jobTitle, companyName,
+            profileGaps,
+            licencePending: !!licencePending,
+            rtwStatus: personal?.right_to_work_status || '',
+          }).catch(e => console.error('Shortlist email failed:', e));
         }
       }
     }

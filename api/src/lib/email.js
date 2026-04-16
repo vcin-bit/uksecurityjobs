@@ -123,14 +123,40 @@ async function sendInterviewScheduled({ toEmail, firstName, jobTitle, companyNam
 }
 
 // ── 4a. SHORTLISTED (CANDIDATE) ──
-async function sendShortlisted({ toEmail, firstName, jobTitle, companyName }) {
+async function sendShortlisted({ toEmail, firstName, jobTitle, companyName, profileGaps = [], licencePending = false, rtwStatus = '' }) {
+  const gapWarnings = profileGaps.length > 0
+    ? `<div class="notice" style="border-left-color:#f59e0b;background:#fefce8;">
+        <strong>Before your interview — items to prepare:</strong><br/>
+        ${profileGaps.map(g => `&bull; ${g}`).join('<br/>')}
+      </div>` : '';
+
+  const licenceNote = licencePending
+    ? `<div class="notice" style="border-left-color:#f59e0b;background:#fefce8;"><strong>SIA Licence pending verification:</strong> Bring your physical SIA licence card to the interview. The employer will verify it.</div>` : '';
+
+  const rtwNote = rtwStatus && rtwStatus !== 'uk_irish_citizen'
+    ? `<div class="notice" style="border-left-color:#1a52a8;background:#eff6ff;"><strong>Right to work:</strong> Bring your original right to work documents to the interview. Employers are legally required to check them before you start work.</div>` : '';
+
   const html = baseTemplate(`
     <h1>You have been shortlisted</h1>
     <p>Hi ${firstName},</p>
-    <p>Good news — you have been shortlisted for <strong>${jobTitle}</strong> at <strong>${companyName}</strong>.</p>
-    <p>The employer will be in touch shortly to arrange an interview. Make sure your availability is up to date on your dashboard so they can reach you quickly.</p>
+    <p>Good news — <strong>${companyName}</strong> has shortlisted you for <strong>${jobTitle}</strong>.</p>
+    <p>They will be in touch shortly to arrange an interview. When they do, you will receive time slot options by email — select your preferred time immediately. Do not leave it.</p>
+
+    <div style="background:#f8fafc;border-radius:8px;padding:1rem 1.25rem;margin:1.25rem 0;font-size:14px;color:#334155;line-height:1.75;">
+      <strong style="color:#0b1222;display:block;margin-bottom:0.5rem;">Standard documents to bring:</strong>
+      &bull; Valid SIA licence card (physical card, not a photo)<br/>
+      &bull; Passport or birth certificate (right to work)<br/>
+      &bull; National Insurance number<br/>
+      &bull; Proof of address documents you declared on your profile
+    </div>
+
+    ${gapWarnings}
+    ${licenceNote}
+    ${rtwNote}
+
+    <div class="notice"><strong>Professional conduct:</strong> Once you confirm an interview slot, you are making a firm commitment to attend. Failure to attend without at least 24 hours notice will result in a no-show recorded against your profile and may lead to suspension.</div>
+
     <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn">View My Applications →</a>
-    <div class="notice"><strong>Be ready:</strong> Have your SIA licence card, proof of right to work and a proof of address document to hand for the interview.</div>
   `);
   return send(toEmail, `You have been shortlisted — ${jobTitle} at ${companyName}`, html);
 }

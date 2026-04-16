@@ -167,6 +167,8 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/employers', requireAuth, employerRoutes);
 app.use('/api/jobs', requireAuth, employerRoutes);
+const messagingRoutes = require('./routes/messaging');
+app.use('/api/messages', messagingRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
