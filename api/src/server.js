@@ -160,11 +160,13 @@ app.get('/api/jobs/public', async (req, res) => {
 });
 
 // All candidate routes require a valid Clerk token
-app.use('/api', requireAuth);
+// NOTE: app.use('/api', requireAuth) catches ALL /api/* routes.
+// Public routes must be registered BEFORE this line.
 app.use('/api/candidates', candidateRoutes);
 app.use('/api/sia', siaRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api', requireAuth);
 app.use('/api/employers', requireAuth, employerRoutes);
 app.use('/api/jobs', requireAuth, employerRoutes);
 const messagingRoutes = require('./routes/messaging');
