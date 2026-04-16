@@ -1647,18 +1647,36 @@ function StepAddress({ data, onChange, onBack, onNext, isComplete }) {
   const [editing, setEditing] = React.useState(!isComplete);
   React.useEffect(() => { if (isComplete) setEditing(false); }, [isComplete]);
 
-  const emptyAddr = () => ({ line1:'', line2:'', town:'', postcode:'', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false });
+  const PROOF_TYPES = [
+    'Bank or building society statement',
+    'Utility bill (gas, electric, water)',
+    'Council tax bill',
+    'Tenancy agreement or lease',
+    'Mortgage statement',
+    'Electoral roll registration',
+    'HMRC or DWP letter',
+    'NHS or GP letter',
+    'Mobile phone bill',
+    'Insurance documents',
+  ];
+
+  const emptyAddr = () => ({ line1:'', line2:'', town:'', county:'', postcode:'', country:'United Kingdom', fromMonth:'', fromYear:'', toMonth:'', toYear:'', current:false, occupancy_type:'', proof_types:[], electoral_roll:true });
 
   const normaliseAddr = (a) => ({
     line1: a.line1 || a.address_line1 || '',
     line2: a.line2 || a.address_line2 || '',
     town: a.town || a.city || '',
+    county: a.county || '',
     postcode: a.postcode || '',
+    country: a.country || 'United Kingdom',
     fromMonth: a.fromMonth || (a.moved_in_date ? a.moved_in_date.split('-')[1] : '') || '',
     fromYear: a.fromYear || (a.moved_in_date ? a.moved_in_date.split('-')[0] : '') || '',
     toMonth: a.toMonth || (a.moved_out_date ? a.moved_out_date.split('-')[1] : '') || '',
     toYear: a.toYear || (a.moved_out_date ? a.moved_out_date.split('-')[0] : '') || '',
     current: a.current || a.is_current || false,
+    occupancy_type: a.occupancy_type || '',
+    proof_types: a.proof_types || [],
+    electoral_roll: a.electoral_roll !== undefined ? a.electoral_roll : true,
   });
 
   const [addresses, setAddresses] = useState(
@@ -1755,7 +1773,30 @@ function StepAddress({ data, onChange, onBack, onNext, isComplete }) {
           </div>
           <div className="field-row">
             <Field label="Town / City"><Input type="text" value={addr.town} onChange={v=>update(i,'town',fmt.titleCase(v))}/></Field>
+            <Field label="County"><Input type="text" placeholder="e.g. Greater Manchester" value={addr.county||''} onChange={v=>update(i,'county',fmt.titleCase(v))}/></Field>
             <Field label="Postcode"><Input type="text" value={addr.postcode} onChange={v=>update(i,'postcode',fmt.postcode(v))}/></Field>
+          </div>
+          <div className="field-row">
+            <Field label="Country">
+              <Select value={addr.country||'United Kingdom'} onChange={v=>update(i,'country',v)}>
+                <option>United Kingdom</option>
+                <option>Republic of Ireland</option>
+                <option>Other — please specify in notes</option>
+              </Select>
+            </Field>
+            <Field label="Occupancy Type">
+              <Select value={addr.occupancy_type||''} onChange={v=>update(i,'occupancy_type',v)}>
+                <option value="">Select</option>
+                <option>Owner occupier</option>
+                <option>Private rented</option>
+                <option>Social / council rented</option>
+                <option>Living with family</option>
+                <option>Living with partner</option>
+                <option>Student accommodation</option>
+                <option>Employer provided</option>
+                <option>Other</option>
+              </Select>
+            </Field>
           </div>
           <div className="field-row">
             <Field label="Move-in Date">
@@ -1779,6 +1820,40 @@ function StepAddress({ data, onChange, onBack, onNext, isComplete }) {
             <Field label=" "><div style={{paddingTop:'1.8rem'}}>
               <Checkbox label="Current address" checked={addr.current} onChange={()=>update(i,'current',!addr.current)}/>
             </div></Field>
+          </div>
+
+          {/* BS7858 Evidence Declaration */}
+          <div style={{background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'1rem 1.25rem',marginTop:'0.75rem'}}>
+            <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0369a1',marginBottom:'0.25rem'}}>Supporting evidence declaration</div>
+            <div style={{fontSize:'0.78rem',color:'#0369a1',marginBottom:'0.875rem',lineHeight:1.6}}>
+              For BS7858 vetting, recruiters will need to verify this address. Tick the documents you currently hold that can evidence you lived here. You are not uploading anything — this is a declaration only.
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:'0.4rem',marginBottom:'0.875rem'}}>
+              {PROOF_TYPES.map(pt => (
+                <label key={pt} style={{display:'flex',alignItems:'center',gap:'0.5rem',fontSize:'0.82rem',color:'#334155',cursor:'pointer'}}>
+                  <input type="checkbox"
+                    checked={(addr.proof_types||[]).includes(pt)}
+                    onChange={() => {
+                      const current = addr.proof_types || [];
+                      const updated = current.includes(pt) ? current.filter(x=>x!==pt) : [...current, pt];
+                      update(i,'proof_types',updated);
+                    }}
+                    style={{width:'15px',height:'15px'}}
+                  />
+                  {pt}
+                </label>
+              ))}
+            </div>
+            <div style={{borderTop:'1px solid #bae6fd',paddingTop:'0.75rem',marginTop:'0.25rem'}}>
+              <label style={{display:'flex',alignItems:'flex-start',gap:'0.625rem',fontSize:'0.82rem',color:'#334155',cursor:'pointer'}}>
+                <input type="checkbox"
+                  checked={addr.electoral_roll !== false}
+                  onChange={() => update(i,'electoral_roll', addr.electoral_roll === false ? true : false)}
+                  style={{width:'15px',height:'15px',marginTop:'2px'}}
+                />
+                <span>I was registered on the electoral roll at this address <span style={{color:'#94a3b8'}}>(if not registered, additional evidence will be required during vetting)</span></span>
+              </label>
+            </div>
           </div>
         </div>
       ))}
@@ -3391,7 +3466,7 @@ function ApplicantModal({ applicationId, candidateId, jobTitle, getToken, onClos
   const [candidate, setCandidate] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [updating, setUpdating] = React.useState(false);
-  const [tab, setTab] = React.useState('profile'); // profile | interview | scorecard
+  const [tab, setTab] = React.useState('profile'); // profile | interview | scorecard | vetting
   // Interview fields
   const [intDate, setIntDate] = React.useState('');
   const [intLocation, setIntLocation] = React.useState('');
@@ -3461,6 +3536,7 @@ function ApplicantModal({ applicationId, candidateId, jobTitle, getToken, onClos
           <TabBtn id="profile" label="Profile"/>
           <TabBtn id="interview" label="Schedule Interview"/>
           <TabBtn id="scorecard" label="Interview Scorecard"/>
+          <TabBtn id="vetting" label="Vetting Summary"/>
         </div>
 
         {loading ? <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8'}}>Loading profile...</div> : (
@@ -3624,6 +3700,112 @@ function ApplicantModal({ applicationId, candidateId, jobTitle, getToken, onClos
                     style={{background:'#0b1222',color:'#fff',border:'none',borderRadius:'8px',padding:'0.75rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',opacity:scorecardAgreed?1:0.5}}>
                     {updating?'Saving...':'Save Scorecard'}
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* VETTING SUMMARY TAB */}
+            {tab === 'vetting' && (
+              <div>
+                <div style={{background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'0.875rem 1.25rem',marginBottom:'1.25rem',fontSize:'0.82rem',color:'#0369a1',lineHeight:1.7}}>
+                  This summary is based on the candidate's self-declared profile. It is provided to support your BS7858 vetting process. You must independently verify all information before the candidate starts work. Do not rely on these declarations as a substitute for a statutory vetting check.
+                </div>
+
+                {/* Personal */}
+                <div style={{marginBottom:'1.25rem'}}>
+                  <div style={{fontSize:'0.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',color:'#94a3b8',marginBottom:'0.75rem'}}>Personal Details — Declared</div>
+                  <div style={{background:'#f8fafc',borderRadius:'8px',padding:'1rem',border:'1px solid #e2e8f0',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem',fontSize:'0.85rem'}}>
+                    <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Full name</span><div style={{fontWeight:700,color:'#0b1222'}}>{p.first_name||'—'} {p.last_name||''}</div></div>
+                    <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Date of birth</span><div style={{fontWeight:600,color:'#0b1222'}}>{p.date_of_birth ? new Date(p.date_of_birth).toLocaleDateString('en-GB') : '—'}</div></div>
+                    <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>National Insurance</span><div style={{fontWeight:600,color:'#0b1222'}}>{p.ni_number || 'Not provided'}</div></div>
+                    <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Right to work</span><div><RtwBadge status={p.right_to_work_status}/></div></div>
+                    <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Phone</span><div style={{fontWeight:600,color:'#0b1222'}}>{p.phone||'—'}</div></div>
+                    <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>SIA address match</span><div style={{fontWeight:600,color:p.sia_address_match?'#15803d':'#dc2626'}}>{p.sia_address_match?'Yes — declared match':'Not confirmed'}</div></div>
+                  </div>
+                </div>
+
+                {/* SIA Licences */}
+                {licences.length > 0 && (
+                  <div style={{marginBottom:'1.25rem'}}>
+                    <div style={{fontSize:'0.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',color:'#94a3b8',marginBottom:'0.75rem'}}>SIA Licences — Declared</div>
+                    {licences.map((l,i) => (
+                      <div key={i} style={{background:'#f8fafc',borderRadius:'8px',padding:'0.875rem 1rem',marginBottom:'0.5rem',border:'1px solid #e2e8f0',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:'0.88rem',color:'#0b1222'}}>{l.licence_type}</div>
+                          <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.15rem'}}>Licence No: <strong>{l.licence_number}</strong> · Expires: {l.expiry_date ? new Date(l.expiry_date).toLocaleDateString('en-GB') : '—'}</div>
+                          <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.1rem'}}>Verify at: <a href={`https://www.services.sia.homeoffice.gov.uk/Pages/licence-checking.aspx`} target="_blank" rel="noopener" style={{color:'#1a52a8'}}>SIA Licence Checker</a></div>
+                        </div>
+                        <span style={{fontSize:'0.72rem',fontWeight:700,padding:'0.25rem 0.75rem',borderRadius:'999px',background:l.verified?'#dcfce7':'#fef9c3',color:l.verified?'#15803d':'#854d0e'}}>{l.verified?'Platform Verified':'Pending verification'}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Address History */}
+                {candidate?.addresses?.length > 0 && (
+                  <div style={{marginBottom:'1.25rem'}}>
+                    <div style={{fontSize:'0.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',color:'#94a3b8',marginBottom:'0.75rem'}}>5-Year Address History — Declared</div>
+                    {candidate.addresses.map((a,i) => (
+                      <div key={i} style={{background:'#f8fafc',borderRadius:'8px',padding:'0.875rem 1rem',marginBottom:'0.5rem',border:'1px solid #e2e8f0'}}>
+                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'1rem',flexWrap:'wrap'}}>
+                          <div>
+                            <div style={{fontWeight:700,fontSize:'0.88rem',color:'#0b1222'}}>
+                              {[a.address_line1, a.address_line2, a.city, a.county, a.postcode].filter(Boolean).join(', ')}
+                            </div>
+                            {a.country && a.country !== 'United Kingdom' && <div style={{fontSize:'0.78rem',color:'#dc2626',fontWeight:600}}>{a.country}</div>}
+                            <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.2rem'}}>
+                              {a.moved_in_date ? new Date(a.moved_in_date).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—'}
+                              {' → '}
+                              {a.is_current ? 'Present' : (a.moved_out_date ? new Date(a.moved_out_date).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—')}
+                              {a.occupancy_type && <span style={{marginLeft:'0.5rem',color:'#94a3b8'}}>· {a.occupancy_type}</span>}
+                            </div>
+                          </div>
+                          <div style={{textAlign:'right'}}>
+                            {a.electoral_roll === false && (
+                              <div style={{fontSize:'0.72rem',background:'#fef9c3',color:'#854d0e',padding:'0.2rem 0.6rem',borderRadius:'999px',marginBottom:'0.3rem',fontWeight:700}}>Not on electoral roll</div>
+                            )}
+                          </div>
+                        </div>
+                        {a.proof_types?.length > 0 && (
+                          <div style={{marginTop:'0.5rem',paddingTop:'0.5rem',borderTop:'1px solid #f1f5f9'}}>
+                            <div style={{fontSize:'0.72rem',color:'#94a3b8',marginBottom:'0.3rem'}}>Evidence declared available:</div>
+                            <div style={{display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
+                              {a.proof_types.map(pt => (
+                                <span key={pt} style={{fontSize:'0.7rem',fontWeight:600,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#dcfce7',color:'#15803d'}}>{pt}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {(!a.proof_types || a.proof_types.length === 0) && (
+                          <div style={{marginTop:'0.5rem',fontSize:'0.75rem',color:'#dc2626'}}>No supporting evidence declared — request at interview</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Employment History */}
+                {employment.length > 0 && (
+                  <div style={{marginBottom:'1.25rem'}}>
+                    <div style={{fontSize:'0.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',color:'#94a3b8',marginBottom:'0.75rem'}}>5-Year Employment History — Declared</div>
+                    {employment.map((e,i) => (
+                      <div key={i} style={{background:'#f8fafc',borderRadius:'8px',padding:'0.875rem 1rem',marginBottom:'0.5rem',border:'1px solid #e2e8f0'}}>
+                        <div style={{fontWeight:700,fontSize:'0.88rem',color:'#0b1222'}}>{e.job_title} — {e.company_name}</div>
+                        <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.15rem'}}>{e.start_date} → {e.end_date||'Present'}</div>
+                        {e.reference_name && (
+                          <div style={{marginTop:'0.4rem',fontSize:'0.78rem',color:'#475569'}}>
+                            <strong>Reference:</strong> {e.reference_name}
+                            {e.reference_email && <span> · {e.reference_email}</span>}
+                            {e.reference_phone && <span> · {e.reference_phone}</span>}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{background:'#fef9c3',border:'1px solid #fde047',borderRadius:'8px',padding:'0.875rem 1.25rem',fontSize:'0.78rem',color:'#854d0e',lineHeight:1.7}}>
+                  <strong>BS7858 vetting reminder:</strong> This summary reflects candidate self-declaration only. All information must be independently verified. Employment gaps over 31 days must be evidenced. Addresses must be confirmed via electoral roll or alternative documentary evidence. Right to work documents must be verified before the candidate starts work.
                 </div>
               </div>
             )}

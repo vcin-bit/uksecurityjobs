@@ -275,9 +275,9 @@ router.get('/candidate/:id', async (req, res) => {
         'job_title, company_name, start_date, end_date, employment_type, reference_name, reference_phone, reference_email, reason_for_leaving'
       ).eq('candidate_id', req.params.id).order('start_date', { ascending: false }),
 
-      // Addresses — town and county only. No full street address.
+      // Addresses — include proof declarations for vetting summary
       supabase.from('candidate_addresses').select(
-        'city, county, moved_in_date, moved_out_date'
+        'address_line1, address_line2, city, county, postcode, country, moved_in_date, moved_out_date, is_current, occupancy_type, proof_types, electoral_roll'
       ).eq('candidate_id', req.params.id).order('moved_in_date', { ascending: false }),
 
       // Qualifications — all relevant

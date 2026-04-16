@@ -271,10 +271,15 @@ router.post('/addresses', async (req, res) => {
       address_line1: b.address_line1 || '',
       address_line2: b.address_line2 || null,
       city: b.city || '',
+      county: b.county || null,
       postcode: b.postcode || null,
+      country: b.country || 'United Kingdom',
       moved_in_date: b.moved_in_date || null,
       moved_out_date: b.moved_out_date || null,
       is_current: b.is_current || false,
+      occupancy_type: b.occupancy_type || null,
+      proof_types: b.proof_types || [],
+      electoral_roll: b.electoral_roll !== undefined ? b.electoral_roll : true,
     };
 
     const { data, error } = await supabase
