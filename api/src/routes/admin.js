@@ -295,16 +295,26 @@ router.post('/waitlist/launch-email', async (req, res) => {
 
     <div style="background:#f8fafc;border-left:4px solid #1a52a8;border-radius:0 8px 8px 0;padding:1rem 1.25rem;margin:1.5rem 0;font-size:0.92rem;color:#334155;line-height:1.8;">
       <strong style="color:#0b1222;display:block;margin-bottom:0.5rem;">What UKSecurityJobs is trying to do:</strong>
-      The security industry deserves a platform built for it — not a generic job board that treats a door supervisor the same as a warehouse picker. Every candidate on this platform holds a valid SIA licence and has a complete, BS7858-ready profile. Employers get quality. Candidates get treated like professionals. No more "b4 i cum bro whats the pay innit."
+      The security industry deserves a platform built for it — not a generic job board that treats a security professional the same as any other job seeker. Every candidate on this platform holds a valid SIA licence and has a complete, BS7858-ready profile. Employers get quality. Candidates get treated like the professionals they are.
     </div>
 
     <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1rem;">
       Here is what would genuinely help right now. If you know a security company, a contract manager, an operations director, or anyone who hires SIA-licensed staff — tell them about this platform. We are offering the first job posting free with no commitment. That is the fastest way to break the deadlock.
     </p>
 
-    <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1.5rem;">
+    <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1rem;">
       And if you have not yet built your profile — do it now. It takes about 20 minutes, you will never have to fill in a job application form again, and when employers start posting you will be first in line.
     </p>
+
+    <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1.5rem;">
+      If you know anyone working in security — officers, supervisors, managers, close protection — please share this with them. The more verified professionals we have on the platform, the stronger the case becomes for employers to post their vacancies here. Every person you tell makes a difference.
+    </p>
+
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:1rem 1.25rem;margin:0 0 1.5rem;font-size:0.88rem;color:#0369a1;line-height:1.7;">
+      <strong>Share the early access link:</strong><br/>
+      <a href="https://www.uksecurityjobs.co.uk/early-access" style="color:#1a52a8;font-weight:700;">www.uksecurityjobs.co.uk/early-access</a><br/>
+      Anyone in the security industry can register. SIA licence holders only.
+    </div>
 
     <div style="text-align:center;margin:1.75rem 0;">
       <a href="https://app.uksecurityjobs.co.uk/sign-up" style="display:inline-block;background:#0b1222;color:#fff;font-weight:700;font-size:0.95rem;padding:0.875rem 2.25rem;border-radius:10px;text-decoration:none;margin-bottom:0.75rem;">
@@ -317,7 +327,7 @@ router.post('/waitlist/launch-email', async (req, res) => {
     </div>
 
     <p style="font-size:0.88rem;color:#64748b;line-height:1.75;margin:1.25rem 0 0;">
-      Thank you again for being here early. Reply to this email any time — I read every one personally.
+      Any questions at all — just reply to this email. I read and respond to every one personally.
     </p>
 
     <p style="font-size:0.88rem;color:#64748b;margin:0.75rem 0 0;">
