@@ -245,12 +245,10 @@ router.get('/waitlist/export', async (req, res) => {
 // POST /admin/waitlist/launch-email — send launch email to all or selected
 router.post('/waitlist/launch-email', async (req, res) => {
   try {
-    const { ids } = req.body; // optional array of specific IDs, or empty for all
+    const { ids } = req.body;
 
     let query = supabase.from('waitlist').select('*');
-    if (ids && ids.length > 0) {
-      query = query.in('id', ids);
-    }
+    if (ids && ids.length > 0) query = query.in('id', ids);
     const { data, error } = await query;
     if (error) throw error;
     if (!data || data.length === 0) return res.status(400).json({ error: 'No recipients found' });
@@ -258,63 +256,96 @@ router.post('/waitlist/launch-email', async (req, res) => {
     const sgMail = require('@sendgrid/mail');
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-    let sent = 0;
-    let failed = 0;
+    let sent = 0, failed = 0;
 
     for (const person of data) {
       try {
         await sgMail.send({
-          from: { email: 'admin@uksecurityjobs.co.uk', name: 'David at UKSecurityJobs' },
+          from: { email: 'admin@uksecurityjobs.co.uk', name: 'David Foster — UKSecurityJobs' },
           to: person.email,
-          subject: "We're live — you're first",
+          subject: `Thank you for registering — an honest update`,
           html: `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#f9fafb;margin:0;padding:0;">
 <div style="max-width:580px;margin:0 auto;padding:2rem 1rem;">
+
   <div style="text-align:center;padding:1.5rem 0 1rem;">
     <a href="https://www.uksecurityjobs.co.uk" style="font-size:1.25rem;font-weight:800;text-decoration:none;">
       <span style="color:#1a52a8;">UK</span><span style="color:#0b1222;">Security</span><span style="color:#1a52a8;">Jobs</span>
     </a>
   </div>
+
   <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:2rem;">
-    <h1 style="font-size:1.3rem;font-weight:800;color:#0b1222;margin:0 0 1rem;">We're live, ${person.first_name}.</h1>
-    <p style="font-size:0.95rem;color:#4a5568;line-height:1.8;margin:0 0 1rem;">
-      You registered your interest in UKSecurityJobs a while back. Today we're opening the platform.
+
+    <h1 style="font-size:1.2rem;font-weight:800;color:#0b1222;margin:0 0 1.25rem;">Thank you, ${person.first_name}.</h1>
+
+    <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1rem;">
+      You registered your interest in UKSecurityJobs and I wanted to write to you personally to say thank you — and to be straight with you about where we are.
     </p>
-    <p style="font-size:0.95rem;color:#4a5568;line-height:1.8;margin:0 0 1.5rem;">
-      As someone on our early access list, you're first through the door. Register now, build your profile and get your ${person.licence_type} licence verified — so you're ready to apply the moment employers start posting.
+
+    <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1rem;">
+      The platform is built. The profile system, the SIA licence verification, the BS7858-ready vetting profiles, the employer dashboard, the interview scheduling — it is all there and working.
     </p>
+
+    <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1rem;">
+      But we have a classic chicken and egg problem. Employers want to see candidates before they post jobs. Candidates want to see jobs before they register. Someone has to move first.
+    </p>
+
+    <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1.5rem;">
+      You already have. You are one of 17 people who registered early — which means you understand what this platform is trying to do and you believe it is worth doing. That matters more than you might think.
+    </p>
+
+    <div style="background:#f8fafc;border-left:4px solid #1a52a8;border-radius:0 8px 8px 0;padding:1rem 1.25rem;margin:1.5rem 0;font-size:0.92rem;color:#334155;line-height:1.8;">
+      <strong style="color:#0b1222;display:block;margin-bottom:0.5rem;">What UKSecurityJobs is trying to do:</strong>
+      The security industry deserves a platform built for it — not a generic job board that treats a door supervisor the same as a warehouse picker. Every candidate on this platform holds a valid SIA licence and has a complete, BS7858-ready profile. Employers get quality. Candidates get treated like professionals. No more "b4 i cum bro whats the pay innit."
+    </div>
+
+    <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1rem;">
+      Here is what would genuinely help right now. If you know a security company, a contract manager, an operations director, or anyone who hires SIA-licensed staff — tell them about this platform. We are offering the first job posting free with no commitment. That is the fastest way to break the deadlock.
+    </p>
+
+    <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1.5rem;">
+      And if you have not yet built your profile — do it now. It takes about 20 minutes, you will never have to fill in a job application form again, and when employers start posting you will be first in line.
+    </p>
+
     <div style="text-align:center;margin:1.75rem 0;">
-      <a href="https://app.uksecurityjobs.co.uk/sign-up" style="display:inline-block;background:#0b1222;color:#fff;font-weight:700;font-size:1rem;padding:0.875rem 2.5rem;border-radius:10px;text-decoration:none;">
-        Complete Your Profile &rarr;
+      <a href="https://app.uksecurityjobs.co.uk/sign-up" style="display:inline-block;background:#0b1222;color:#fff;font-weight:700;font-size:0.95rem;padding:0.875rem 2.25rem;border-radius:10px;text-decoration:none;margin-bottom:0.75rem;">
+        Build My Profile &rarr;
+      </a>
+      <br/>
+      <a href="https://www.uksecurityjobs.co.uk/employers" style="display:inline-block;background:#fff;color:#1a52a8;font-weight:700;font-size:0.88rem;padding:0.65rem 1.75rem;border-radius:10px;text-decoration:none;border:1px solid #bfdbfe;margin-top:0.5rem;">
+        Share with an Employer &rarr;
       </a>
     </div>
-    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:1rem 1.25rem;margin:1.25rem 0;font-size:0.88rem;color:#0369a1;line-height:1.7;">
-      <strong>What happens when you register:</strong><br/>
-      1. Build your 11-step verified profile<br/>
-      2. Your SIA licence is checked against the SIA register<br/>
-      3. Your BS7858 employment history is structured and ready<br/>
-      4. Verified employers can find and contact you directly
-    </div>
-    <p style="font-size:0.85rem;color:#94a3b8;margin:1rem 0 0;line-height:1.65;">
-      Questions? Reply to this email or contact <a href="mailto:admin@uksecurityjobs.co.uk" style="color:#1a52a8;">admin@uksecurityjobs.co.uk</a>
+
+    <p style="font-size:0.88rem;color:#64748b;line-height:1.75;margin:1.25rem 0 0;">
+      Thank you again for being here early. Reply to this email any time — I read every one personally.
     </p>
+
+    <p style="font-size:0.88rem;color:#64748b;margin:0.75rem 0 0;">
+      David Foster<br/>
+      Founder, UKSecurityJobs.co.uk<br/>
+      Digital Software Group Ltd
+    </p>
+
   </div>
+
   <div style="text-align:center;padding:1.5rem 0;font-size:0.75rem;color:#94a3b8;">
-    You registered your interest at uksecurityjobs.co.uk. 
+    You registered your interest at uksecurityjobs.co.uk.<br/>
     <a href="https://www.uksecurityjobs.co.uk/unsubscribe?email=${encodeURIComponent(person.email)}" style="color:#94a3b8;">Unsubscribe</a><br/>
     &copy; 2026 UKSecurityJobs.co.uk &mdash; Digital Software Group Ltd
   </div>
+
 </div>
 </body></html>`
         });
         sent++;
-      } catch (e) {
+      } catch(e) {
         console.error(`Failed to send to ${person.email}:`, e.message);
         failed++;
       }
     }
 
     res.json({ sent, failed, total: data.length });
-  } catch (err) {
+  } catch(err) {
     console.error('Launch email error:', err);
     res.status(500).json({ error: 'Failed to send launch emails' });
   }
