@@ -2131,7 +2131,11 @@ function ProfileBuilder() {
         const addresses = full.addresses || null;
         const interviewAnswers = full.candidate?.interview_answers || null;
 
-        setProfileData({ licences, personal, driving, sectors, qualifications, background, employment, photo: null, addresses, interview: interviewAnswers });
+        setProfileData({ licences, personal: personal || {
+          // Pre-populate from Clerk on first registration so name is not asked twice
+          first_name: user?.firstName || '',
+          last_name: user?.lastName || '',
+        }, driving, sectors, qualifications, background, employment, photo: null, addresses, interview: interviewAnswers });
 
         // Infer which steps are already complete from API data
         const completed = new Set();
@@ -3265,7 +3269,21 @@ function Dashboard() {
 // ── AUTH PAGES ──
 function SignUpPage() {
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ firstName:'', lastName:'', email:'', password:'', gdprConsent: false });
+  // Pre-populate from early access page if they came from there
+  const urlParams = new URLSearchParams(window.location.search);
+  const [form, setForm] = useState({
+    firstName: urlParams.get('first_name') || sessionStorage.getItem('signup_first') || '',
+    lastName: urlParams.get('last_name') || sessionStorage.getItem('signup_last') || '',
+    email: urlParams.get('email') || sessionStorage.getItem('signup_email') || '',
+    password: '',
+    gdprConsent: false
+  });
+  // Clear session storage once used
+  React.useEffect(() => {
+    sessionStorage.removeItem('signup_first');
+    sessionStorage.removeItem('signup_last');
+    sessionStorage.removeItem('signup_email');
+  }, []);
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

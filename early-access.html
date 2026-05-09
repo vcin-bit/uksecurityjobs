@@ -156,7 +156,7 @@ h1 span{color:#1a52a8;}
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7" stroke="#15803d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
           <div class="success-title">You're on the list.</div>
-          <p class="success-sub">Check your email for confirmation. We'll be in touch before launch to verify your SIA licence — so you're ready to apply from day one.</p>
+          <p class="success-sub">You'll receive a confirmation email shortly. We'll be in touch before launch.</p>
         </div>
       </div>
     </div>
@@ -189,6 +189,10 @@ document.getElementById('waitlist-form').addEventListener('submit', async functi
     if (res.ok) {
       document.getElementById('waitlist-form').style.display = 'none';
       document.getElementById('success-state').style.display = 'block';
+      // Store details so sign-up page can pre-fill
+      if (data.first_name) sessionStorage.setItem('signup_first', data.first_name);
+      if (data.last_name) sessionStorage.setItem('signup_last', data.last_name);
+      if (data.email) sessionStorage.setItem('signup_email', data.email);
     } else {
       errEl.textContent = json.error || 'Something went wrong. Please try again.';
       errEl.style.display = 'block';
