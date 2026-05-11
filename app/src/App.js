@@ -4851,6 +4851,7 @@ function JobListingsPage() {
   const [filters, setFilters] = React.useState({ licence:'', location:'', type:'' });
   const [applying, setApplying] = React.useState(null);
   const [applied, setApplied] = React.useState(new Set());
+  const [profileComplete, setProfileComplete] = React.useState(false);
 
   React.useEffect(() => {
     fetch('https://uksecurityjobs-api.onrender.com/api/jobs/public')
@@ -4858,6 +4859,28 @@ function JobListingsPage() {
       .then(d => { setJobs(d.jobs || []); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  React.useEffect(() => {
+    if (!isSignedIn) return;
+    (async () => {
+      try {
+        const full = await apiRequest('/api/candidates/me/full', 'GET', null, getToken);
+        const c = full.candidate;
+        if (!c) { setProfileComplete(false); return; }
+        const licences = full.licences || [];
+        const personal = full.personal || null;
+        const driving = full.driving || null;
+        const sectors = full.sectors || null;
+        const qualifications = full.qualifications || null;
+        const background = full.background || null;
+        const employment = full.employment || [];
+        const addresses = full.addresses || [];
+        const siaVerified = licences[0]?.verified === true;
+        const done = siaVerified && personal?.first_name && driving && sectors && qualifications && background && employment.length > 0 && addresses.length > 0;
+        setProfileComplete(!!done);
+      } catch { setProfileComplete(false); }
+    })();
+  }, [isSignedIn]);
 
   const licenceMap = {
     'Door Supervisor': ['Door Supervisor','Security Guard'],
@@ -4968,11 +4991,11 @@ function JobListingsPage() {
                   <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
                     <div style={{flex:1}}>
                       <div style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',marginBottom:'0.5rem'}}>
-                        {job.logo_url && <img src={job.logo_url} alt={job.company_name} style={{width:'44px',height:'44px',borderRadius:'8px',objectFit:'contain',border:'1px solid #e2e8f0',background:'#f8fafc',padding:'3px',flexShrink:0}}/>}
+                        {profileComplete && job.logo_url && <img src={job.logo_url} alt={job.company_name} style={{width:'44px',height:'44px',borderRadius:'8px',objectFit:'contain',border:'1px solid #e2e8f0',background:'#f8fafc',padding:'3px',flexShrink:0}}/>}
                         <div>
                           <div style={{fontWeight:800,fontSize:'1.05rem',color:'#0b1222',marginBottom:'0.1rem'}}>{job.title}</div>
                           <div style={{fontWeight:600,fontSize:'0.85rem',color:'#1a52a8',display:'flex',alignItems:'center',gap:'0.4rem'}}>
-                            {job.company_name}
+                            {profileComplete ? job.company_name : 'Verified Employer'}
                             {job.employers?.reputation_score && (
                               <span style={{fontSize:'0.7rem',fontWeight:700,color:'#15803d',background:'#f0fdf4',padding:'0.1rem 0.4rem',borderRadius:'4px'}}>
                                 ★ {job.employers.reputation_score}
@@ -5005,6 +5028,11 @@ function JobListingsPage() {
                       <div style={{fontSize:'0.68rem',color:'#94a3b8'}}>{new Date(job.created_at).toLocaleDateString('en-GB')}</div>
                       {applied.has(job.id)
                         ? <div style={{background:'#dcfce7',color:'#15803d',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.85rem',fontWeight:700}}>✓ Applied</div>
+                        : isSignedIn && !profileComplete
+                        ? <div style={{textAlign:'right'}}>
+                            <div style={{background:'#fef3c7',color:'#92400e',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.78rem',fontWeight:600,lineHeight:1.5}}>Complete your profile to apply</div>
+                            <a href="/profile" style={{fontSize:'0.72rem',color:'#1a52a8',fontWeight:600,marginTop:'0.3rem',display:'inline-block'}}>Continue Profile →</a>
+                          </div>
                         : <button onClick={()=>applyForJob(job)} disabled={applying===job.id} style={{background:'#1a52a8',color:'#fff',border:'none',borderRadius:'8px',padding:'0.65rem 1.5rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
                             {applying===job.id?'Applying...':isSignedIn?'Apply Now':'Sign in to Apply'}
                           </button>
