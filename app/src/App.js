@@ -3315,7 +3315,7 @@ function SignUpPage() {
           body: JSON.stringify({ email: form.email, gdpr_consent: true })
         });
       } catch(apiErr) { console.error('API create failed:', apiErr); }
-      setTimeout(() => { window.location.href = 'https://app.uksecurityjobs.co.uk/profile'; }, 500);
+      setTimeout(() => { window.location.href = '/dashboard'; }, 500);
     } catch(err) { setError(err.errors?.[0]?.message || 'Invalid code. Please try again.'); }
     setLoading(false);
   };
