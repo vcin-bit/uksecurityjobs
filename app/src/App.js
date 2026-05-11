@@ -3516,7 +3516,16 @@ function ForgotPasswordPage() {
       });
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
-        window.location.href = '/dashboard';
+        setTimeout(async () => {
+          try {
+            const token = await window.Clerk?.session?.getToken();
+            const res = await fetch('https://uksecurityjobs-api.onrender.com/api/employers/me', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            window.location.href = data.employer ? '/employer' : '/dashboard';
+          } catch { window.location.href = '/dashboard'; }
+        }, 500);
       }
     } catch(err) {
       setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Invalid code or password too weak.');
