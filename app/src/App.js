@@ -116,6 +116,7 @@ function ProgressRings({ sections, onGoToStep }) {
           );
         })}
       </div>
+      {onGoToStep && <div style={{textAlign:'center',fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.5rem'}}>Click any circle above to edit that section</div>}
     </div>
   );
 }
