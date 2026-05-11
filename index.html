@@ -49,8 +49,10 @@ nav{position:sticky;top:0;z-index:200;background:rgba(249,250,251,0.96);backdrop
 .nav-right{display:flex;align-items:center;gap:0.75rem;}
 .nav-signin{color:var(--body);font-size:0.82rem;font-weight:500;padding:0.4rem 0.75rem;transition:color 0.15s;}
 .nav-signin:hover{color:var(--text);}
-.nav-cta{background:var(--blue);color:#fff;font-size:0.82rem;font-weight:600;padding:0.5rem 1.1rem;border-radius:6px;transition:background 0.15s;}
+.nav-cta{background:var(--blue);color:#fff;font-size:0.78rem;font-weight:600;padding:0.45rem 0.9rem;border-radius:6px;transition:background 0.15s;}
 .nav-cta:hover{background:var(--blue2);}
+.nav-cta-outline{font-size:0.78rem;font-weight:600;padding:0.45rem 0.9rem;border-radius:6px;border:1.5px solid var(--blue);color:var(--blue);transition:background 0.15s,color 0.15s;}
+.nav-cta-outline:hover{background:var(--blue);color:#fff;}
 .nav-mob{display:none;color:var(--body);font-size:1.3rem;}
 
 /* HERO */
@@ -405,7 +407,7 @@ h2{font-size:clamp(2rem,3.5vw,2.8rem);font-weight:800;letter-spacing:-0.03em;lin
   .iphone2{left:calc(50% - 390px);width:150px;}
 }
 @media(max-width:900px){
-  .nav-links,.nav-signin,.nav-cta{display:none;}
+  .nav-links,.nav-signin,.nav-cta,.nav-cta-outline{display:none;}
   .nav-mob{display:block;}
   .device-scene{height:360px;}
   .laptop{width:440px;}
@@ -501,8 +503,6 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
 <!-- TOP BAR -->
 <div class="topbar">
   <span>Now open — register today and unlock exclusive member benefits</span>
-  <a href="/officers">Candidate Registration ›</a>
-  <a href="/employers">Company Registration ›</a>
 </div>
 
 <!-- NAV -->
@@ -520,7 +520,7 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
     <div class="nav-right">
       <a class="nav-signin" href="https://app.uksecurityjobs.co.uk/sign-in">Sign in</a>
       <a class="nav-cta" href="/officers">Candidate Registration</a>
-      <a class="nav-cta" href="/employers">Company Registration</a>
+      <a class="nav-cta-outline" href="/employers">Company Registration</a>
     </div>
     <button class="nav-mob" id="menuBtn" aria-label="Menu">&#9776;</button>
   </div>
