@@ -3371,11 +3371,18 @@ function SignUpPage() {
 }
 
 function SignInPage() {
+  const { isSignedIn } = useUser();
   const [form, setForm] = useState({ email:'', password:'' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, setActive } = useSignIn();
   const { getToken } = useAuth();
+
+  // Already signed in — redirect to dashboard
+  React.useEffect(() => {
+    if (isSignedIn) window.location.href = '/dashboard';
+  }, [isSignedIn]);
+
   const handleSignIn = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
