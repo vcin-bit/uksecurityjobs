@@ -381,13 +381,14 @@ router.post('/apply', async (req, res) => {
 
     // Get job and employer details for emails
     const { data: job } = await supabase.from('jobs').select('title, location, employer_id, employers(contact_email, company_name)').eq('id', job_id).single();
-    const { data: candPersonal } = await supabase.from('candidate_personal').select('first_name, last_name').eq('candidate_id', candidate.id).single();
+    const { data: candPersonal } = await supabase.from('personal_details').select('first_name, last_name').eq('candidate_id', candidate.id).single();
     const { data: candMain } = await supabase.from('candidates').select('email').eq('id', candidate.id).single();
+    const candidateEmail = candMain?.email || req.userEmail || '';
 
-    if (job && candMain?.email) {
+    if (job) {
       // Email candidate confirmation
       email.sendApplicationConfirmation({
-        toEmail: candMain.email,
+        toEmail: candidateEmail,
         firstName: candPersonal?.first_name || 'Officer',
         jobTitle: job.title,
         companyName: job.employers?.company_name || 'Employer',
