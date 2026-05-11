@@ -61,7 +61,7 @@ router.put('/', async (req, res) => {
 
     // Notify admin of new verification requests
     if (licences.length > 0) {
-      const { data: personal } = await supabase.from('candidate_personal').select('first_name, last_name').eq('candidate_id', candidate.id).single();
+      const { data: personal } = await supabase.from('personal_details').select('first_name, last_name').eq('candidate_id', candidate.id).single();
       const candidateName = personal ? `${personal.first_name || ''} ${personal.last_name || ''}`.trim() : 'Unknown';
       const firstLicence = licences[0];
       email.sendAdminSiaRequest({

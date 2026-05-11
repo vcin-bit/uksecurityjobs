@@ -320,12 +320,13 @@ router.delete('/me', async (req, res) => {
     // Delete all candidate data in order (child tables first)
     await supabase.from('job_applications').delete().eq('candidate_id', id);
     await supabase.from('sia_licences').delete().eq('candidate_id', id);
-    await supabase.from('candidate_personal').delete().eq('candidate_id', id);
-    await supabase.from('candidate_employment').delete().eq('candidate_id', id);
-    await supabase.from('candidate_addresses').delete().eq('candidate_id', id);
-    await supabase.from('candidate_qualifications').delete().eq('candidate_id', id);
-    await supabase.from('candidate_sectors').delete().eq('candidate_id', id);
-    await supabase.from('candidate_driving').delete().eq('candidate_id', id);
+    await supabase.from('personal_details').delete().eq('candidate_id', id);
+    await supabase.from('employment_history').delete().eq('candidate_id', id);
+    await supabase.from('address_history').delete().eq('candidate_id', id);
+    await supabase.from('qualifications').delete().eq('candidate_id', id);
+    await supabase.from('preferred_sectors').delete().eq('candidate_id', id);
+    await supabase.from('driving_details').delete().eq('candidate_id', id);
+    await supabase.from('professional_background').delete().eq('candidate_id', id);
     await supabase.from('candidates').delete().eq('id', id);
 
     // Log the deletion for GDPR audit trail

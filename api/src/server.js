@@ -26,8 +26,7 @@ app.use(cors({
     'https://www.uksecurityjobs.co.uk',
     'https://uksecurityjobs.co.uk',
     'http://localhost:3000',
-    'http://localhost:5500',
-    'null'
+    'http://localhost:5500'
   ],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key']
@@ -170,7 +169,7 @@ app.use('/api', requireAuth);
 app.use('/api/employers', requireAuth, employerRoutes);
 app.use('/api/jobs', requireAuth, employerRoutes);
 const messagingRoutes = require('./routes/messaging');
-app.use('/api/messages', messagingRoutes);
+app.use('/api/messages', requireAuth, messagingRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {

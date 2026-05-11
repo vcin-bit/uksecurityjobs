@@ -156,8 +156,8 @@ router.get('/jobs/:id/applicants', async (req, res) => {
       .select(`
         id, status, created_at, interview_date, employer_feedback,
         candidates(id, sia_verified, profile_complete,
-          candidate_personal(first_name, last_name, phone, right_to_work_status, visa_expiry),
-          candidate_licences(licence_type, expiry_date, verified)
+          personal_details(first_name, last_name, phone, right_to_work_status, visa_expiry),
+          sia_licences(licence_type, expiry_date, verified)
         )
       `)
       .eq('job_id', req.params.id)
@@ -224,9 +224,9 @@ router.patch('/applications/:id', async (req, res) => {
     // Send status emails
     if ((status || no_show) && data) {
       const { data: job } = await supabase.from('jobs').select('title, employers(company_name)').eq('id', data.job_id).single();
-      const { data: cand } = await supabase.from('candidates').select('email, candidate_personal(first_name)').eq('id', data.candidate_id).single();
+      const { data: cand } = await supabase.from('candidates').select('email, personal_details(first_name)').eq('id', data.candidate_id).single();
       if (cand?.email && job) {
-        const firstName = cand.candidate_personal?.[0]?.first_name || cand.candidate_personal?.first_name || 'Officer';
+        const firstName = cand.personal_details?.[0]?.first_name || cand.personal_details?.first_name || 'Officer';
         const jobTitle = job.title;
         const companyName = job.employers?.company_name || 'Employer';
         const effectiveStatus = no_show ? 'no_show' : status;
@@ -240,7 +240,7 @@ router.patch('/applications/:id', async (req, res) => {
           const { data: licences } = await supabase.from('sia_licences').select('verified').eq('candidate_id', cand.id);
           const licencePending = licences?.some(l => !l.verified);
           if (licencePending) profileGaps.push('Your SIA licence is pending platform verification — bring your physical licence card');
-          const { data: addrs } = await supabase.from('candidate_addresses').select('proof_types,electoral_roll').eq('candidate_id', cand.id);
+          const { data: addrs } = await supabase.from('address_history').select('proof_types,electoral_roll').eq('candidate_id', cand.id);
           if (addrs?.some(a => !a.proof_types?.length)) profileGaps.push('Some addresses have no evidence declared — bring additional proof of address documents');
           if (addrs?.some(a => a.electoral_roll === false)) profileGaps.push('One or more addresses not on electoral roll — bring alternative proof (bank statement, utility bill)');
           const { data: personal } = await supabase.from('personal_details').select('right_to_work_status,has_ni_number').eq('candidate_id', cand.id).single();
@@ -291,44 +291,44 @@ router.get('/candidate/:id', async (req, res) => {
       { data: driving },
       { data: candidate }
     ] = await Promise.all([
-      // Personal — no DOB, no full address, no email, no gender, no health
-      supabase.from('candidate_personal').select(
-        'first_name, last_name, phone, right_to_work_status, visa_expiry'
+      // Personal — no DOB, no full address, no email
+      supabase.from('personal_details').select(
+        'first_name, last_name, phone, has_ni_number'
       ).eq('candidate_id', req.params.id).single(),
 
       // Licences — type, expiry and verified status only. No licence number.
-      supabase.from('candidate_licences').select(
+      supabase.from('sia_licences').select(
         'licence_type, expiry_date, verified'
       ).eq('candidate_id', req.params.id),
 
       // Employment — full history for BS7858. Reference contacts included.
-      supabase.from('candidate_employment').select(
-        'job_title, company_name, start_date, end_date, employment_type, reference_name, reference_phone, reference_email, reason_for_leaving'
+      supabase.from('employment_history').select(
+        'job_title, employer_name, start_date, end_date, is_current, reference_name, reference_phone, reference_email, reason_for_leaving'
       ).eq('candidate_id', req.params.id).order('start_date', { ascending: false }),
 
       // Addresses — include proof declarations for vetting summary
-      supabase.from('candidate_addresses').select(
+      supabase.from('address_history').select(
         'address_line1, address_line2, city, county, postcode, country, moved_in_date, moved_out_date, is_current, occupancy_type, proof_types, electoral_roll'
       ).eq('candidate_id', req.params.id).order('moved_in_date', { ascending: false }),
 
       // Qualifications — all relevant
-      supabase.from('candidate_qualifications').select(
-        'first_aid_level, languages, sia_trainer, security_clearance, additional_certs'
+      supabase.from('qualifications').select(
+        'frec_level, has_efaw, has_faw, first_aid_expiry, languages, is_sia_trainer, security_clearance, other_qualifications'
       ).eq('candidate_id', req.params.id).single(),
 
       // Sectors and availability
-      supabase.from('candidate_sectors').select(
-        'sectors, preferred_shift, travel_radius, available_from'
+      supabase.from('preferred_sectors').select(
+        'sectors, preferred_shift, available_from, min_hourly_rate'
       ).eq('candidate_id', req.params.id).single(),
 
       // Driving — type and vehicle access only
-      supabase.from('candidate_driving').select(
-        'licence_type, own_vehicle, travel_radius'
+      supabase.from('driving_details').select(
+        'licence_type, has_own_vehicle, travel_radius_miles'
       ).eq('candidate_id', req.params.id).single(),
 
       // Candidate meta — verified status and score only
       supabase.from('candidates').select(
-        'id, sia_verified, profile_complete, vettability_score, created_at'
+        'id, profile_complete, created_at'
       ).eq('id', req.params.id).single(),
     ]);
 
@@ -498,13 +498,13 @@ router.post('/jobs/:jobId/interview-slots', async (req, res) => {
     for (const appId of application_ids) {
       const { data: app } = await supabase
         .from('job_applications')
-        .select('id, candidate_id, candidates(email, candidate_personal(first_name, last_name))')
+        .select('id, candidate_id, candidates(email, personal_details(first_name, last_name))')
         .eq('id', appId)
         .single();
 
       if (!app) continue;
 
-      const firstName = app.candidates?.candidate_personal?.[0]?.first_name || app.candidates?.candidate_personal?.first_name || 'Officer';
+      const firstName = app.candidates?.personal_details?.[0]?.first_name || app.candidates?.personal_details?.first_name || 'Officer';
       const candidateEmail = app.candidates?.email;
       if (!candidateEmail) continue;
 
@@ -594,7 +594,7 @@ router.get('/confirm-slot/:slotId', async (req, res) => {
     // Validate token
     const { data: application } = await supabase
       .from('job_applications')
-      .select('id, candidate_id, interview_token, interview_token_expires, status, candidates(email, candidate_personal(first_name, last_name)), jobs(title, employer_id, employers(company_name))')
+      .select('id, candidate_id, interview_token, interview_token_expires, status, candidates(email, personal_details(first_name, last_name)), jobs(title, employer_id, employers(company_name))')
       .eq('id', appId)
       .single();
 
@@ -623,7 +623,7 @@ router.get('/confirm-slot/:slotId', async (req, res) => {
     }).eq('id', appId);
 
     // Send confirmation email to candidate
-    const firstName = application.candidates?.candidate_personal?.[0]?.first_name || application.candidates?.candidate_personal?.first_name || 'Officer';
+    const firstName = application.candidates?.personal_details?.[0]?.first_name || application.candidates?.personal_details?.first_name || 'Officer';
     const candidateEmail = application.candidates?.email;
     const jobTitle = application.jobs?.title || 'the role';
     const companyName = application.jobs?.employers?.company_name || 'the employer';
@@ -714,7 +714,7 @@ router.get('/decline-interview', async (req, res) => {
 
     const { data: application } = await supabase
       .from('job_applications')
-      .select('id, interview_token, interview_token_expires, candidates(email, candidate_personal(first_name))')
+      .select('id, interview_token, interview_token_expires, candidates(email, personal_details(first_name))')
       .eq('id', appId).single();
 
     if (!application || application.interview_token !== token) {
@@ -737,7 +737,7 @@ router.post('/applications/:id/no-show', async (req, res) => {
 
     const { data: app } = await supabase
       .from('job_applications')
-      .select('id, candidate_id, jobs(employer_id, title), candidates(email, candidate_personal(first_name))')
+      .select('id, candidate_id, jobs(employer_id, title), candidates(email, personal_details(first_name))')
       .eq('id', req.params.id).single();
 
     if (!app || app.jobs?.employer_id !== employerId) return res.status(403).json({ error: 'Not authorised' });
@@ -758,7 +758,7 @@ router.post('/applications/:id/no-show', async (req, res) => {
     }
 
     // Email the candidate
-    const firstName = app.candidates?.candidate_personal?.first_name || app.candidates?.candidate_personal?.[0]?.first_name || 'Officer';
+    const firstName = app.candidates?.personal_details?.first_name || app.candidates?.personal_details?.[0]?.first_name || 'Officer';
     const candidateEmail = app.candidates?.email;
     if (candidateEmail) {
       const sgMail = require('@sendgrid/mail');

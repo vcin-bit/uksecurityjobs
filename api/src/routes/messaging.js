@@ -10,7 +10,7 @@ const MESSAGE_TYPES = ['general','request_info','schedule_update','offer','outco
 async function verifyAccess(applicationId, userId, senderType) {
   const { data: app } = await supabase
     .from('job_applications')
-    .select('id, candidate_id, job_id, jobs(employer_id, title), candidates(clerk_user_id, email, candidate_personal(first_name)), employers(contact_email, company_name)')
+    .select('id, candidate_id, job_id, jobs(employer_id, title), candidates(clerk_user_id, email, personal_details(first_name)), employers(contact_email, company_name)')
     .eq('id', applicationId)
     .single();
 
@@ -89,7 +89,7 @@ router.post('/:applicationId', async (req, res) => {
 
     if (sender_type === 'employer') {
       const candidateEmail = app.candidates?.email;
-      const firstName = app.candidates?.candidate_personal?.first_name || app.candidates?.candidate_personal?.[0]?.first_name || 'Officer';
+      const firstName = app.candidates?.personal_details?.first_name || app.candidates?.personal_details?.[0]?.first_name || 'Officer';
       if (candidateEmail) {
         await sgMail.send({
           from: { email: 'admin@uksecurityjobs.co.uk', name: 'UKSecurityJobs' },
@@ -107,7 +107,7 @@ router.post('/:applicationId', async (req, res) => {
     } else {
       const empEmail = app.employers?.contact_email || app.jobs?.employers?.contact_email;
       if (empEmail) {
-        const candidateName = `${app.candidates?.candidate_personal?.first_name || app.candidates?.candidate_personal?.[0]?.first_name || 'Candidate'} ${app.candidates?.candidate_personal?.last_name || app.candidates?.candidate_personal?.[0]?.last_name || ''}`.trim();
+        const candidateName = `${app.candidates?.personal_details?.first_name || app.candidates?.personal_details?.[0]?.first_name || 'Candidate'} ${app.candidates?.personal_details?.last_name || app.candidates?.personal_details?.[0]?.last_name || ''}`.trim();
         await sgMail.send({
           from: { email: 'admin@uksecurityjobs.co.uk', name: 'UKSecurityJobs' },
           to: empEmail,
