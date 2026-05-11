@@ -48,6 +48,7 @@ app.get('/health', (req, res) => {
 
 // Public contact form — no auth required
 const sgMailContact = require('@sendgrid/mail');
+const escapeHtml = (str) => String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 app.post('/api/contact', async (req, res) => {
   try {
     const { name, email: fromEmail, type, subject, message } = req.body;
@@ -57,8 +58,8 @@ app.post('/api/contact', async (req, res) => {
       from: { email: 'admin@uksecurityjobs.co.uk', name: 'UKSecurityJobs' },
       to: 'admin@uksecurityjobs.co.uk',
       replyTo: fromEmail,
-      subject: `Contact Form — ${subject || 'General Enquiry'}`,
-      html: `<p><strong>From:</strong> ${name} (${fromEmail})</p><p><strong>Type:</strong> ${type || 'Not specified'}</p><p><strong>Subject:</strong> ${subject || 'Not specified'}</p><p><strong>Message:</strong></p><p>${message.replace(/\n/g,'<br>')}</p>`
+      subject: `Contact Form — ${escapeHtml(subject || 'General Enquiry')}`,
+      html: `<p><strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(fromEmail)})</p><p><strong>Type:</strong> ${escapeHtml(type || 'Not specified')}</p><p><strong>Subject:</strong> ${escapeHtml(subject || 'Not specified')}</p><p><strong>Message:</strong></p><p>${escapeHtml(message).replace(/\n/g,'<br>')}</p>`
     });
     res.json({ success: true });
   } catch(err) {

@@ -177,6 +177,16 @@ router.patch('/applications/:id', async (req, res) => {
     const employerId = await getEmployerId(req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
 
+    // Verify this application belongs to a job owned by this employer
+    const { data: appCheck } = await supabase
+      .from('job_applications')
+      .select('id, jobs!inner(employer_id)')
+      .eq('id', req.params.id)
+      .single();
+    if (!appCheck || appCheck.jobs?.employer_id !== employerId) {
+      return res.status(403).json({ error: 'Not authorised' });
+    }
+
     const {
       status,
       interview_date,
