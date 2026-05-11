@@ -55,7 +55,7 @@ function Nav() {
 }
 
 // ── PROGRESS RINGS ──
-function ProgressRings({ sections }) {
+function ProgressRings({ sections, onGoToStep }) {
   const total = sections.length;
   const completed = sections.filter(s => s.complete).length;
   const overallPct = Math.round((completed / total) * 100);
@@ -95,7 +95,7 @@ function ProgressRings({ sections }) {
           const pct = s.complete ? 100 : s.pending ? 75 : s.started ? 50 : 0;
           const off2 = c2 - (pct/100)*c2;
           return (
-            <div key={i} className="ring-mini" title={s.name}>
+            <div key={i} className="ring-mini" title={s.name} style={{cursor: onGoToStep ? 'pointer' : 'default'}} onClick={() => onGoToStep && onGoToStep(i)}>
               <svg width="56" height="56" viewBox="0 0 56 56">
                 <circle cx="28" cy="28" r={r2} stroke="#f3f4f6" strokeWidth="5" fill="none"/>
                 <circle cx="28" cy="28" r={r2} stroke={col} strokeWidth="5" fill="none"
@@ -2382,21 +2382,23 @@ function ProfileBuilder() {
     setStep(s => s + 1);
   };
 
+  const sectionToStep = [1,2,3,4,5,6,7,8,9];
+  const sectionKeys = ['licences','personal','driving','sectors','qualifications','background','interview','employment','addresses'];
+  const goToSection = (i) => { setForceEditKey(sectionKeys[i]||null); setStep(sectionToStep[i]||1); };
+
   const stepContent = (() => {
-    if(step === 0) return <><ProgressRings sections={sections}/><StepWelcome onNext={next} name={user?.firstName || 'there'}/></>;
-    if(step === 1) return <><ProgressRings sections={sections}/><StepSIA data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('licences') && forceEditKey !== 'licences'}/></>;
-    if(step === 2) return <><ProgressRings sections={sections}/><StepPersonal data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('personal') && forceEditKey !== 'personal'}/></>;
-    if(step === 3) return <><ProgressRings sections={sections}/><StepDriving data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('driving') && forceEditKey !== 'driving'}/></>;
-    if(step === 4) return <><ProgressRings sections={sections}/><StepSectors data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('sectors') && forceEditKey !== 'sectors'}/></>;
-    if(step === 5) return <><ProgressRings sections={sections}/><StepQualifications data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('qualifications') && forceEditKey !== 'qualifications'}/></>;
-    if(step === 6) return <><ProgressRings sections={sections}/><StepBackground data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('background') && forceEditKey !== 'background'}/></>;
-    if(step === 7) return <><ProgressRings sections={sections}/><StepInterview data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('interview') && forceEditKey !== 'interview'}/></>;
-    if(step === 8) return <><ProgressRings sections={sections}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('employment') && forceEditKey !== 'employment'}/></>;
-    if(step === 9) return <><ProgressRings sections={sections}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('addresses') && forceEditKey !== 'addresses'}/></>;
+    if(step === 0) return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepWelcome onNext={next} name={user?.firstName || 'there'}/></>;
+    if(step === 1) return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepSIA data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('licences') && forceEditKey !== 'licences'}/></>;
+    if(step === 2) return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepPersonal data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('personal') && forceEditKey !== 'personal'}/></>;
+    if(step === 3) return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepDriving data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('driving') && forceEditKey !== 'driving'}/></>;
+    if(step === 4) return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepSectors data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('sectors') && forceEditKey !== 'sectors'}/></>;
+    if(step === 5) return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepQualifications data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('qualifications') && forceEditKey !== 'qualifications'}/></>;
+    if(step === 6) return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepBackground data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('background') && forceEditKey !== 'background'}/></>;
+    if(step === 7) return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepInterview data={profileData} onChange={update} onBack={back} onNext={next} isComplete={completedSteps.has('interview') && forceEditKey !== 'interview'}/></>;
+    if(step === 8) return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepEmployment data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('employment') && forceEditKey !== 'employment'}/></>;
+    if(step === 9) return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepAddress data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('addresses') && forceEditKey !== 'addresses'}/></>;
     if(step === 10) {
-      const sectionToStep = [1,2,3,4,5,6,7,8,9];
-      const sectionKeys = ['licences','personal','driving','sectors','qualifications','background','interview','employment','addresses'];
-      return <><ProgressRings sections={sections}/><StepComplete name={user?.firstName || "there"} sections={sections} onGoToStep={i=>{setForceEditKey(sectionKeys[i]||null);setStep(sectionToStep[i]||1);}}/></>;
+      return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepComplete name={user?.firstName || "there"} sections={sections} onGoToStep={goToSection}/></>;
     }
     return <StepComplete name={user?.firstName || 'there'} sections={sections} onGoToStep={i=>{const m=[1,2,3,4,5,6,7,8,9];setStep(m[i]||1);}}/>;
   })();
