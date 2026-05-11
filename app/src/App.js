@@ -2119,6 +2119,8 @@ function ProfileBuilder() {
   useEffect(() => {
     async function loadProfile() {
       try {
+        // Ensure candidate record exists (auto-creates on first access)
+        await apiRequest('/api/candidates/me', 'GET', null, getToken);
         const full = await apiRequest('/api/candidates/me/full', 'GET', null, getToken);
 
         const licences = full.licences || null;
@@ -3113,6 +3115,7 @@ function Dashboard() {
   React.useEffect(() => {
     async function load() {
       try {
+        await apiRequest('/api/candidates/me', 'GET', null, getToken);
         const full = await apiRequest('/api/candidates/me/full', 'GET', null, getToken);
         setProfileData({
           licences: full.licences || [],
