@@ -183,11 +183,9 @@ router.get('/background', async (req, res) => {
     if (error && error.code === 'PGRST116') return res.json({ background: null });
     if (error) throw error;
 
-    // Decrypt criminal record if present
-    if (data.criminal_record_encrypted) {
-      data.criminal_record = await decrypt(data.criminal_record_encrypted);
-      delete data.criminal_record_encrypted;
-    }
+    // Strip criminal record fields from response
+    delete data.criminal_record_encrypted;
+    delete data.has_criminal_record;
 
     res.json({ background: data });
   } catch (err) {
@@ -201,9 +199,6 @@ router.put('/background', async (req, res) => {
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
     const b = req.body;
-    const criminal_record_encrypted = b.criminal_record
-      ? await encrypt(b.criminal_record) : undefined;
-
     const payload = {
       candidate_id: candidateId,
       served_in_forces: b.served_in_forces ?? false,
@@ -212,9 +207,7 @@ router.put('/background', async (req, res) => {
       forces_years: b.forces_years || null,
       forces_discharge_type: b.forces_discharge_type || null,
       served_in_police: b.served_in_police ?? false,
-      has_criminal_record: b.has_criminal_record ?? false,
       has_dbs_certificate: b.has_dbs_certificate ?? false,
-      ...(criminal_record_encrypted && { criminal_record_encrypted }),
     };
 
     const { data, error } = await supabase
