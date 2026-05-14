@@ -1263,10 +1263,6 @@ function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
     forcesRank: raw.forcesRank || raw.forces_rank || '',
     forcesYears: raw.forcesYears || raw.forces_years || '',
     forcesDischarge: raw.forcesDischarge || raw.forces_discharge_type || '',
-    hasCriminal: raw.hasCriminal || (raw.has_criminal_record ? 'yes' : raw.has_criminal_record === false ? 'no' : ''),
-    criminalDetails: raw.criminalDetails || raw.criminal_record || '',
-    healthDeclaration: raw.healthDeclaration || '',
-    healthDetails: raw.healthDetails || '',
   });
   const u = (f,v) => setForm({...form,[f]:v});
   const save = () => { onChange({ background: form }); onNext(); };
@@ -1275,7 +1271,7 @@ function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
     return (
       <CompletedStep
         title="Professional Background"
-        summary={(() => { const d=data.background||{}; return [{label:"Forces/Police",value:d.served_in_forces||d.hasForces=="yes"?d.forces_branch||d.forcesBranch||"Yes":"No"},{label:"Criminal Record",value:d.has_criminal_record||d.hasCriminal=="yes"?"Yes — declared":"No"}]; })()}
+        summary={(() => { const d=data.background||{}; return [{label:"Forces/Police",value:d.served_in_forces||d.hasForces=="yes"?d.forces_branch||d.forcesBranch||"Yes":"No"}]; })()}
         onEdit={() => setEditing(true)}
         onBack={onBack}
         onNext={onNext}
@@ -1306,28 +1302,6 @@ function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
           {['Honourable discharge','Medical discharge','Voluntary exit','Retirement','Other'].map(d=><option key={d}>{d}</option>)}
         </Select>
       </Field>}
-      <div className="divider"></div>
-      <Field label="Do you have any unspent criminal convictions?" hint="This does not automatically disqualify you — we assess each case individually">
-        <div className="radio-row"><Radio name="hasCriminal" value="yes" label="Yes" checked={form.hasCriminal==='yes'} onChange={v=>u('hasCriminal',v)}/><Radio name="hasCriminal" value="no" label="No" checked={form.hasCriminal==='no'} onChange={v=>u('hasCriminal',v)}/></div>
-      </Field>
-      {form.hasCriminal==='yes' && <Field label="Please provide brief details" hint="Date, offence, sentence. This is confidential and only visible to you and our admin team."><textarea className="f-textarea" rows={3} value={form.criminalDetails} onChange={e=>u('criminalDetails',e.target.value)} placeholder="e.g. 2019 — SP30 — 3 points and £100 fine"/></Field>}
-
-      <div className="divider"></div>
-      <Field label="Health Declaration" hint="Under the Equality Act 2010, you are not required to disclose medical information. This is voluntary and entirely your choice.">
-        <div style={{fontSize:'0.78rem',color:'#64748b',marginBottom:'0.75rem',lineHeight:'1.5'}}>
-          Do you have any medical conditions or physical restrictions you wish to declare to a prospective employer? This information is encrypted and you control whether it is shared.
-        </div>
-        <div className="radio-row">
-          <Radio name="healthDeclaration" value="no" label="Nothing to declare" checked={form.healthDeclaration==='no'} onChange={v=>u('healthDeclaration',v)}/>
-          <Radio name="healthDeclaration" value="yes" label="I wish to declare something" checked={form.healthDeclaration==='yes'} onChange={v=>u('healthDeclaration',v)}/>
-          <Radio name="healthDeclaration" value="prefer_not" label="Prefer not to say" checked={form.healthDeclaration==='prefer_not'} onChange={v=>u('healthDeclaration',v)}/>
-        </div>
-      </Field>
-      {form.healthDeclaration === 'yes' && (
-        <Field label="Brief details" hint="This is encrypted and confidential. Only share what you are comfortable with.">
-          <textarea className="f-textarea" rows={2} value={form.healthDetails} onChange={e=>u('healthDetails',e.target.value)} placeholder="e.g. Managed diabetes — no impact on duties. Or: Reduced mobility in left arm."/>
-        </Field>
-      )}
     </StepShell>
   );
 }
@@ -2181,7 +2155,7 @@ function ProfileBuilder() {
     { name:'Driving & Transport', short:'Drive', complete: completedSteps.has('driving'), started: completedSteps.has('driving') || !!profileData.driving },
     { name:'Sectors & Availability', short:'Work', complete: completedSteps.has('sectors'), started: completedSteps.has('sectors') || !!profileData.sectors },
     { name:'Qualifications', short:'Quals', complete: completedSteps.has('qualifications'), started: completedSteps.has('qualifications') || !!profileData.qualifications },
-    { name:'Criminal Record', short:'Record', complete: completedSteps.has('background'), started: completedSteps.has('background') || !!profileData.background },
+    { name:'Professional Background', short:'Background', complete: completedSteps.has('background'), started: completedSteps.has('background') || !!profileData.background },
     { name:'About You', short:'About', complete: completedSteps.has('interview'), started: completedSteps.has('interview') || !!profileData.interview },
     { name:'Work History', short:'Work H', complete: completedSteps.has('employment'), started: completedSteps.has('employment') || !!profileData.employment?.length },
     { name:'Address History', short:'Addr', complete: completedSteps.has('addresses'), started: completedSteps.has('addresses') || !!profileData.addresses?.length },
@@ -2285,8 +2259,6 @@ function ProfileBuilder() {
           forces_years: parseInt(b.yearsServed || b.forces_years || 0) || null,
           forces_discharge_type: b.dischargeType || b.forces_discharge_type || null,
           served_in_police: false,
-          has_criminal_record: b.hasCriminal === 'yes' || b.has_criminal_record || false,
-          criminal_record: b.criminalDetails || b.criminal_record || null,
           has_dbs_certificate: false,
         }, getToken); } catch(e) { console.error('Failed to save background:', e.message); }
       }
@@ -2666,14 +2638,6 @@ function CVPanel({ profileData, userName, mobileOpen, onMobileClose }) {
           })}
         </div>
       )}
-
-      {/* Criminal disclosure */}
-      <div style={sectionStyle}>
-        <div style={titleStyle}>Criminal Disclosure</div>
-        <div style={{fontSize:'0.73rem',color:'#374151'}}>
-          {background.has_criminal_record ? 'Unspent convictions declared — see attached disclosure' : 'No unspent convictions declared by candidate'}
-        </div>
-      </div>
 
       <div style={{marginTop:'1rem',fontSize:'0.62rem',color:'#94a3b8',borderTop:'1px solid #f1f5f9',paddingTop:'0.5rem'}}>
         This document is confidential and for vetting purposes only · UKSecurityJobs.co.uk · {new Date().toLocaleDateString('en-GB')}
@@ -3146,7 +3110,7 @@ function Dashboard() {
     { name:'Driving & Transport', short:'Drive', complete: !!profileData?.driving, started: !!profileData?.driving },
     { name:'Sectors & Availability', short:'Work', complete: !!(profileData?.sectors?.sectors?.length || profileData?.sectors?.preferred_shift), started: !!profileData?.sectors },
     { name:'Qualifications', short:'Quals', complete: !!profileData?.qualifications, started: !!profileData?.qualifications },
-    { name:'Criminal Record', short:'Record', complete: !!(profileData?.background?.has_criminal_record !== undefined || profileData?.background?.has_criminal_record !== null) && !!profileData?.background, started: !!profileData?.background },
+    { name:'Professional Background', short:'Background', complete: !!profileData?.background, started: !!profileData?.background },
     { name:'Work History', short:'Work H', complete: profileData?.employment?.length > 0, started: !!profileData?.employment?.length },
     { name:'Address History', short:'Addr', complete: profileData?.addresses?.length > 0, started: !!profileData?.addresses?.length },
   ];
