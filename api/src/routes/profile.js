@@ -183,10 +183,6 @@ router.get('/background', async (req, res) => {
     if (error && error.code === 'PGRST116') return res.json({ background: null });
     if (error) throw error;
 
-    // Strip criminal record fields from response
-    delete data.criminal_record_encrypted;
-    delete data.has_criminal_record;
-
     res.json({ background: data });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch professional background' });
@@ -203,11 +199,9 @@ router.put('/background', async (req, res) => {
       candidate_id: candidateId,
       served_in_forces: b.served_in_forces ?? false,
       forces_branch: b.forces_branch || null,
-      forces_rank: b.forces_rank || null,
       forces_years: b.forces_years || null,
-      forces_discharge_type: b.forces_discharge_type || null,
       served_in_police: b.served_in_police ?? false,
-      has_dbs_certificate: b.has_dbs_certificate ?? false,
+      police_years: b.police_years || null,
     };
 
     const { data, error } = await supabase

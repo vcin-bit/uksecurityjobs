@@ -104,7 +104,7 @@ router.patch('/me/step', async (req, res) => {
   }
 });
 
-// GET /api/candidates/me/personal — get personal details (decrypts NI)
+// GET /api/candidates/me/personal — get personal details
 router.get('/me/personal', async (req, res) => {
   try {
     const { data: candidate } = await supabase
@@ -126,11 +126,6 @@ router.get('/me/personal', async (req, res) => {
     }
     if (error) throw error;
 
-    // Remove encrypted NI if present (legacy field — no longer used)
-    if (personal.ni_number_encrypted) {
-      delete personal.ni_number_encrypted;
-    }
-
     await auditLog({
       tableName: 'personal_details',
       recordId: personal.id,
@@ -146,7 +141,7 @@ router.get('/me/personal', async (req, res) => {
   }
 });
 
-// PUT /api/candidates/me/personal — save personal details (encrypts NI)
+// PUT /api/candidates/me/personal — save personal details
 router.put('/me/personal', async (req, res) => {
   try {
     const { data: candidate } = await supabase
@@ -160,7 +155,6 @@ router.put('/me/personal', async (req, res) => {
     const {
       first_name, last_name, date_of_birth, phone,
       address_line1, address_line2, city, county, postcode, move_in_date,
-      has_ni_number,
       bs7858_5yr_eligible, sia_address_match, dvla_address_match
     } = req.body;
 
@@ -168,7 +162,6 @@ router.put('/me/personal', async (req, res) => {
       candidate_id: candidate.id,
       first_name, last_name, date_of_birth, phone,
       address_line1, address_line2, city, county, postcode, move_in_date,
-      has_ni_number: has_ni_number !== undefined ? has_ni_number : null,
       bs7858_5yr_eligible, sia_address_match, dvla_address_match,
     };
 
