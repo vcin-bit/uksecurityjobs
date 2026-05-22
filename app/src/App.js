@@ -656,24 +656,6 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
       )}
 
       <div className="divider"></div>
-      <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.25rem'}}>National Insurance Number</div>
-      <div style={{background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'0.875rem 1rem',marginBottom:'1rem',fontSize:'0.8rem',color:'#0369a1',lineHeight:1.65}}>
-        We do not store your National Insurance number. You will provide it directly to your employer or their BS7858 vetting provider when you start work. We simply need to know whether you have one.
-      </div>
-      <Field label="Do you have a National Insurance number? *">
-        <Select value={form.has_ni_number===true?'yes':form.has_ni_number===false?'no':''} onChange={v=>u('has_ni_number', v==='yes' ? true : v==='no' ? false : null)}>
-          <option value="">Select</option>
-          <option value="yes">Yes — I have a National Insurance number</option>
-          <option value="no">No — I do not have a National Insurance number</option>
-        </Select>
-      </Field>
-      {form.has_ni_number === false && (
-        <div style={{background:'#fff7ed',border:'1px solid #fed7aa',borderRadius:'8px',padding:'0.875rem 1rem',fontSize:'0.8rem',color:'#9a3412',lineHeight:1.65}}>
-          You will need a National Insurance number to work legally in the UK. You can apply at <a href="https://www.gov.uk/apply-national-insurance-number" target="_blank" rel="noopener" style={{color:'#9a3412',fontWeight:700}}>GOV.UK →</a>. Some employers may require one before offering you a role.
-        </div>
-      )}
-
-      <div className="divider"></div>
       <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.25rem'}}>Current Address</div>
       <div style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1rem'}}>We need your current address to verify your SIA licence and begin BS7858 checks.</div>
 
@@ -1260,9 +1242,9 @@ function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
   const [form, setForm] = useState({
     hasForces: raw.hasForces || (raw.served_in_forces ? 'yes' : raw.served_in_forces === false ? 'no' : ''),
     forcesBranch: raw.forcesBranch || raw.forces_branch || '',
-    forcesRank: raw.forcesRank || raw.forces_rank || '',
     forcesYears: raw.forcesYears || raw.forces_years || '',
-    forcesDischarge: raw.forcesDischarge || raw.forces_discharge_type || '',
+    hasPolice: raw.hasPolice || (raw.served_in_police ? 'yes' : raw.served_in_police === false ? 'no' : ''),
+    policeYears: raw.policeYears || raw.police_years || '',
   });
   const u = (f,v) => setForm({...form,[f]:v});
   const save = () => { onChange({ background: form }); onNext(); };
@@ -1271,7 +1253,15 @@ function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
     return (
       <CompletedStep
         title="Professional Background"
-        summary={(() => { const d=data.background||{}; return [{label:"Forces/Police",value:d.served_in_forces||d.hasForces=="yes"?d.forces_branch||d.forcesBranch||"Yes":"No"}]; })()}
+        summary={(() => {
+          const d = data.background || {};
+          const mil = d.served_in_forces || d.hasForces === 'yes';
+          const pol = d.served_in_police || d.hasPolice === 'yes';
+          return [
+            { label: 'Military', value: mil ? (d.forces_branch || d.forcesBranch || 'Yes') : 'No' },
+            { label: 'Police', value: pol ? 'Yes' : 'No' },
+          ];
+        })()}
         onEdit={() => setEditing(true)}
         onBack={onBack}
         onNext={onNext}
@@ -1281,27 +1271,27 @@ function StepBackground({ data, onChange, onBack, onNext, isComplete }) {
 
   return (
     <StepShell step={7} total={11} title="Professional Background"
-      why="Armed forces and police backgrounds are highly valued by security employers. BID accreditation opens doors to town centre and retail roles. Be proud of your background — it sets you apart."
+      why="Armed forces and police backgrounds are highly valued by security employers and help you stand out. This section is optional."
       onBack={onBack} onNext={save}>
-      <Field label="Do you have an armed forces or police background?">
+      <Field label="Have you served in the UK armed forces?">
         <div className="radio-row"><Radio name="hasForces" value="yes" label="Yes" checked={form.hasForces==='yes'} onChange={v=>u('hasForces',v)}/><Radio name="hasForces" value="no" label="No" checked={form.hasForces==='no'} onChange={v=>u('hasForces',v)}/></div>
       </Field>
       {form.hasForces==='yes' && <div className="field-row">
-        <Field label="Branch / Force">
+        <Field label="Branch">
           <Select value={form.forcesBranch} onChange={v=>u('forcesBranch',v)}>
             <option value="">Select</option>
-            {['British Army','Royal Navy','Royal Air Force','Royal Marines','Police Service','Other'].map(b=><option key={b}>{b}</option>)}
+            {['British Army','Royal Navy','Royal Air Force','Royal Marines','Other'].map(b=><option key={b}>{b}</option>)}
           </Select>
         </Field>
-        <Field label="Rank / Grade"><Input type="text" placeholder="e.g. Sergeant, PC" value={form.forcesRank} onChange={v=>u('forcesRank',fmt.titleCase(v))}/></Field>
         <Field label="Years Served"><Input type="text" placeholder="e.g. 8" value={form.forcesYears} onChange={v=>u('forcesYears',v)}/></Field>
       </div>}
-      {form.hasForces==='yes' && <Field label="Type of discharge / departure">
-        <Select value={form.forcesDischarge} onChange={v=>u('forcesDischarge',v)}>
-          <option value="">Select</option>
-          {['Honourable discharge','Medical discharge','Voluntary exit','Retirement','Other'].map(d=><option key={d}>{d}</option>)}
-        </Select>
-      </Field>}
+      <div className="divider"></div>
+      <Field label="Have you served as a UK police officer?">
+        <div className="radio-row"><Radio name="hasPolice" value="yes" label="Yes" checked={form.hasPolice==='yes'} onChange={v=>u('hasPolice',v)}/><Radio name="hasPolice" value="no" label="No" checked={form.hasPolice==='no'} onChange={v=>u('hasPolice',v)}/></div>
+      </Field>
+      {form.hasPolice==='yes' && <div className="field-row">
+        <Field label="Years Served"><Input type="text" placeholder="e.g. 5" value={form.policeYears} onChange={v=>u('policeYears',v)}/></Field>
+      </div>}
     </StepShell>
   );
 }
@@ -2186,7 +2176,6 @@ function ProfileBuilder() {
           county: p.county || null,
           postcode: p.postcode || '',
           move_in_date: movedIn || null,
-          has_ni_number: p.has_ni_number !== undefined ? p.has_ni_number : null,
           sia_address_match: p.siaAddress === 'yes' || p.sia_address_match === true,
           dvla_address_match: p.dvlaAddress === 'yes' || p.dvla_address_match === true,
         }, getToken); } catch(e) { console.error("Failed to save personal details:", e.message); }
@@ -2255,11 +2244,9 @@ function ProfileBuilder() {
         try { await apiRequest('/api/profile/background', 'PUT', {
           served_in_forces: b.hasForces === 'yes' || b.served_in_forces || false,
           forces_branch: b.forcesBranch || b.forces_branch || null,
-          forces_rank: b.forcesRank || b.forces_rank || null,
-          forces_years: parseInt(b.yearsServed || b.forces_years || 0) || null,
-          forces_discharge_type: b.dischargeType || b.forces_discharge_type || null,
-          served_in_police: false,
-          has_dbs_certificate: false,
+          forces_years: parseInt(b.forcesYears || b.forces_years || 0) || null,
+          served_in_police: b.hasPolice === 'yes' || b.served_in_police || false,
+          police_years: parseInt(b.policeYears || b.police_years || 0) || null,
         }, getToken); } catch(e) { console.error('Failed to save background:', e.message); }
       }
       if (d.photo) {
@@ -2526,14 +2513,21 @@ function CVPanel({ profileData, userName, mobileOpen, onMobileClose }) {
       ) : null}
 
       {/* Military/Police */}
-      {background.served_in_forces && (
+      {(background.served_in_forces || background.served_in_police) && (
         <div style={sectionStyle}>
           <div style={titleStyle}>Service Background</div>
-          <div style={{...jobStyle, borderBottom:'none', paddingBottom:0}}>
-            <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222'}}>{background.forces_rank || 'Veteran'}</div>
-            <div style={{fontSize:'0.75rem',color:'#475569'}}>{background.forces_branch}{background.forces_years ? ' · '+background.forces_years+' years served' : ''}</div>
-            {background.forces_discharge_type && <div style={{fontSize:'0.72rem',color:'#64748b',marginTop:'0.2rem'}}>{background.forces_discharge_type}</div>}
-          </div>
+          {background.served_in_forces && (
+            <div style={{...jobStyle, borderBottom:'none', paddingBottom:0}}>
+              <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222'}}>{background.forces_branch || 'Armed Forces'}</div>
+              {background.forces_years && <div style={{fontSize:'0.75rem',color:'#475569'}}>{background.forces_years} years served</div>}
+            </div>
+          )}
+          {background.served_in_police && (
+            <div style={{...jobStyle, borderBottom:'none', paddingBottom:0}}>
+              <div style={{fontWeight:700,fontSize:'0.82rem',color:'#0b1222'}}>Police Service</div>
+              {background.police_years && <div style={{fontSize:'0.75rem',color:'#475569'}}>{background.police_years} years served</div>}
+            </div>
+          )}
         </div>
       )}
 
@@ -3982,7 +3976,6 @@ function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken,
                   <div style={{background:'#f8fafc',borderRadius:'8px',padding:'1rem',border:'1px solid #e2e8f0',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem',fontSize:'0.85rem'}}>
                     <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Full name</span><div style={{fontWeight:700,color:'#0b1222'}}>{p.first_name||'—'} {p.last_name||''}</div></div>
                     <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Date of birth</span><div style={{fontWeight:600,color:'#0b1222'}}>{p.date_of_birth ? new Date(p.date_of_birth).toLocaleDateString('en-GB') : '—'}</div></div>
-                    <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>National Insurance</span><div style={{fontWeight:600,color:p.has_ni_number===true?'#15803d':p.has_ni_number===false?'#dc2626':'#94a3b8'}}>{p.has_ni_number===true?'Confirmed held — will provide at vetting':p.has_ni_number===false?'No NI number — candidate to clarify':'Not declared'}</div></div>
                     <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Right to work</span><div><RtwBadge status={p.right_to_work_status}/></div></div>
                     <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Phone</span><div style={{fontWeight:600,color:'#0b1222'}}>{p.phone||'—'}</div></div>
                     <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>SIA address match</span><div style={{fontWeight:600,color:p.sia_address_match?'#15803d':'#dc2626'}}>{p.sia_address_match?'Yes — declared match':'Not confirmed'}</div></div>
