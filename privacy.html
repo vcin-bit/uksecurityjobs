@@ -88,8 +88,6 @@ footer{background:#0b1222;padding:2.5rem 2rem;}
     <li>Employment history including employer details and reference contacts</li>
     <li>Driving licence details and vehicle information</li>
     <li>Qualifications, certifications and training records</li>
-    <li>Criminal record disclosures (encrypted at rest, voluntary)</li>
-    <li>Health declarations (encrypted at rest, voluntary)</li>
     <li>Interview responses and professional profile information</li>
     <li>Right to work documentation</li>
     <li>Profile photo (if uploaded)</li>
@@ -131,19 +129,15 @@ footer{background:#0b1222;padding:2.5rem 2rem;}
   <p>We process your personal data under the following lawful bases:</p>
   <ul>
     <li><strong>Contract:</strong> Processing necessary to provide the platform services you have signed up for</li>
-    <li><strong>Consent:</strong> Where you have explicitly consented — including health declarations and criminal record disclosures</li>
+    <li><strong>Consent:</strong> Where you have given specific consent — for example, for optional profile information you choose to provide, or to receive updates about the platform if you have asked us to.</li>
     <li><strong>Legitimate interests:</strong> To improve our platform, prevent fraud and ensure security</li>
     <li><strong>Legal obligation:</strong> Where required by law</li>
   </ul>
 
-  <h2>5. Sensitive Personal Data</h2>
-  <p>Certain information you may provide — including SIA licence numbers, criminal record disclosures and health declarations — is classified as sensitive personal data. This data is:</p>
-  <ul>
-    <li>Encrypted at the field level in our database</li>
-    <li>Only accessible to you and, where you explicitly apply for a role, to the relevant employer</li>
-    <li>Never shared with third parties without your explicit consent</li>
-    <li>Only processed with your explicit consent, which you may withdraw at any time</li>
-  </ul>
+  <h2>5. Special Category and Criminal Offence Data</h2>
+  <p>We have deliberately designed UKSecurityJobs so that we do <strong>not</strong> collect special category personal data (such as health, ethnicity, religion, or sexual orientation) or criminal offence data (such as criminal convictions or driving bans).</p>
+  <p>Where eligibility for security work depends on these matters, that assessment rests with the relevant authorities and employers: the Security Industry Authority carries out the statutory criminal record check when it issues a licence, and your employer carries out BS7858 vetting before you start work. We do not duplicate those checks, and we do not ask you to disclose that information to us.</p>
+  <p>The most sensitive information we do hold is your SIA licence number and your address history. These are encrypted and access to them is strictly limited.</p>
 
   <h2>6. Data Sharing</h2>
   <p>We do not sell your personal data. We share data only in the following circumstances:</p>
@@ -183,7 +177,7 @@ footer{background:#0b1222;padding:2.5rem 2rem;}
   <h2>10. Data Security</h2>
   <p>We implement appropriate technical and organisational measures to protect your personal data, including:</p>
   <ul>
-    <li>Field-level encryption for sensitive data (SIA licence numbers, criminal disclosures)</li>
+    <li>Field-level encryption for SIA licence numbers</li>
     <li>HTTPS encryption for all data in transit</li>
     <li>Row-level security on database tables</li>
     <li>Authentication via Clerk with industry-standard security</li>
