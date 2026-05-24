@@ -556,7 +556,7 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
           { label:'Date of Birth', value: d.date_of_birth || '' },
           { label:'Right to Work', value: d.right_to_work_status || '' },
           { label:'Address', value: [d.address_line1, d.city, d.postcode].filter(Boolean).join(', ') },
-          { label:'SIA Address Match', value: d.sia_address_match === true ? 'Yes' : d.sia_address_match === false ? 'No — update needed' : '' },
+          { label:'SIA Address', value: d.sia_address_match === true ? 'You confirmed it matches' : d.sia_address_match === false ? 'You said it needs updating' : '' },
         ]}
         onEdit={() => setEditing(true)}
         onBack={onBack}
@@ -872,7 +872,7 @@ function StepDriving({ data, onChange, onBack, onNext, isComplete }) {
     return (
       <CompletedStep
         title="Driving & Transport"
-        summary={(() => { const d=data.driving||{}; return [{label:"Driving Licence",value:d.hasLicence=="yes"||d.has_driving_licence?"Yes":"No"},{label:"Licence Type",value:d.licenceType||d.licence_type||""},{label:"Own Transport",value:d.hasTransport=="yes"||d.has_own_vehicle?"Yes":"No"},{label:"Travel Radius",value:d.travelRadius||d.travel_radius_miles?d.travelRadius||d.travel_radius_miles+" miles":""},{label:"DVLA Address",value:d.dvlaAddress=="yes"?"Matches":d.dvlaAddress=="no"?"Mismatch":""}]; })()}
+        summary={(() => { const d=data.driving||{}; return [{label:"Driving Licence",value:d.hasLicence=="yes"||d.has_driving_licence?"Yes":"No"},{label:"Licence Type",value:d.licenceType||d.licence_type||""},{label:"Own Transport",value:d.hasTransport=="yes"||d.has_own_vehicle?"Yes":"No"},{label:"Travel Radius",value:d.travelRadius||d.travel_radius_miles?d.travelRadius||d.travel_radius_miles+" miles":""},{label:"DVLA Address",value:d.dvlaAddress=="yes"?"You confirmed it matches":d.dvlaAddress=="no"?"You said it doesn't match":""}]; })()}
         onEdit={() => setEditing(true)}
         onBack={onBack}
         onNext={onNext}
