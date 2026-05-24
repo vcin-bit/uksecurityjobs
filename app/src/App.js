@@ -3591,7 +3591,7 @@ function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken,
   const [msgType, setMsgType] = React.useState('general');
   const [msgSending, setMsgSending] = React.useState(false);
   // Rating state
-  const [rating, setRating] = React.useState({ turned_up:true, punctual:null, professional_presentation:null, profile_accuracy:null, communication_quality:null, would_recommend:true, notes:'' });
+  const [rating, setRating] = React.useState({ turned_up:true, punctual:null, preparedness_professionalism:null, profile_accuracy:null, communication_quality:null, would_recommend:true, notes:'' });
   const [ratingSaved, setRatingSaved] = React.useState(false);
   // Slot scheduling state
   const [slots, setSlots] = React.useState([{datetime:''}]);
@@ -4110,19 +4110,20 @@ function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken,
                 ) : (
                   <div>
                     <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'8px',padding:'0.875rem 1rem',marginBottom:'1.25rem',fontSize:'0.78rem',color:'#64748b',lineHeight:1.65}}>
-                      Your rating contributes to the candidate's platform reputation score. It is not shared directly with the candidate but is visible to UKSecurityJobs admin and informs future employers' decisions. Rate honestly.
+                      Your rating contributes to the candidate's platform reputation score. It is not shared directly with the candidate but is visible to UKSecurityJobs admin and informs future employers' decisions. Rate only on job-relevant conduct — do not rate appearance, accent, or anything related to a protected characteristic.
                     </div>
 
                     {[
                       { key:'turned_up', label:'Candidate attended the interview', type:'bool' },
                       { key:'punctual', label:'Arrived on time', type:'bool' },
-                      { key:'professional_presentation', label:'Professional presentation and dress', type:'score' },
+                      { key:'preparedness_professionalism', label:'Preparedness and professionalism', type:'score', hint:'How well-prepared was the candidate for a professional interview? 5 = fully prepared, brought required documents and CV, professional and interview-ready. 3 = adequately prepared, some gaps. 1 = unprepared, no documents or CV, not interview-ready.' },
                       { key:'profile_accuracy', label:'Profile accurately reflected their experience', type:'score' },
                       { key:'communication_quality', label:'Quality of communication during interview', type:'score' },
                       { key:'would_recommend', label:'Would you shortlist this candidate for another suitable role?', type:'bool' },
-                    ].map(({ key, label, type }) => (
+                    ].map(({ key, label, type, hint }) => (
                       <div key={key} style={{marginBottom:'1rem',paddingBottom:'1rem',borderBottom:'1px solid #f1f5f9'}}>
                         <div style={{fontSize:'0.85rem',fontWeight:600,color:'#334155',marginBottom:'0.5rem'}}>{label}</div>
+                        {hint && <div style={{fontSize:'0.72rem',color:'#94a3b8',marginBottom:'0.5rem',lineHeight:1.5}}>{hint}</div>}
                         {type === 'bool' ? (
                           <div style={{display:'flex',gap:'0.5rem'}}>
                             {[['Yes',true],['No',false]].map(([lbl,val])=>(
@@ -4150,6 +4151,7 @@ function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken,
                       <textarea value={rating.notes} onChange={e=>setRating(r=>({...r,notes:e.target.value}))} rows={3}
                         placeholder="Any additional observations for the platform record..."
                         style={{width:'100%',padding:'0.6rem 0.875rem',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'0.85rem',fontFamily:'inherit',resize:'vertical'}}/>
+                      <div style={{fontSize:'0.72rem',color:'#94a3b8',marginTop:'0.35rem',lineHeight:1.5}}>Notes must relate to job-relevant conduct only. Do not record appearance or anything tied to a protected characteristic.</div>
                     </div>
 
                     <button onClick={saveRating}
