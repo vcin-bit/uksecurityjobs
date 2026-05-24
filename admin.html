@@ -113,8 +113,6 @@ tr:hover td{background:#fafbfc;}
 .detail label{display:block;font-size:0.7rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.3rem;}
 .detail span{font-size:0.875rem;color:var(--navy);font-weight:500;}
 .sensitive{font-family:'SF Mono',Monaco,monospace;background:#f0f4ff;color:var(--blue);padding:0.15rem 0.45rem;border-radius:4px;font-size:0.78rem;}
-.criminal-box{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:1rem 1.25rem;}
-.criminal-box .panel-section-title{color:var(--red);border-color:#fecaca;}
 .job-item,.addr-item{padding:0.75rem 0;border-bottom:1px solid #f8fafc;}
 .job-item:last-child,.addr-item:last-child{border-bottom:none;}
 .job-title-row{font-weight:600;font-size:0.875rem;color:var(--navy);margin-bottom:0.2rem;}
@@ -425,7 +423,6 @@ async function viewCandidate(id) {
           <div class="detail"><label>Full Name</label><span>${p.first_name||''} ${p.last_name||''}</span></div>
           <div class="detail"><label>Date of Birth</label><span>${fd(p.date_of_birth)}</span></div>
           <div class="detail"><label>Phone</label><span>${p.phone||'—'}</span></div>
-          <div class="detail"><label>NI Number</label><span class="sensitive">${p.ni_number||'—'}</span></div>
           <div class="detail" style="grid-column:1/-1"><label>Current Address</label><span>${[p.address_line1,p.address_line2,p.city,p.county,p.postcode].filter(Boolean).join(', ')||'—'}</span></div>
           <div class="detail"><label>SIA Address Match</label><span>${p.sia_address_match?'Yes':'No'}</span></div>
           <div class="detail"><label>DVLA Address Match</label><span>${p.dvla_address_match?'Yes':'No'}</span></div>
@@ -466,12 +463,6 @@ async function viewCandidate(id) {
         </div>`).join('')}
       </div>` : ''}
 
-      ${d.background?.has_criminal_record ? `<div class="panel-section">
-        <div class="criminal-box">
-          <div class="panel-section-title">Criminal Disclosure</div>
-          <p style="font-size:0.875rem;color:var(--navy);line-height:1.6">${d.background.criminal_record||'—'}</p>
-        </div>
-      </div>` : ''}
     `;
   } catch(e) {
     document.getElementById('panelBody').innerHTML = '<div class="empty">Failed to load profile</div>';
