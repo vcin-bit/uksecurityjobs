@@ -191,9 +191,17 @@ router.put('/me/personal', async (req, res) => {
 // PUT /api/candidates/me/interview
 router.put('/me/interview', async (req, res) => {
   try {
+    const { whyHire, proudOf, availability, salary } = req.body;
+    const interview_answers = {
+      whyHire: whyHire || null,
+      proudOf: proudOf || null,
+      availability: availability || null,
+      salary: salary || null,
+    };
+
     const { data: candidate, error } = await supabase
       .from('candidates')
-      .update({ interview_answers: req.body })
+      .update({ interview_answers })
       .eq('clerk_user_id', req.userId)
       .select().single();
 

@@ -1289,8 +1289,6 @@ function StepInterview({ data, onChange, onBack, onNext, isComplete }) {
   const [form, setForm] = useState({
     whyHire: raw.whyHire || '',
     proudOf: raw.proudOf || '',
-    difficult: raw.difficult || '',
-    strengthen: raw.strengthen || '',
     availability: raw.availability || '',
     salary: raw.salary || '',
   });
@@ -1324,14 +1322,6 @@ function StepInterview({ data, onChange, onBack, onNext, isComplete }) {
 
       <Field label="What are you most proud of in your security career?" hint="A specific situation, achievement or moment that shows your character.">
         <textarea className="f-textarea" rows={3} placeholder="e.g. Successfully managing a hostile situation at a licensed premises without escalation or police involvement." value={form.proudOf} onChange={e=>u('proudOf',e.target.value)}/>
-      </Field>
-
-      <Field label="Describe a difficult situation you handled well." hint="Employers want to know how you react under pressure.">
-        <textarea className="f-textarea" rows={3} placeholder="e.g. Dealt with a medical emergency on site before paramedics arrived — administered first aid and kept bystanders calm." value={form.difficult} onChange={e=>u('difficult',e.target.value)}/>
-      </Field>
-
-      <Field label="What would you do to strengthen this industry?" hint="Optional — shows professional thinking and ambition.">
-        <textarea className="f-textarea" rows={2} placeholder="e.g. Better training standards and clearer career progression routes for front-line officers." value={form.strengthen} onChange={e=>u('strengthen',e.target.value)}/>
       </Field>
 
       <div className="divider"></div>
