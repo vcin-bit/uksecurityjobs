@@ -155,14 +155,14 @@ router.put('/me/personal', async (req, res) => {
     const {
       first_name, last_name, date_of_birth, phone,
       address_line1, address_line2, city, county, postcode, move_in_date,
-      bs7858_5yr_eligible, sia_address_match, dvla_address_match
+      sia_address_match, dvla_address_match
     } = req.body;
 
     const payload = {
       candidate_id: candidate.id,
       first_name, last_name, date_of_birth, phone,
       address_line1, address_line2, city, county, postcode, move_in_date,
-      bs7858_5yr_eligible, sia_address_match, dvla_address_match,
+      sia_address_match, dvla_address_match,
     };
 
     const { data: personal, error } = await supabase
