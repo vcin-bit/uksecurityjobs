@@ -84,7 +84,7 @@ router.post('/jobs', async (req, res) => {
       created_at: new Date().toISOString()
     }).select().single();
     if (error) throw error;
-    await auditLog(req.userId, 'job_posted', { job_id: data.id, title: data.title });
+    await auditLog({ tableName: 'jobs', recordId: data.id, action: 'INSERT', performedBy: req.userId, ipAddress: req.ip, changes: { title: data.title } });
     res.json({ success: true, job: data, free_job_used: true });
   } catch(err) { console.error('POST /employers/jobs error:', err); res.status(500).json({ error: 'Failed to post job' }); }
 });
@@ -121,7 +121,7 @@ router.patch('/jobs/:id/status', async (req, res) => {
     };
     const { data, error } = await supabase.from('jobs').update(update).eq('id', req.params.id).eq('employer_id', employerId).select().single();
     if (error) throw error;
-    await auditLog(req.userId, `job_${status}`, { job_id: req.params.id, pause_reason: pause_reason||null });
+    await auditLog({ tableName: 'jobs', recordId: req.params.id, action: 'UPDATE', performedBy: req.userId, ipAddress: req.ip, changes: { status, pause_reason: pause_reason || null } });
     res.json({ success: true, job: data });
   } catch(err) { console.error('PATCH /employers/jobs/:id/status error:', err); res.status(500).json({ error: 'Failed to update job status' }); }
 });
@@ -265,7 +265,7 @@ router.patch('/applications/:id', async (req, res) => {
       }
     }
 
-    await auditLog(req.userId, 'application_updated', { application_id: req.params.id, status: status || (no_show ? 'no_show' : null) });
+    await auditLog({ tableName: 'job_applications', recordId: req.params.id, action: 'UPDATE', performedBy: req.userId, ipAddress: req.ip, changes: { status: status || (no_show ? 'no_show' : null) } });
     res.json({ success: true, application: data });
   } catch(err) {
     console.error('PATCH /employers/applications/:id error:', err);
@@ -342,11 +342,7 @@ router.get('/candidate/:id', async (req, res) => {
       ).eq('id', req.params.id).single(),
     ]);
 
-    await auditLog(req.userId, 'employer_view_candidate', {
-      candidate_id: req.params.id,
-      employer_id: employerId,
-      fields_accessed: 'data_minimised_employer_view'
-    });
+    await auditLog({ tableName: 'candidates', recordId: req.params.id, action: 'READ', performedBy: req.userId, ipAddress: req.ip, changes: { employer_id: employerId, fields_accessed: 'data_minimised_employer_view' } });
 
     res.json({
       candidate: {
