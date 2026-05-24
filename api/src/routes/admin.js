@@ -134,13 +134,9 @@ router.get('/candidate/:id', async (req, res) => {
       supabase.from('audit_log').select('*').eq('record_id', id).order('performed_at', { ascending: false }).limit(20),
     ]);
 
-    // Decrypt sensitive fields
     let personal = personalRes.status === 'fulfilled' ? personalRes.value.data : null;
-    if (personal?.ni_number_encrypted) {
-      personal.ni_number = await decrypt(personal.ni_number_encrypted).catch(() => '[decryption failed]');
-      delete personal.ni_number_encrypted;
-    }
 
+    // Decrypt SIA licence numbers
     let licences = siaRes.status === 'fulfilled' ? siaRes.value.data : [];
     licences = await Promise.all((licences || []).map(async (lic) => {
       const licence_number = await decrypt(lic.licence_number_encrypted).catch(() => '[decryption failed]');
@@ -149,10 +145,6 @@ router.get('/candidate/:id', async (req, res) => {
     }));
 
     let background = bgRes.status === 'fulfilled' ? bgRes.value.data : null;
-    if (background?.criminal_record_encrypted) {
-      background.criminal_record = await decrypt(background.criminal_record_encrypted).catch(() => '[decryption failed]');
-      delete background.criminal_record_encrypted;
-    }
 
     await auditLog({
       tableName: 'candidates',
