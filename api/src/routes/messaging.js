@@ -135,10 +135,10 @@ router.post('/:applicationId/rate-candidate', async (req, res) => {
     const app = await verifyAccess(req.params.applicationId, req.userId, 'employer');
     if (!app) return res.status(403).json({ error: 'Not authorised' });
 
-    const { turned_up, punctual, professional_presentation, profile_accuracy, communication_quality, would_recommend, notes } = req.body;
+    const { turned_up, punctual, preparedness_professionalism, profile_accuracy, communication_quality, would_recommend, notes } = req.body;
 
     // Calculate overall score (1-5)
-    const scores = [turned_up?5:1, punctual?5:1, professional_presentation, profile_accuracy, communication_quality].filter(s=>s!=null);
+    const scores = [turned_up?5:1, punctual?5:1, preparedness_professionalism, profile_accuracy, communication_quality].filter(s=>s!=null);
     const overall = scores.length ? Math.round(scores.reduce((a,b)=>a+Number(b),0)/scores.length*10)/10 : null;
 
     const { error: ratingErr } = await supabase.from('candidate_ratings').upsert({
@@ -147,7 +147,7 @@ router.post('/:applicationId/rate-candidate', async (req, res) => {
       employer_id: app.jobs?.employer_id,
       turned_up: turned_up !== false,
       punctual,
-      professional_presentation,
+      preparedness_professionalism,
       profile_accuracy,
       communication_quality,
       would_recommend: would_recommend !== false,
