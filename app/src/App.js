@@ -852,10 +852,6 @@ function StepDriving({ data, onChange, onBack, onNext, isComplete }) {
     yearsHeld: raw.yearsHeld || '',
     points: raw.points || '',
     endorsements: raw.endorsements || raw.endorsement_codes || [],
-    hasBan: raw.hasBan || (raw.has_ban_history ? 'yes' : ''),
-    banDate: raw.banDate || '',
-    banDuration: raw.banDuration || '',
-    banReason: raw.banReason || '',
     hasTransport: raw.hasTransport || (raw.has_own_vehicle ? 'yes' : raw.has_own_vehicle === false ? 'no' : ''),
     vehicleType: raw.vehicleType || '',
     taxed: raw.taxed || (raw.vehicle_taxed ? 'yes' : ''),
@@ -924,17 +920,6 @@ function StepDriving({ data, onChange, onBack, onNext, isComplete }) {
             </div>
           </Field>
         </>}
-        <Field label="Previous driving bans?">
-          <div className="radio-row">
-            <Radio name="hasBan" value="yes" label="Yes" checked={form.hasBan==='yes'} onChange={v=>u('hasBan',v)}/>
-            <Radio name="hasBan" value="no" label="No" checked={form.hasBan==='no'} onChange={v=>u('hasBan',v)}/>
-          </div>
-        </Field>
-        {form.hasBan === 'yes' && <div className="field-row">
-          <Field label="Date of ban"><div className="field-row" style={{gap:"0.5rem",marginBottom:0}}><Select value={form.banDateMonth||""} onChange={v=>u("banDateMonth",v)}><option value="">Month</option>{["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m,mi)=><option key={mi} value={String(mi+1).padStart(2,"0")}>{m}</option>)}</Select><Input type="number" placeholder="Year" min="2010" max={new Date().getFullYear()} value={form.banDateYear||""} onChange={v=>u("banDateYear",v)} style={{width:"90px"}}/></div></Field>
-          <Field label="Duration"><Input type="text" placeholder="e.g. 12 months" value={form.banDuration} onChange={v=>u('banDuration',v)}/></Field>
-          <Field label="Reason"><Input type="text" placeholder="e.g. SP30" value={form.banReason} onChange={v=>u('banReason',v)}/></Field>
-        </div>}
       </>}
       <div className="divider"></div>
       <Field label="Do you have your own transport?">
@@ -2189,7 +2174,6 @@ function ProfileBuilder() {
           has_driving_licence: dr.hasLicence === 'yes',
           licence_type: dr.licenceType === 'Full' ? 'Full UK' : dr.licenceType || null,
           endorsement_codes: dr.endorsements || [],
-          has_ban_history: dr.hasBan === 'yes',
           has_own_vehicle: dr.hasTransport === 'yes',
           vehicle_insured: dr.insured === 'yes',
           vehicle_taxed: dr.taxed === 'yes',

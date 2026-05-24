@@ -45,7 +45,6 @@ router.put('/driving', async (req, res) => {
       has_driving_licence: b.has_driving_licence ?? false,
       licence_type: b.licence_type || null,
       endorsement_codes: b.endorsement_codes || [],
-      has_ban_history: b.has_ban_history ?? false,
       has_own_vehicle: b.has_own_vehicle ?? false,
       vehicle_insured: b.vehicle_insured ?? false,
       vehicle_taxed: b.vehicle_taxed ?? false,
