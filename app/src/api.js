@@ -11,6 +11,13 @@ export async function apiRequest(path, method = 'GET', body = null, getToken) {
   };
   if (body) options.body = JSON.stringify(body);
   const res = await fetch(`${API_URL}${path}`, options);
+  if (res.status === 401) {
+    // Session expired or invalid — send the user to sign in.
+    if (window.location.pathname !== '/sign-in') {
+      window.location.href = '/sign-in';
+    }
+    throw new Error('Your session has expired. Please sign in again.');
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Request failed' }));
     throw new Error(err.error || `Request failed (${res.status})`);
