@@ -20,14 +20,15 @@ function Logo() {
 // ── NAV ──
 function Nav() {
   const { signOut } = useClerk();
-  const { getToken } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const [isEmployer, setIsEmployer] = React.useState(false);
 
   React.useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
     apiRequest('/api/employers/me', 'GET', null, getToken)
       .then(r => { if (r.employer) setIsEmployer(true); })
       .catch(() => {});
-  }, []);
+  }, [isLoaded, isSignedIn]);
 
   return (
     <nav className="nav">
