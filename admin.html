@@ -21,14 +21,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Ar
 .login-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:2.5rem;width:100%;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,0.06);}
 .login-logo{font-size:1.3rem;font-weight:800;letter-spacing:0.01em;margin-bottom:2rem;}
 .login-logo .uk{color:var(--blue);}.login-logo .sec{color:var(--navy);}.login-logo .job{color:var(--blue);}
-.login-title{font-size:1.25rem;font-weight:700;margin-bottom:0.4rem;}
-.login-sub{font-size:0.875rem;color:var(--body);margin-bottom:1.75rem;}
-.login-label{display:block;font-size:0.8rem;font-weight:600;color:var(--navy);margin-bottom:0.4rem;}
-.login-input{width:100%;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.95rem;font-family:inherit;transition:border-color 0.15s;margin-bottom:1rem;}
-.login-input:focus{outline:none;border-color:var(--blue);}
 .login-btn{width:100%;padding:0.8rem;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background 0.15s;}
 .login-btn:hover{background:#1545a0;}
-.login-error{background:#fef2f2;color:var(--red);border:1px solid #fecaca;padding:0.75rem 1rem;border-radius:8px;font-size:0.85rem;margin-bottom:1rem;display:none;}
 .login-badge{display:inline-flex;align-items:center;gap:0.4rem;background:#f0f4ff;color:var(--blue);font-size:0.75rem;font-weight:600;padding:0.3rem 0.75rem;border-radius:999px;margin-bottom:1.5rem;}
 
 /* APP */
@@ -137,8 +131,6 @@ tr:hover td{background:#fafbfc;}
   <div class="login-card">
     <div class="login-logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></div>
     <div class="login-badge">Admin Access</div>
-    <div class="login-title">Sign in to Admin</div>
-    <div class="login-sub">Restricted to authorised Digital Software Group personnel only.</div>
     <div id="clerk-signin"></div>
     <div id="notAdminMsg" style="display:none;color:#b91c1c;font-size:0.85rem;margin-top:0.75rem;">
       You are signed in but this account does not have admin access.
