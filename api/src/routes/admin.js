@@ -68,7 +68,7 @@ router.post('/sia/:id/verify', async (req, res) => {
       tableName: 'sia_licences',
       recordId: id,
       action: 'UPDATE',
-      performedBy: 'admin',
+      performedBy: req.userId,
       ipAddress: req.ip,
       changes: { verified: true }
     });
@@ -104,7 +104,7 @@ router.post('/sia/:id/reject', async (req, res) => {
       tableName: 'sia_licences',
       recordId: id,
       action: 'UPDATE',
-      performedBy: 'admin',
+      performedBy: req.userId,
       ipAddress: req.ip,
       changes: { verified: false, rejected: true }
     });
@@ -150,7 +150,7 @@ router.get('/candidate/:id', async (req, res) => {
       tableName: 'candidates',
       recordId: id,
       action: 'READ',
-      performedBy: 'admin',
+      performedBy: req.userId,
       ipAddress: req.ip
     });
 
