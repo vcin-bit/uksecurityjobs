@@ -5121,7 +5121,10 @@ function JobListingsPage() {
 }
 
 function ProtectedRoute({ children }) {
-  return <><SignedIn>{children}</SignedIn><SignedOut><Navigate to="/sign-in" replace/></SignedOut></>;
+  const { isLoaded, isSignedIn } = useUser();
+  if (!isLoaded) return null;
+  if (!isSignedIn) return <Navigate to="/sign-in" replace/>;
+  return children;
 }
 
 export default function App() {
