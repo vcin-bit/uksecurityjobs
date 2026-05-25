@@ -289,10 +289,6 @@ window.addEventListener('load', async function () {
 
 function applyAuthState() {
   if (!clerkReady) return;
-  console.log('APPLYAUTHSTATE', 'signedIn=', Clerk.isSignedIn,
-    'user=', Clerk.user ? 'yes' : 'no',
-    'publicMetadata=', JSON.stringify(Clerk.user && Clerk.user.publicMetadata),
-    'role=', Clerk.user && Clerk.user.publicMetadata && Clerk.user.publicMetadata.role);
   const signInDiv = document.getElementById('clerk-signin');
   const notAdmin = document.getElementById('notAdminMsg');
   const signOutBtn = document.getElementById('signOutBtn');
@@ -315,7 +311,10 @@ function applyAuthState() {
     if (notAdmin) notAdmin.style.display = 'none';
     if (signOutBtn) signOutBtn.style.display = 'none';
     if (signInDiv && !signInDiv.hasChildNodes()) {
-      Clerk.mountSignIn(signInDiv);
+      Clerk.mountSignIn(signInDiv, {
+        forceRedirectUrl: '/admin',
+        fallbackRedirectUrl: '/admin'
+      });
     }
   }
 }
