@@ -3308,7 +3308,7 @@ function SignInPage() {
   const [form, setForm] = useState({ email:'', password:'' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, setActive } = useSignIn();
+  const { signIn, setActive, isLoaded } = useSignIn();
 
   // Already signed in — redirect to dashboard
   React.useEffect(() => {
@@ -3317,6 +3317,7 @@ function SignInPage() {
 
   const handleSignIn = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
+    if (!isLoaded) { setLoading(false); return; }
     try {
       const result = await signIn.create({ identifier: form.email, password: form.password });
       await setActive({ session: result.createdSessionId });
@@ -3336,10 +3337,10 @@ function SignInPage() {
           <div className="auth-sub">Sign in to your UK Security Jobs account</div>
           <form className="auth-form" onSubmit={handleSignIn}>
             {error && <div className="auth-error">{error}</div>}
-            <div className="field"><label className="field-label">Email Address</label><input className="f-input" type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="your@email.com"/></div>
-            <div className="field"><label className="field-label">Password</label><input className="f-input" type="password" required value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Your password"/></div>
+            <div className="field"><label className="field-label" htmlFor="signin-email">Email Address</label><input id="signin-email" name="email" className="f-input" type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="your@email.com"/></div>
+            <div className="field"><label className="field-label" htmlFor="signin-password">Password</label><input id="signin-password" name="password" className="f-input" type="password" required value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Your password"/></div>
             <div style={{textAlign:'right',marginBottom:'0.5rem'}}><a href="/forgot-password" style={{fontSize:'0.82rem',color:'var(--blue)'}}>Forgot password?</a></div>
-            <button className="btn-full" type="submit" disabled={loading}>{loading?'Signing in...':'Sign In →'}</button>
+            <button className="btn-full" type="submit" disabled={loading || !isLoaded}>{loading?'Signing in...':'Sign In →'}</button>
           </form>
           <div className="auth-footer">Not registered? <a href="/sign-up">Create your profile</a></div>
           <div style={{marginTop:'1rem',paddingTop:'1rem',borderTop:'1px solid #f1f5f9',textAlign:'center',fontSize:'0.82rem',color:'#64748b'}}>
