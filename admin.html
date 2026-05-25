@@ -263,7 +263,6 @@ tr:hover td{background:#fafbfc;}
 </div>
 
 <script>
-console.log('ADMIN INLINE SCRIPT RUNNING', typeof Clerk, typeof window.Clerk);
 const API = 'https://uksecurityjobs-api.onrender.com';
 let queue = [];
 
@@ -278,7 +277,6 @@ async function req(path, method='GET', body=null) {
 
 let clerkReady = false;
 window.addEventListener('load', async function () {
-  console.log('ADMIN LOAD LISTENER FIRED', typeof Clerk);
   try {
     await Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } });
     clerkReady = true;
@@ -291,6 +289,10 @@ window.addEventListener('load', async function () {
 
 function applyAuthState() {
   if (!clerkReady) return;
+  console.log('APPLYAUTHSTATE', 'signedIn=', Clerk.isSignedIn,
+    'user=', Clerk.user ? 'yes' : 'no',
+    'publicMetadata=', JSON.stringify(Clerk.user && Clerk.user.publicMetadata),
+    'role=', Clerk.user && Clerk.user.publicMetadata && Clerk.user.publicMetadata.role);
   const signInDiv = document.getElementById('clerk-signin');
   const notAdmin = document.getElementById('notAdminMsg');
   const signOutBtn = document.getElementById('signOutBtn');
