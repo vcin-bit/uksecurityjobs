@@ -3309,7 +3309,6 @@ function SignInPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, setActive } = useSignIn();
-  const { getToken } = useAuth();
 
   // Already signed in — redirect to dashboard
   React.useEffect(() => {
@@ -3321,15 +3320,11 @@ function SignInPage() {
     try {
       const result = await signIn.create({ identifier: form.email, password: form.password });
       await setActive({ session: result.createdSessionId });
-      try {
-        const token = await getToken();
-        const res = await fetch('https://uksecurityjobs-api.onrender.com/api/employers/me', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        navigate(data.employer ? '/employer' : '/dashboard');
-      } catch { navigate('/dashboard'); }
-    } catch(err) { setError(err.errors?.[0]?.message || 'Invalid email or password.'); setLoading(false); }
+      navigate('/dashboard');
+    } catch(err) {
+      setError(err.errors?.[0]?.message || 'Invalid email or password.');
+      setLoading(false);
+    }
   };
   return (
     <div className="page">
