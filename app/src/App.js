@@ -3310,10 +3310,10 @@ function SignInPage() {
   const [loading, setLoading] = useState(false);
   const { signIn, setActive, isLoaded } = useSignIn();
 
-  // Already signed in — redirect to dashboard
+  // Single source of truth: navigate only when Clerk confirms signed in
   React.useEffect(() => {
-    if (isSignedIn) navigate('/dashboard');
-  }, [isSignedIn]);
+    if (isSignedIn) navigate('/dashboard', { replace: true });
+  }, [isSignedIn, navigate]);
 
   const handleSignIn = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
@@ -3321,7 +3321,7 @@ function SignInPage() {
     try {
       const result = await signIn.create({ identifier: form.email, password: form.password });
       await setActive({ session: result.createdSessionId });
-      navigate('/dashboard');
+      // Don't navigate — effect fires once isSignedIn flips to true
     } catch(err) {
       setError(err.errors?.[0]?.message || 'Invalid email or password.');
       setLoading(false);
