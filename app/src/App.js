@@ -3461,6 +3461,7 @@ function ForgotPasswordPage() {
   const [error, setError] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const { signIn, setActive } = useSignIn();
+  const navigate = useNavigate();
 
   const sendCode = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
@@ -3481,16 +3482,9 @@ function ForgotPasswordPage() {
       });
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
-        setTimeout(async () => {
-          try {
-            const token = await window.Clerk?.session?.getToken();
-            const res = await fetch('https://uksecurityjobs-api.onrender.com/api/employers/me', {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await res.json();
-            window.location.href = data.employer ? '/employer' : '/dashboard';
-          } catch { window.location.href = '/dashboard'; }
-        }, 500);
+        navigate('/dashboard');
+      } else {
+        setError('Could not complete the password reset. Please try again.');
       }
     } catch(err) {
       setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Invalid code or password too weak.');
