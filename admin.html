@@ -139,10 +139,11 @@ tr:hover td{background:#fafbfc;}
     <div class="login-badge">Admin Access</div>
     <div class="login-title">Sign in to Admin</div>
     <div class="login-sub">Restricted to authorised Digital Software Group personnel only.</div>
-    <div class="login-error" id="loginError">Incorrect password. Please try again.</div>
-    <label class="login-label">Admin Password</label>
-    <input type="password" class="login-input" id="adminPw" placeholder="Enter password" onkeydown="if(event.key==='Enter')login()"/>
-    <button class="login-btn" onclick="login()">Sign In</button>
+    <div id="clerk-signin"></div>
+    <div id="notAdminMsg" style="display:none;color:#b91c1c;font-size:0.85rem;margin-top:0.75rem;">
+      You are signed in but this account does not have admin access.
+    </div>
+    <button id="signOutBtn" onclick="clerkSignOut()" style="display:none;margin-top:0.75rem;" class="login-btn">Sign out</button>
   </div>
 </div>
 
@@ -167,7 +168,7 @@ tr:hover td{background:#fafbfc;}
         <div class="queue-pill hidden" id="queuePill" onclick="showSection('verification',document.querySelectorAll('.topnav-tab')[1])">
           <span id="queuePillCount">0</span> pending verification
         </div>
-        <button class="signout-btn" onclick="logout()">Sign out</button>
+        <button class="signout-btn" onclick="clerkSignOut()">Sign out</button>
       </div>
     </div>
   </div>
@@ -220,7 +221,7 @@ tr:hover td{background:#fafbfc;}
             <span style="font-size:0.85rem;color:#64748b;margin-left:0.5rem;">registrations</span>
           </div>
           <div style="display:flex;gap:0.5rem;">
-            <a id="waitlistExportLink" href="#" style="display:inline-block;padding:0.5rem 1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:0.82rem;font-weight:600;color:#0b1222;text-decoration:none;">Export CSV</a>
+            <button id="waitlistExportLink" onclick="exportWaitlist()" style="display:inline-block;padding:0.5rem 1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:0.82rem;font-weight:600;color:#0b1222;text-decoration:none;cursor:pointer;font-family:inherit;">Export CSV</button>
             <button onclick="sendLaunchEmail()" id="launchEmailBtn" style="padding:0.5rem 1rem;background:#0b1222;border:none;border-radius:7px;font-size:0.82rem;font-weight:700;color:#fff;cursor:pointer;">Send Launch Email</button>
           </div>
         </div>
@@ -271,39 +272,61 @@ tr:hover td{background:#fafbfc;}
 
 <script>
 const API = 'https://uksecurityjobs-api.onrender.com';
-let KEY = '';
 let queue = [];
 
 async function req(path, method='GET', body=null) {
-  const opts = { method, headers: { 'Content-Type': 'application/json', 'x-admin-key': KEY } };
+  const token = await Clerk.session.getToken();
+  const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } };
   if (body) opts.body = JSON.stringify(body);
   const r = await fetch(API + path, opts);
   if (!r.ok) throw new Error(r.status);
   return r.json();
 }
 
-function login() {
-  KEY = document.getElementById('adminPw').value.trim();
-  fetch(API + '/admin/api/stats', { headers: { 'Content-Type': 'application/json', 'x-admin-key': KEY } })
-    .then(r => {
-      if (r.ok) {
-        sessionStorage.setItem('ak', KEY);
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('app').classList.add('visible');
-        document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-        init();
-      } else {
-        document.getElementById('loginError').style.display = 'block';
-      }
-    }).catch(() => { document.getElementById('loginError').style.display = 'block'; });
+let clerkReady = false;
+window.addEventListener('load', async function () {
+  try {
+    await Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } });
+    clerkReady = true;
+    Clerk.addListener(applyAuthState);
+    applyAuthState();
+  } catch (e) {
+    console.error('Clerk failed to load', e);
+  }
+});
+
+function applyAuthState() {
+  if (!clerkReady) return;
+  const signInDiv = document.getElementById('clerk-signin');
+  const notAdmin = document.getElementById('notAdminMsg');
+  const signOutBtn = document.getElementById('signOutBtn');
+  if (Clerk.isSignedIn) {
+    const role = Clerk.user && Clerk.user.publicMetadata && Clerk.user.publicMetadata.role;
+    if (role === 'admin') {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('app').classList.add('visible');
+      document.getElementById('todayDate').textContent =
+        new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+      init();
+    } else {
+      // signed in but not an admin
+      if (signInDiv) signInDiv.style.display = 'none';
+      if (notAdmin) notAdmin.style.display = 'block';
+      if (signOutBtn) signOutBtn.style.display = 'block';
+    }
+  } else {
+    // not signed in — mount Clerk sign-in
+    if (notAdmin) notAdmin.style.display = 'none';
+    if (signOutBtn) signOutBtn.style.display = 'none';
+    if (signInDiv && !signInDiv.hasChildNodes()) {
+      Clerk.mountSignIn(signInDiv);
+    }
+  }
 }
 
-function logout() { sessionStorage.removeItem('ak'); location.reload(); }
-
-window.addEventListener('load', () => {
-  const k = sessionStorage.getItem('ak');
-  if (k) { KEY = k; login(); }
-});
+function clerkSignOut() {
+  Clerk.signOut().then(() => window.location.reload());
+}
 
 async function init() { loadStats(); loadQueue(); }
 
@@ -493,8 +516,6 @@ async function loadWaitlist() {
     const data = await req('/admin/api/waitlist');
     const list = data.waitlist || [];
     document.getElementById('waitlistCount').textContent = list.length;
-    // Update CSV export link with auth key in query param
-    document.getElementById('waitlistExportLink').href = API + '/admin/api/waitlist/export?key=' + encodeURIComponent(KEY);
     const tbody = document.getElementById('waitlistBody');
     if (list.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5" style="padding:2rem;text-align:center;color:#94a3b8;">No registrations yet.</td></tr>';
@@ -510,6 +531,27 @@ async function loadWaitlist() {
       </tr>`).join('');
   } catch(e) {
     document.getElementById('waitlistBody').innerHTML = '<tr><td colspan="5" style="padding:2rem;text-align:center;color:#dc2626;">Failed to load</td></tr>';
+  }
+}
+
+async function exportWaitlist() {
+  try {
+    const token = await Clerk.session.getToken();
+    const r = await fetch(API + '/admin/api/waitlist/export', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!r.ok) { alert('Export failed'); return; }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'waitlist.csv';
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    a.remove();
+  } catch (e) {
+    alert('Export failed');
   }
 }
 
