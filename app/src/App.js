@@ -3306,6 +3306,8 @@ function SignInPage() {
   const { isSignedIn } = useUser();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email:'', password:'' });
+  const [step, setStep] = useState(1);
+  const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, setActive, isLoaded } = useSignIn();
@@ -3320,32 +3322,58 @@ function SignInPage() {
     if (!isLoaded) { setLoading(false); return; }
     try {
       const result = await signIn.create({ identifier: form.email, password: form.password });
-      await setActive({ session: result.createdSessionId });
-      // Don't navigate — effect fires once isSignedIn flips to true
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId });
+      } else if (result.status === 'needs_second_factor') {
+        await signIn.prepareSecondFactor({ strategy: 'email_code' });
+        setStep(2);
+      }
     } catch(err) {
       setError(err.errors?.[0]?.message || 'Invalid email or password.');
+    }
+    setLoading(false);
+  };
+
+  const handleVerify = async (e) => {
+    e.preventDefault(); setError(''); setLoading(true);
+    try {
+      const result = await signIn.attemptSecondFactor({ strategy: 'email_code', code });
+      await setActive({ session: result.createdSessionId });
+    } catch(err) {
+      setError(err.errors?.[0]?.message || 'Invalid code. Please try again.');
       setLoading(false);
     }
   };
+
   return (
     <div className="page">
       <Nav/>
       <div className="auth-page">
         <div className="auth-card">
           <div className="auth-logo"><Logo/></div>
-          <div className="auth-title">Welcome back</div>
-          <div className="auth-sub">Sign in to your UK Security Jobs account</div>
-          <form className="auth-form" onSubmit={handleSignIn}>
-            {error && <div className="auth-error">{error}</div>}
-            <div className="field"><label className="field-label" htmlFor="signin-email">Email Address</label><input id="signin-email" name="email" className="f-input" type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="your@email.com"/></div>
-            <div className="field"><label className="field-label" htmlFor="signin-password">Password</label><input id="signin-password" name="password" className="f-input" type="password" required value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Your password"/></div>
-            <div style={{textAlign:'right',marginBottom:'0.5rem'}}><a href="/forgot-password" style={{fontSize:'0.82rem',color:'var(--blue)'}}>Forgot password?</a></div>
-            <button className="btn-full" type="submit" disabled={loading || !isLoaded}>{loading?'Signing in...':'Sign In →'}</button>
-          </form>
-          <div className="auth-footer">Not registered? <a href="/sign-up">Create your profile</a></div>
-          <div style={{marginTop:'1rem',paddingTop:'1rem',borderTop:'1px solid #f1f5f9',textAlign:'center',fontSize:'0.82rem',color:'#64748b'}}>
-            Registering a security company? <a href="/employer/sign-up" style={{color:'#1a52a8',fontWeight:600}}>Employer sign-up →</a>
-          </div>
+          {step === 1 ? <>
+            <div className="auth-title">Welcome back</div>
+            <div className="auth-sub">Sign in to your UK Security Jobs account</div>
+            <form className="auth-form" onSubmit={handleSignIn}>
+              {error && <div className="auth-error">{error}</div>}
+              <div className="field"><label className="field-label" htmlFor="signin-email">Email Address</label><input id="signin-email" name="email" className="f-input" type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="your@email.com"/></div>
+              <div className="field"><label className="field-label" htmlFor="signin-password">Password</label><input id="signin-password" name="password" className="f-input" type="password" required value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Your password"/></div>
+              <div style={{textAlign:'right',marginBottom:'0.5rem'}}><a href="/forgot-password" style={{fontSize:'0.82rem',color:'var(--blue)'}}>Forgot password?</a></div>
+              <button className="btn-full" type="submit" disabled={loading || !isLoaded}>{loading?'Signing in...':'Sign In →'}</button>
+            </form>
+            <div className="auth-footer">Not registered? <a href="/sign-up">Create your profile</a></div>
+            <div style={{marginTop:'1rem',paddingTop:'1rem',borderTop:'1px solid #f1f5f9',textAlign:'center',fontSize:'0.82rem',color:'#64748b'}}>
+              Registering a security company? <a href="/employer/sign-up" style={{color:'#1a52a8',fontWeight:600}}>Employer sign-up →</a>
+            </div>
+          </> : <>
+            <div className="auth-title">Check your email</div>
+            <div className="auth-sub">We sent a verification code to {form.email}</div>
+            <form className="auth-form" onSubmit={handleVerify}>
+              {error && <div className="auth-error">{error}</div>}
+              <div className="field"><label className="field-label" htmlFor="signin-code">Verification Code</label><input id="signin-code" name="code" className="f-input" type="text" required value={code} onChange={e=>setCode(e.target.value)} placeholder="000000" style={{textAlign:'center',fontSize:'1.5rem',letterSpacing:'0.4em'}} maxLength={6}/></div>
+              <button className="btn-full" type="submit" disabled={loading}>{loading?'Verifying...':'Verify & Sign In →'}</button>
+            </form>
+          </>}
         </div>
       </div>
     </div>
