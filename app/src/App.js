@@ -3304,6 +3304,7 @@ function SignUpPage() {
 
 function SignInPage() {
   const { isSignedIn } = useUser();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ email:'', password:'' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -3312,7 +3313,7 @@ function SignInPage() {
 
   // Already signed in — redirect to dashboard
   React.useEffect(() => {
-    if (isSignedIn) window.location.href = '/dashboard';
+    if (isSignedIn) navigate('/dashboard');
   }, [isSignedIn]);
 
   const handleSignIn = async (e) => {
@@ -3320,18 +3321,15 @@ function SignInPage() {
     try {
       const result = await signIn.create({ identifier: form.email, password: form.password });
       await setActive({ session: result.createdSessionId });
-      setTimeout(async () => {
-        try {
-          const token = await getToken();
-          const res = await fetch('https://uksecurityjobs-api.onrender.com/api/employers/me', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          const data = await res.json();
-          window.location.href = data.employer ? '/employer' : '/dashboard';
-        } catch { window.location.href = '/dashboard'; }
-      }, 500);
-    } catch(err) { setError(err.errors?.[0]?.message || 'Invalid email or password.'); }
-    setLoading(false);
+      try {
+        const token = await getToken();
+        const res = await fetch('https://uksecurityjobs-api.onrender.com/api/employers/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        navigate(data.employer ? '/employer' : '/dashboard');
+      } catch { navigate('/dashboard'); }
+    } catch(err) { setError(err.errors?.[0]?.message || 'Invalid email or password.'); setLoading(false); }
   };
   return (
     <div className="page">
