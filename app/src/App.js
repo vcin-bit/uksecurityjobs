@@ -4815,6 +4815,7 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel, onPaymentRequi
 function JobListingsPage() {
   const { isSignedIn } = useUser();
   const { getToken } = useAuth();
+  const navigate = useNavigate();
   const [jobs, setJobs] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [filters, setFilters] = React.useState({ licence:'', location:'', type:'' });
@@ -4877,7 +4878,7 @@ function JobListingsPage() {
   const [coverNote, setCoverNote] = React.useState('');
 
   const applyForJob = (job) => {
-    if (!isSignedIn) { window.location.href = '/sign-in'; return; }
+    if (!isSignedIn) { navigate('/sign-in'); return; }
     if (applied.has(job.id)) return;
     setConfirmJob(job);
     setCoverNote('');
