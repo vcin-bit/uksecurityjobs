@@ -3327,6 +3327,8 @@ function SignInPage() {
       } else if (result.status === 'needs_second_factor') {
         await signIn.prepareSecondFactor({ strategy: 'email_code' });
         setStep(2);
+      } else {
+        setError('Unable to complete sign-in. Please try again.');
       }
     } catch(err) {
       setError(err.errors?.[0]?.message || 'Invalid email or password.');
