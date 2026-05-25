@@ -3391,6 +3391,7 @@ function EmployerSignUpPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp, setActive } = useSignUp();
+  const navigate = useNavigate();
 
   const handleSignUp = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
@@ -3410,7 +3411,7 @@ function EmployerSignUpPage() {
     try {
       const result = await signUp.attemptEmailAddressVerification({ code });
       await setActive({ session: result.createdSessionId });
-      window.location.href = '/employer';
+      navigate('/employer');
     } catch(err) { setError(err.errors?.[0]?.message || 'Invalid code.'); }
     setLoading(false);
   };
