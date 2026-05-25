@@ -3226,6 +3226,7 @@ function SignUpPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp, setActive } = useSignUp();
+  const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
@@ -3253,7 +3254,7 @@ function SignUpPage() {
           body: JSON.stringify({ email: form.email, gdpr_consent: true })
         });
       } catch(apiErr) { console.error('API create failed:', apiErr); }
-      setTimeout(() => { window.location.href = '/dashboard'; }, 500);
+      navigate('/dashboard');
     } catch(err) { setError(err.errors?.[0]?.message || 'Invalid code. Please try again.'); }
     setLoading(false);
   };
