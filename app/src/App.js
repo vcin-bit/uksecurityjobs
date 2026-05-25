@@ -6,7 +6,7 @@ import './styles.css';
 
 startApiKeepAlive();
 
-const CLERK_KEY = 'pk_test_ZXhjaXRpbmctdXJjaGluLTQxLmNsZXJrLmFjY291bnRzLmRldiQ';
+const CLERK_KEY = 'pk_live_Y2xlcmsudWtzZWN1cml0eWpvYnMuY28udWsk';
 
 // ── LOGO ──
 function Logo() {
