@@ -15,8 +15,17 @@ router.get('/_debug_jwt', async (req, res) => {
 
 router.get('/_debug_select', async (req, res) => {
   const db = getClientForUser(req.token);
-  const { data, error } = await db.from('sia_licences').select('id, candidate_id');
-  res.json({ count: (data||[]).length, rows: data, error });
+  const { data, error } = await db.from('sia_licences')
+    .select('id, candidate_id, licence_number_encrypted');
+  res.json({
+    count: (data||[]).length,
+    error,
+    enc_present: (data||[]).map(r => ({
+      id: r.id,
+      enc_is_null: r.licence_number_encrypted == null,
+      enc_len: (r.licence_number_encrypted||'').length
+    }))
+  });
 });
 
 // GET /api/sia
