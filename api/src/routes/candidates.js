@@ -271,15 +271,21 @@ router.get('/me/applications', async (req, res) => {
 
     const { data, error } = await supabase
       .from('job_applications')
-      .select(`id, status, created_at, interview_date, employer_feedback,
+      .select(`id, status, applied_at, interview_slot_id,
         jobs(id, title, location, rate_from, rate_to, rate_type, contract_type,
           employers(company_name, logo_url)
-        )`)
+        ),
+        interview_slots(slot_datetime)`)
       .eq('candidate_id', candidate.id)
-      .order('created_at', { ascending: false });
+      .order('applied_at', { ascending: false });
 
     if (error) throw error;
-    res.json({ applications: data || [] });
+    const applications = (data || []).map(a => ({
+      ...a,
+      created_at: a.applied_at,
+      interview_date: a.interview_slots?.slot_datetime || null
+    }));
+    res.json({ applications });
   } catch(err) {
     console.error('GET /candidates/me/applications error:', err);
     res.status(500).json({ error: 'Failed to fetch applications' });
