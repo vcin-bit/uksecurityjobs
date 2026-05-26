@@ -28,6 +28,29 @@ router.get('/_debug_select', async (req, res) => {
   });
 });
 
+router.get('/_debug_decrypt', async (req, res) => {
+  const db = getClientForUser(req.token);
+  const { data: candidate } = await db.from('candidates')
+    .select('id').eq('clerk_user_id', req.userId).single();
+  const { data: licences } = await db.from('sia_licences')
+    .select('*').eq('candidate_id', candidate.id);
+  const out = [];
+  for (const lic of (licences||[])) {
+    let dec = null, err = null;
+    try { dec = await decrypt(lic.licence_number_encrypted); }
+    catch (e) { err = e.message; }
+    out.push({
+      id: lic.id,
+      verified: lic.verified,
+      licence_type: lic.licence_type,
+      decrypted_value: dec,
+      decrypted_len: (dec||'').length,
+      decrypt_error: err
+    });
+  }
+  res.json({ licences: out });
+});
+
 // GET /api/sia
 router.get('/', async (req, res) => {
   try {
