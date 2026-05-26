@@ -161,7 +161,7 @@ router.get('/jobs/:id/applicants', async (req, res) => {
       .from('job_applications')
       .select(`
         id, status, applied_at,
-        candidates(id, sia_verified, profile_complete,
+        candidates(id, profile_complete,
           personal_details(first_name, last_name, phone),
           sia_licences(licence_type, expiry_date, verified)
         )
