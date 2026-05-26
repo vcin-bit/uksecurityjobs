@@ -142,7 +142,8 @@ router.get('/qualifications', async (req, res) => {
 
 router.put('/qualifications', async (req, res) => {
   try {
-    const candidateId = await getCandidateId(req.userId);
+    const db = getClientForUser(req.token);
+    const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
     const b = req.body;

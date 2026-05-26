@@ -1,5 +1,4 @@
 require('dotenv').config();
-console.log('ANON KEY present:', !!process.env.SUPABASE_ANON_KEY, 'len:', (process.env.SUPABASE_ANON_KEY||'').length);
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
