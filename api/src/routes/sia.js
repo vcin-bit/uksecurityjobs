@@ -13,6 +13,12 @@ router.get('/_debug_jwt', async (req, res) => {
   }
 });
 
+router.get('/_debug_select', async (req, res) => {
+  const db = getClientForUser(req.token);
+  const { data, error } = await db.from('sia_licences').select('id, candidate_id');
+  res.json({ count: (data||[]).length, rows: data, error });
+});
+
 // GET /api/sia
 router.get('/', async (req, res) => {
   try {
