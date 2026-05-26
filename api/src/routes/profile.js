@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { supabase, encrypt, decrypt, auditLog } = require('../lib/supabase');
+const { supabase, getClientForUser, encrypt, decrypt, auditLog } = require('../lib/supabase');
 
 // Helper to get candidate ID from Clerk user ID
-async function getCandidateId(userId) {
-  const { data, error } = await supabase
+async function getCandidateId(db, userId) {
+  const { data, error } = await db
     .from('candidates')
     .select('id')
     .eq('clerk_user_id', userId)
@@ -16,10 +16,11 @@ async function getCandidateId(userId) {
 // --- DRIVING DETAILS ---
 router.get('/driving', async (req, res) => {
   try {
-    const candidateId = await getCandidateId(req.userId);
+    const db = getClientForUser(req.token);
+    const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('driving_details')
       .select('*')
       .eq('candidate_id', candidateId)
@@ -36,7 +37,8 @@ router.get('/driving', async (req, res) => {
 
 router.put('/driving', async (req, res) => {
   try {
-    const candidateId = await getCandidateId(req.userId);
+    const db = getClientForUser(req.token);
+    const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
     const b = req.body;
@@ -53,7 +55,7 @@ router.put('/driving', async (req, res) => {
       willing_to_relocate: b.willing_to_relocate ?? false,
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('driving_details')
       .upsert(payload, { onConflict: 'candidate_id' })
       .select().single();
@@ -70,10 +72,11 @@ router.put('/driving', async (req, res) => {
 // --- PREFERRED SECTORS ---
 router.get('/sectors', async (req, res) => {
   try {
-    const candidateId = await getCandidateId(req.userId);
+    const db = getClientForUser(req.token);
+    const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('preferred_sectors')
       .select('*')
       .eq('candidate_id', candidateId)
@@ -89,7 +92,8 @@ router.get('/sectors', async (req, res) => {
 
 router.put('/sectors', async (req, res) => {
   try {
-    const candidateId = await getCandidateId(req.userId);
+    const db = getClientForUser(req.token);
+    const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
     const b = req.body;
@@ -101,7 +105,7 @@ router.put('/sectors', async (req, res) => {
       min_hourly_rate: b.min_hourly_rate || null,
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('preferred_sectors')
       .upsert(payload, { onConflict: 'candidate_id' })
       .select().single();
@@ -118,10 +122,11 @@ router.put('/sectors', async (req, res) => {
 // --- QUALIFICATIONS ---
 router.get('/qualifications', async (req, res) => {
   try {
-    const candidateId = await getCandidateId(req.userId);
+    const db = getClientForUser(req.token);
+    const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('qualifications')
       .select('*')
       .eq('candidate_id', candidateId)
@@ -153,7 +158,7 @@ router.put('/qualifications', async (req, res) => {
       other_qualifications: b.other_qualifications || null,
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('qualifications')
       .upsert(payload, { onConflict: 'candidate_id' })
       .select().single();
@@ -170,10 +175,11 @@ router.put('/qualifications', async (req, res) => {
 // --- PROFESSIONAL BACKGROUND ---
 router.get('/background', async (req, res) => {
   try {
-    const candidateId = await getCandidateId(req.userId);
+    const db = getClientForUser(req.token);
+    const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('professional_background')
       .select('*')
       .eq('candidate_id', candidateId)
@@ -190,7 +196,8 @@ router.get('/background', async (req, res) => {
 
 router.put('/background', async (req, res) => {
   try {
-    const candidateId = await getCandidateId(req.userId);
+    const db = getClientForUser(req.token);
+    const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
     const b = req.body;
@@ -203,7 +210,7 @@ router.put('/background', async (req, res) => {
       police_years: b.police_years || null,
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('professional_background')
       .upsert(payload, { onConflict: 'candidate_id' })
       .select().single();
@@ -220,9 +227,10 @@ router.put('/background', async (req, res) => {
 // --- ADDRESS HISTORY ---
 router.delete('/addresses/clear', async (req, res) => {
   try {
-    const candidateId = await getCandidateId(req.userId);
+    const db = getClientForUser(req.token);
+    const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
-    await supabase.from('address_history').delete().eq('candidate_id', candidateId);
+    await db.from('address_history').delete().eq('candidate_id', candidateId);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to clear addresses' });
@@ -230,10 +238,11 @@ router.delete('/addresses/clear', async (req, res) => {
 });
 router.get('/addresses', async (req, res) => {
   try {
-    const candidateId = await getCandidateId(req.userId);
+    const db = getClientForUser(req.token);
+    const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('address_history')
       .select('*')
       .eq('candidate_id', candidateId)
@@ -248,7 +257,8 @@ router.get('/addresses', async (req, res) => {
 
 router.post('/addresses', async (req, res) => {
   try {
-    const candidateId = await getCandidateId(req.userId);
+    const db = getClientForUser(req.token);
+    const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
     const b = req.body;
@@ -268,7 +278,7 @@ router.post('/addresses', async (req, res) => {
       electoral_roll: b.electoral_roll !== undefined ? b.electoral_roll : true,
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('address_history')
       .insert(payload)
       .select().single();
@@ -285,9 +295,10 @@ router.post('/addresses', async (req, res) => {
 // --- EMPLOYMENT HISTORY ---
 router.delete('/employment/clear', async (req, res) => {
   try {
-    const candidateId = await getCandidateId(req.userId);
+    const db = getClientForUser(req.token);
+    const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
-    await supabase.from('employment_history').delete().eq('candidate_id', candidateId);
+    await db.from('employment_history').delete().eq('candidate_id', candidateId);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to clear employment' });
@@ -295,10 +306,11 @@ router.delete('/employment/clear', async (req, res) => {
 });
 router.get('/employment', async (req, res) => {
   try {
-    const candidateId = await getCandidateId(req.userId);
+    const db = getClientForUser(req.token);
+    const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('employment_history')
       .select('*')
       .eq('candidate_id', candidateId)
@@ -313,7 +325,8 @@ router.get('/employment', async (req, res) => {
 
 router.post('/employment', async (req, res) => {
   try {
-    const candidateId = await getCandidateId(req.userId);
+    const db = getClientForUser(req.token);
+    const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
 
     const b = req.body;
@@ -340,7 +353,7 @@ router.post('/employment', async (req, res) => {
       return res.status(400).json({ error: 'start_date is required' });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('employment_history')
       .insert(payload)
       .select().single();
