@@ -1,18 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const { supabase, auditLog } = require('../lib/supabase');
+const { supabase, getClientForUser, auditLog } = require('../lib/supabase');
 const email = require('../lib/email');
 
 // Helper
-async function getEmployerId(userId) {
-  const { data } = await supabase.from('employers').select('id').eq('clerk_user_id', userId).single();
+async function getEmployerId(client, userId) {
+  const { data } = await client.from('employers').select('id').eq('clerk_user_id', userId).single();
   return data?.id || null;
 }
 
 // GET /api/employers/me
 router.get('/me', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('employers').select('*').eq('clerk_user_id', req.userId).single();
+    const db = getClientForUser(req.token);
+    const { data, error } = await db.from('employers').select('*').eq('clerk_user_id', req.userId).single();
     if (error && error.code === 'PGRST116') return res.json({ employer: null });
     if (error) throw error;
     res.json({ employer: data });
@@ -22,8 +23,9 @@ router.get('/me', async (req, res) => {
 // POST /api/employers/me — register as employer
 router.post('/me', async (req, res) => {
   try {
+    const db = getClientForUser(req.token);
     const { company_name, company_number, contact_name, contact_position, contact_email, contact_mobile, contact_office, contact_dd, website, address, postcode, sia_acs } = req.body;
-    const { data, error } = await supabase.from('employers').upsert({
+    const { data, error } = await db.from('employers').upsert({
       clerk_user_id: req.userId, company_name, company_number, contact_name, contact_position, contact_email, contact_mobile, contact_office, contact_dd, website, address, postcode, sia_acs
     }, { onConflict: 'clerk_user_id' }).select().single();
     if (error) throw error;
@@ -42,9 +44,10 @@ router.post('/me', async (req, res) => {
 // GET /api/employers/jobs — get employer's jobs with applicant counts
 router.get('/jobs', async (req, res) => {
   try {
-    const employerId = await getEmployerId(req.userId);
+    const db = getClientForUser(req.token);
+    const employerId = await getEmployerId(db, req.userId);
     if (!employerId) return res.json({ jobs: [] });
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('jobs')
       .select('*, job_applications(count)')
       .eq('employer_id', employerId)
@@ -57,11 +60,12 @@ router.get('/jobs', async (req, res) => {
 // POST /api/employers/jobs — post a job (first job free, subsequent require payment)
 router.post('/jobs', async (req, res) => {
   try {
-    const employerId = await getEmployerId(req.userId);
+    const db = getClientForUser(req.token);
+    const employerId = await getEmployerId(db, req.userId);
     if (!employerId) return res.status(404).json({ error: 'Employer profile not found' });
 
     // Check how many jobs this employer has posted
-    const { count } = await supabase
+    const { count } = await db
       .from('jobs')
       .select('*', { count: 'exact', head: true })
       .eq('employer_id', employerId);
@@ -76,7 +80,7 @@ router.post('/jobs', async (req, res) => {
     }
 
     const expires_at = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
-    const { data, error } = await supabase.from('jobs').insert({
+    const { data, error } = await db.from('jobs').insert({
       ...req.body,
       employer_id: employerId,
       status: 'active',
@@ -92,9 +96,10 @@ router.post('/jobs', async (req, res) => {
 // PUT /api/employers/jobs/:id — update a job
 router.put('/jobs/:id', async (req, res) => {
   try {
-    const employerId = await getEmployerId(req.userId);
+    const db = getClientForUser(req.token);
+    const employerId = await getEmployerId(db, req.userId);
     if (!employerId) return res.status(404).json({ error: 'Not found' });
-    const { data, error } = await supabase.from('jobs')
+    const { data, error } = await db.from('jobs')
       .update({ ...req.body, updated_at: new Date() })
       .eq('id', req.params.id).eq('employer_id', employerId).select().single();
     if (error) throw error;
@@ -105,7 +110,8 @@ router.put('/jobs/:id', async (req, res) => {
 // PATCH /api/employers/jobs/:id/status — change job status
 router.patch('/jobs/:id/status', async (req, res) => {
   try {
-    const employerId = await getEmployerId(req.userId);
+    const db = getClientForUser(req.token);
+    const employerId = await getEmployerId(db, req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
     const { status, pause_reason, pause_notes } = req.body;
     const validStatuses = ['active', 'paused', 'ended'];
@@ -119,14 +125,14 @@ router.patch('/jobs/:id/status', async (req, res) => {
       ...(status === 'ended' && { ended_at: new Date().toISOString() }),
       ...(status === 'active' && { pause_reason: null, pause_notes: null, paused_at: null }),
     };
-    const { data, error } = await supabase.from('jobs').update(update).eq('id', req.params.id).eq('employer_id', employerId).select().single();
+    const { data, error } = await db.from('jobs').update(update).eq('id', req.params.id).eq('employer_id', employerId).select().single();
     if (error) throw error;
     await auditLog({ tableName: 'jobs', recordId: req.params.id, action: 'UPDATE', performedBy: req.userId, ipAddress: req.ip, changes: { status, pause_reason: pause_reason || null } });
     res.json({ success: true, job: data });
   } catch(err) { console.error('PATCH /employers/jobs/:id/status error:', err); res.status(500).json({ error: 'Failed to update job status' }); }
 });
 
-// GET /api/jobs/public — public job listings (active, not expired)
+// GET /api/jobs/public — public listing, no user session — service client
 router.get('/public', async (req, res) => {
   try {
     const now = new Date().toISOString();
@@ -141,10 +147,10 @@ router.get('/public', async (req, res) => {
   } catch(err) { res.status(500).json({ error: 'Failed to fetch jobs' }); }
 });
 
-// GET /api/employers/jobs/:id/applicants — get applicants for a job
+// GET /api/employers/jobs/:id/applicants — cross-user candidate read, ownership checked in code — service client
 router.get('/jobs/:id/applicants', async (req, res) => {
   try {
-    const employerId = await getEmployerId(req.userId);
+    const employerId = await getEmployerId(supabase, req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
 
     // Verify job belongs to this employer
@@ -171,10 +177,10 @@ router.get('/jobs/:id/applicants', async (req, res) => {
   }
 });
 
-// PATCH /api/employers/applications/:id — update application status with full pipeline
+// PATCH /api/employers/applications/:id — cross-user candidate read/write, ownership checked in code — service client
 router.patch('/applications/:id', async (req, res) => {
   try {
-    const employerId = await getEmployerId(req.userId);
+    const employerId = await getEmployerId(supabase, req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
 
     // Verify this application belongs to a job owned by this employer
@@ -273,10 +279,10 @@ router.patch('/applications/:id', async (req, res) => {
   }
 });
 
-// GET /api/employers/candidate/:id — get candidate profile for employer (data minimised)
+// GET /api/employers/candidate/:id — cross-user candidate profile read, ownership checked in code — service client
 router.get('/candidate/:id', async (req, res) => {
   try {
-    const employerId = await getEmployerId(req.userId);
+    const employerId = await getEmployerId(supabase, req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
 
     // Verify this candidate has applied for one of their jobs
@@ -364,18 +370,19 @@ router.get('/candidate/:id', async (req, res) => {
 
 module.exports = router;
 
-// POST /api/jobs/apply — candidate applies for a job
+// POST /api/jobs/apply — candidate applies for a job (candidate's own data)
 router.post('/apply', async (req, res) => {
   try {
+    const db = getClientForUser(req.token);
     const { job_id, cover_note } = req.body;
     if (!job_id) return res.status(400).json({ error: 'job_id required' });
 
     // Get candidate id
-    const { data: candidate } = await supabase
+    const { data: candidate } = await db
       .from('candidates').select('id').eq('clerk_user_id', req.userId).single();
     if (!candidate) return res.status(404).json({ error: 'Candidate profile not found' });
 
-    const { data, error } = await supabase.from('job_applications').insert({
+    const { data, error } = await db.from('job_applications').insert({
       job_id,
       candidate_id: candidate.id,
       status: 'applied',
@@ -386,9 +393,9 @@ router.post('/apply', async (req, res) => {
     if (error) throw error;
 
     // Get job and employer details for emails
-    const { data: job } = await supabase.from('jobs').select('title, location, employer_id, employers(contact_email, company_name)').eq('id', job_id).single();
-    const { data: candPersonal } = await supabase.from('personal_details').select('first_name, last_name').eq('candidate_id', candidate.id).single();
-    const { data: candMain } = await supabase.from('candidates').select('email').eq('id', candidate.id).single();
+    const { data: job } = await db.from('jobs').select('title, location, employer_id, employers(contact_email, company_name)').eq('id', job_id).single();
+    const { data: candPersonal } = await db.from('personal_details').select('first_name, last_name').eq('candidate_id', candidate.id).single();
+    const { data: candMain } = await db.from('candidates').select('email').eq('id', candidate.id).single();
     const candidateEmail = candMain?.email || req.userEmail || '';
 
     if (job) {
@@ -419,9 +426,10 @@ router.post('/apply', async (req, res) => {
   }
 });
 
-// POST /api/employers/logo — upload employer logo
+// POST /api/employers/logo — employer's own data (storage stays on service client)
 router.post('/logo', async (req, res) => {
   try {
+    const db = getClientForUser(req.token);
     const { base64, mimeType, fileName } = req.body;
     if (!base64 || !mimeType) return res.status(400).json({ error: 'No file provided' });
 
@@ -443,7 +451,7 @@ router.post('/logo', async (req, res) => {
       .getPublicUrl(path);
 
     // Save URL to employers table
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from('employers')
       .update({ logo_url: publicUrl })
       .eq('clerk_user_id', req.userId);
@@ -459,10 +467,10 @@ router.post('/logo', async (req, res) => {
 
 // ── INTERVIEW SLOT SYSTEM ──────────────────────────────────────────────
 
-// POST /api/employers/jobs/:jobId/interview-slots — create slots and send to candidates
+// POST /api/employers/jobs/:jobId/interview-slots — cross-user candidate data via joins, ownership checked in code — service client
 router.post('/jobs/:jobId/interview-slots', async (req, res) => {
   try {
-    const employerId = await getEmployerId(req.userId);
+    const employerId = await getEmployerId(supabase, req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
 
     const { slots, interviewer_name, interviewer_phone, interviewer_email, location, format, notes_for_candidate, application_ids } = req.body;
@@ -591,7 +599,7 @@ router.post('/jobs/:jobId/interview-slots', async (req, res) => {
   }
 });
 
-// GET /api/employers/confirm-slot/:slotId — candidate clicks to confirm a slot
+// GET /api/employers/confirm-slot/:slotId — token-gated, no user session — service client
 router.get('/confirm-slot/:slotId', async (req, res) => {
   try {
     const { token, app: appId } = req.query;
@@ -713,7 +721,7 @@ router.get('/confirm-slot/:slotId', async (req, res) => {
   }
 });
 
-// GET /api/employers/decline-interview — candidate declines
+// GET /api/employers/decline-interview — token-gated, no user session — service client
 router.get('/decline-interview', async (req, res) => {
   try {
     const { token, app: appId } = req.query;
@@ -735,10 +743,10 @@ router.get('/decline-interview', async (req, res) => {
   }
 });
 
-// POST /api/employers/applications/:id/no-show — employer reports no-show
+// POST /api/employers/applications/:id/no-show — cross-user write to candidates, ownership checked in code — service client
 router.post('/applications/:id/no-show', async (req, res) => {
   try {
-    const employerId = await getEmployerId(req.userId);
+    const employerId = await getEmployerId(supabase, req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
 
     const { data: app } = await supabase
@@ -798,10 +806,10 @@ router.post('/applications/:id/no-show', async (req, res) => {
   }
 });
 
-// POST /api/employers/applications/:id/feedback — post-interview feedback
+// POST /api/employers/applications/:id/feedback — cross-user, ownership checked in code — service client
 router.post('/applications/:id/feedback', async (req, res) => {
   try {
-    const employerId = await getEmployerId(req.userId);
+    const employerId = await getEmployerId(supabase, req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
 
     const { attended, punctual, professional_presentation, would_proceed, notes, overall_rating } = req.body;
