@@ -160,17 +160,18 @@ router.get('/jobs/:id/applicants', async (req, res) => {
     const { data, error } = await supabase
       .from('job_applications')
       .select(`
-        id, status, created_at, interview_date, employer_feedback,
+        id, status, applied_at,
         candidates(id, sia_verified, profile_complete,
           personal_details(first_name, last_name, phone, right_to_work_status, visa_expiry),
           sia_licences(licence_type, expiry_date, verified)
         )
       `)
       .eq('job_id', req.params.id)
-      .order('created_at', { ascending: false });
+      .order('applied_at', { ascending: false });
 
     if (error) throw error;
-    res.json({ applicants: data || [] });
+    const applicants = (data || []).map(a => ({ ...a, created_at: a.applied_at }));
+    res.json({ applicants });
   } catch(err) {
     console.error('GET /employers/jobs/:id/applicants error:', err);
     res.status(500).json({ error: 'Failed to fetch applicants' });
