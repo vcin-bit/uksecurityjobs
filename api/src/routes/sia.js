@@ -3,54 +3,6 @@ const router = express.Router();
 const { supabase, getClientForUser, encrypt, decrypt, auditLog } = require('../lib/supabase');
 const email = require('../lib/email');
 
-router.get('/_debug_jwt', async (req, res) => {
-  try {
-    const db = getClientForUser(req.token);
-    const { data, error } = await db.rpc('debug_jwt');
-    res.json({ rpc_data: data, rpc_error: error, userId: req.userId });
-  } catch (e) {
-    res.json({ caught: e.message, userId: req.userId });
-  }
-});
-
-router.get('/_debug_select', async (req, res) => {
-  const db = getClientForUser(req.token);
-  const { data, error } = await db.from('sia_licences')
-    .select('id, candidate_id, licence_number_encrypted');
-  res.json({
-    count: (data||[]).length,
-    error,
-    enc_present: (data||[]).map(r => ({
-      id: r.id,
-      enc_is_null: r.licence_number_encrypted == null,
-      enc_len: (r.licence_number_encrypted||'').length
-    }))
-  });
-});
-
-router.get('/_debug_decrypt', async (req, res) => {
-  const db = getClientForUser(req.token);
-  const { data: candidate } = await db.from('candidates')
-    .select('id').eq('clerk_user_id', req.userId).single();
-  const { data: licences } = await db.from('sia_licences')
-    .select('*').eq('candidate_id', candidate.id);
-  const out = [];
-  for (const lic of (licences||[])) {
-    let dec = null, err = null;
-    try { dec = await decrypt(lic.licence_number_encrypted); }
-    catch (e) { err = e.message; }
-    out.push({
-      id: lic.id,
-      verified: lic.verified,
-      licence_type: lic.licence_type,
-      decrypted_value: dec,
-      decrypted_len: (dec||'').length,
-      decrypt_error: err
-    });
-  }
-  res.json({ licences: out });
-});
-
 // GET /api/sia
 router.get('/', async (req, res) => {
   try {
@@ -64,9 +16,7 @@ router.get('/', async (req, res) => {
     if (error) throw error;
 
     const decrypted = await Promise.all((licences||[]).map(async (lic) => {
-      let licence_number = '';
-      try { licence_number = await decrypt(lic.licence_number_encrypted); }
-      catch (e) { console.error('SIA decrypt error:', e.message, '| encrypted value:', JSON.stringify(lic.licence_number_encrypted)); }
+      const licence_number = await decrypt(lic.licence_number_encrypted).catch(() => '');
       const { licence_number_encrypted, ...rest } = lic;
       return { ...rest, licence_number };
     }));

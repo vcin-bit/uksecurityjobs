@@ -253,9 +253,15 @@ router.get('/me/full', async (req, res) => {
       db.from('address_history').select('*').eq('candidate_id', candidate.id).order('moved_in_date', { ascending: false }),
     ]);
 
+    const licences = await Promise.all((siaRes.data || []).map(async (lic) => {
+      const licence_number = await decrypt(lic.licence_number_encrypted).catch(() => '');
+      const { licence_number_encrypted, ...rest } = lic;
+      return { ...rest, licence_number };
+    }));
+
     res.json({
       candidate,
-      licences: siaRes.data || [],
+      licences,
       personal: personalRes.data || null,
       driving: drivingRes.data || null,
       sectors: sectorsRes.data || null,
