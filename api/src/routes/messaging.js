@@ -1,14 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { createClient } = require('@supabase/supabase-js');
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+const { supabase, getClientForUser } = require('../lib/supabase');
 const sgMail = require('@sendgrid/mail');
 
 const MESSAGE_TYPES = ['general','request_info','schedule_update','offer','outcome','shortlist_prep'];
 
 // Verify sender has access to this application
-async function verifyAccess(applicationId, userId, senderType) {
-  const { data: app } = await supabase
+async function verifyAccess(client, applicationId, userId, senderType) {
+  const { data: app } = await client
     .from('job_applications')
     .select('id, candidate_id, job_id, jobs(employer_id, title), candidates(clerk_user_id, email, personal_details(first_name)), employers(contact_email, company_name)')
     .eq('id', applicationId)
@@ -17,7 +16,7 @@ async function verifyAccess(applicationId, userId, senderType) {
   if (!app) return null;
 
   if (senderType === 'employer') {
-    const { data: emp } = await supabase.from('employers').select('id').eq('clerk_user_id', userId).single();
+    const { data: emp } = await client.from('employers').select('id').eq('clerk_user_id', userId).single();
     if (!emp || app.jobs?.employer_id !== emp.id) return null;
   } else {
     if (app.candidates?.clerk_user_id !== userId) return null;
@@ -28,11 +27,12 @@ async function verifyAccess(applicationId, userId, senderType) {
 // GET /api/messages/:applicationId — get thread
 router.get('/:applicationId', async (req, res) => {
   try {
+    const db = getClientForUser(req.token);
     const senderType = req.query.as || 'candidate';
-    const app = await verifyAccess(req.params.applicationId, req.userId, senderType);
+    const app = await verifyAccess(db, req.params.applicationId, req.userId, senderType);
     if (!app) return res.status(403).json({ error: 'Not authorised' });
 
-    const { data: messages } = await supabase
+    const { data: messages } = await db
       .from('messages')
       .select('*')
       .eq('application_id', req.params.applicationId)
@@ -41,7 +41,7 @@ router.get('/:applicationId', async (req, res) => {
     // Mark unread messages as read
     const unread = (messages || []).filter(m => !m.read_at && m.sender_type !== senderType);
     if (unread.length > 0) {
-      await supabase.from('messages')
+      await db.from('messages')
         .update({ read_at: new Date().toISOString() })
         .in('id', unread.map(m => m.id));
     }
@@ -56,11 +56,12 @@ router.get('/:applicationId', async (req, res) => {
 // POST /api/messages/:applicationId — send message
 router.post('/:applicationId', async (req, res) => {
   try {
+    const db = getClientForUser(req.token);
     const { content, message_type, sender_type } = req.body;
     if (!content?.trim()) return res.status(400).json({ error: 'Message content required' });
     if (!MESSAGE_TYPES.includes(message_type || 'general')) return res.status(400).json({ error: 'Invalid message type' });
 
-    const app = await verifyAccess(req.params.applicationId, req.userId, sender_type);
+    const app = await verifyAccess(db, req.params.applicationId, req.userId, sender_type);
     if (!app) return res.status(403).json({ error: 'Not authorised' });
 
     // Profanity / professional conduct check — basic word filter
@@ -68,7 +69,7 @@ router.post('/:applicationId', async (req, res) => {
     const lower = content.toLowerCase();
     const flagged = BANNED.some(w => lower.includes(w));
 
-    const { data: msg, error } = await supabase.from('messages').insert({
+    const { data: msg, error } = await db.from('messages').insert({
       application_id: req.params.applicationId,
       candidate_id: app.candidate_id,
       job_id: app.job_id,
@@ -132,7 +133,8 @@ router.post('/:applicationId', async (req, res) => {
 // POST /api/messages/:applicationId/rate-candidate — employer rates candidate
 router.post('/:applicationId/rate-candidate', async (req, res) => {
   try {
-    const app = await verifyAccess(req.params.applicationId, req.userId, 'employer');
+    const db = getClientForUser(req.token);
+    const app = await verifyAccess(db, req.params.applicationId, req.userId, 'employer');
     if (!app) return res.status(403).json({ error: 'Not authorised' });
 
     const { turned_up, punctual, preparedness_professionalism, profile_accuracy, communication_quality, would_recommend, notes } = req.body;
@@ -141,7 +143,7 @@ router.post('/:applicationId/rate-candidate', async (req, res) => {
     const scores = [turned_up?5:1, punctual?5:1, preparedness_professionalism, profile_accuracy, communication_quality].filter(s=>s!=null);
     const overall = scores.length ? Math.round(scores.reduce((a,b)=>a+Number(b),0)/scores.length*10)/10 : null;
 
-    const { error: ratingErr } = await supabase.from('candidate_ratings').upsert({
+    const { error: ratingErr } = await db.from('candidate_ratings').upsert({
       application_id: req.params.applicationId,
       candidate_id: app.candidate_id,
       employer_id: app.jobs?.employer_id,
@@ -159,7 +161,7 @@ router.post('/:applicationId/rate-candidate', async (req, res) => {
     if (ratingErr) throw ratingErr;
 
     // Recalculate candidate reputation score
-    const { data: allRatings } = await supabase
+    const { data: allRatings } = await db
       .from('candidate_ratings')
       .select('overall')
       .eq('candidate_id', app.candidate_id)
@@ -167,6 +169,7 @@ router.post('/:applicationId/rate-candidate', async (req, res) => {
 
     if (allRatings?.length) {
       const avg = allRatings.reduce((a,r)=>a+r.overall,0)/allRatings.length;
+      // cross-user write to candidate's row — service client
       await supabase.from('candidates').update({
         reputation_score: Math.round(avg*10)/10,
         reputation_count: allRatings.length,
@@ -183,12 +186,13 @@ router.post('/:applicationId/rate-candidate', async (req, res) => {
 // POST /api/messages/:applicationId/rate-employer — candidate rates employer
 router.post('/:applicationId/rate-employer', async (req, res) => {
   try {
-    const app = await verifyAccess(req.params.applicationId, req.userId, 'candidate');
+    const db = getClientForUser(req.token);
+    const app = await verifyAccess(db, req.params.applicationId, req.userId, 'candidate');
     if (!app) return res.status(403).json({ error: 'Not authorised' });
 
     const { role_as_described, professional_interview, feedback_given, would_recommend, overall, notes } = req.body;
 
-    const { error: ratingErr } = await supabase.from('employer_ratings').upsert({
+    const { error: ratingErr } = await db.from('employer_ratings').upsert({
       application_id: req.params.applicationId,
       candidate_id: app.candidate_id,
       employer_id: app.jobs?.employer_id,
@@ -204,7 +208,7 @@ router.post('/:applicationId/rate-employer', async (req, res) => {
     if (ratingErr) throw ratingErr;
 
     // Recalculate employer reputation score
-    const { data: allRatings } = await supabase
+    const { data: allRatings } = await db
       .from('employer_ratings')
       .select('overall')
       .eq('employer_id', app.jobs?.employer_id)
@@ -212,6 +216,7 @@ router.post('/:applicationId/rate-employer', async (req, res) => {
 
     if (allRatings?.length) {
       const avg = allRatings.reduce((a,r)=>a+r.overall,0)/allRatings.length;
+      // cross-user write to employer's row — service client
       await supabase.from('employers').update({
         reputation_score: Math.round(avg*10)/10,
         reputation_count: allRatings.length,
