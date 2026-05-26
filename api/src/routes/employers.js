@@ -631,7 +631,6 @@ router.get('/confirm-slot/:slotId', async (req, res) => {
     // Update application status
     await supabase.from('job_applications').update({
       status: 'interview_confirmed',
-      interview_date: slot.slot_datetime,
       interview_slot_id: slot.id,
     }).eq('id', appId);
 
