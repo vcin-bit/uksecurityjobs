@@ -3051,6 +3051,8 @@ function Dashboard() {
   React.useEffect(() => {
     async function load() {
       try {
+        const emp = await apiRequest('/api/employers/me', 'GET', null, getToken);
+        if (emp && emp.employer) { setProfileLoading(false); navigate('/employer', { replace: true }); return; }
         await apiRequest('/api/candidates/me', 'GET', null, getToken);
         const full = await apiRequest('/api/candidates/me/full', 'GET', null, getToken);
         setProfileData({
