@@ -103,6 +103,19 @@
     document.getElementById('cookie-accept-btn').addEventListener('click', accept);
     document.getElementById('cookie-reject-btn').addEventListener('click', reject);
 
+    // footer link
+    var footerBlock = document.querySelector('.foot-legal') || document.querySelector('.foot-links');
+    if (footerBlock) {
+      var link = document.createElement('a');
+      link.href = '#';
+      link.textContent = 'Cookie Settings';
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        openCookieSettings();
+      });
+      footerBlock.appendChild(link);
+    }
+
     // apply any stored choice
     var consent = null;
     try { consent = localStorage.getItem(STORE_KEY); } catch (e) {}
