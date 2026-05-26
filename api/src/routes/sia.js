@@ -3,6 +3,30 @@ const router = express.Router();
 const { supabase, getClientForUser, encrypt, decrypt, auditLog } = require('../lib/supabase');
 const email = require('../lib/email');
 
+router.get('/_isolation_test', async (req, res) => {
+  const db = getClientForUser(req.token);
+  // The caller's own candidate row
+  const { data: own } = await db.from('candidates')
+    .select('id, clerk_user_id').eq('clerk_user_id', req.userId).single();
+  // ALL candidates the caller can see (should be ONLY their own)
+  const { data: allVisible } = await db.from('candidates')
+    .select('id, clerk_user_id');
+  // ALL personal_details the caller can see (should be ONLY their own)
+  const { data: pd } = await db.from('personal_details')
+    .select('candidate_id');
+  // ALL sia_licences visible (should be ONLY their own)
+  const { data: sia } = await db.from('sia_licences')
+    .select('id, candidate_id');
+  res.json({
+    my_user_id: req.userId,
+    my_candidate_id: own?.id,
+    candidates_visible_count: (allVisible||[]).length,
+    candidates_visible_ids: (allVisible||[]).map(c => c.clerk_user_id),
+    personal_details_visible_count: (pd||[]).length,
+    sia_licences_visible_count: (sia||[]).length
+  });
+});
+
 // GET /api/sia
 router.get('/', async (req, res) => {
   try {
