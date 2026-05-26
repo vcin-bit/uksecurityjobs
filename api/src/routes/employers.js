@@ -162,7 +162,7 @@ router.get('/jobs/:id/applicants', async (req, res) => {
       .select(`
         id, status, applied_at,
         candidates(id, sia_verified, profile_complete,
-          personal_details(first_name, last_name, phone, right_to_work_status, visa_expiry),
+          personal_details(first_name, last_name, phone),
           sia_licences(licence_type, expiry_date, verified)
         )
       `)
@@ -260,13 +260,11 @@ router.patch('/applications/:id', async (req, res) => {
           const { data: addrs } = await supabase.from('address_history').select('proof_types,electoral_roll').eq('candidate_id', cand.id);
           if (addrs?.some(a => !a.proof_types?.length)) profileGaps.push('Some addresses have no evidence declared — bring additional proof of address documents');
           if (addrs?.some(a => a.electoral_roll === false)) profileGaps.push('One or more addresses not on electoral roll — bring alternative proof (bank statement, utility bill)');
-          const { data: personal } = await supabase.from('personal_details').select('right_to_work_status,has_ni_number').eq('candidate_id', cand.id).single();
-          if (!personal?.has_ni_number) profileGaps.push('You indicated you may not have an NI number — clarify your status before the interview');
           email.sendShortlisted({
             toEmail: cand.email, firstName, jobTitle, companyName,
             profileGaps,
             licencePending: !!licencePending,
-            rtwStatus: personal?.right_to_work_status || '',
+            rtwStatus: '',
           }).catch(e => console.error('Shortlist email failed:', e));
         }
       }
@@ -310,7 +308,7 @@ router.get('/candidate/:id', async (req, res) => {
     ] = await Promise.all([
       // Personal — no DOB, no full address, no email
       supabase.from('personal_details').select(
-        'first_name, last_name, phone, has_ni_number'
+        'first_name, last_name, phone'
       ).eq('candidate_id', req.params.id).single(),
 
       // Licences — type, expiry and verified status only. No licence number.
