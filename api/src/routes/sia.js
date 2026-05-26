@@ -16,7 +16,9 @@ router.get('/', async (req, res) => {
     if (error) throw error;
 
     const decrypted = await Promise.all((licences||[]).map(async (lic) => {
-      const licence_number = await decrypt(lic.licence_number_encrypted).catch(() => '');
+      let licence_number = '';
+      try { licence_number = await decrypt(lic.licence_number_encrypted); }
+      catch (e) { console.error('SIA decrypt error:', e.message, '| encrypted value:', JSON.stringify(lic.licence_number_encrypted)); }
       const { licence_number_encrypted, ...rest } = lic;
       return { ...rest, licence_number };
     }));
