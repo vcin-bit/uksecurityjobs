@@ -1,16 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { supabase, encrypt, decrypt, auditLog } = require('../lib/supabase');
+const { supabase, getClientForUser, encrypt, decrypt, auditLog } = require('../lib/supabase');
 const email = require('../lib/email');
 
 // GET /api/sia
 router.get('/', async (req, res) => {
   try {
-    const { data: candidate } = await supabase
+    const db = getClientForUser(req.token);
+    const { data: candidate } = await db
       .from('candidates').select('id').eq('clerk_user_id', req.userId).single();
     if (!candidate) return res.json({ licences: [] });
 
-    const { data: licences, error } = await supabase
+    const { data: licences, error } = await db
       .from('sia_licences').select('*').eq('candidate_id', candidate.id);
     if (error) throw error;
 
@@ -30,7 +31,8 @@ router.get('/', async (req, res) => {
 // PUT /api/sia — upsert all licences for this candidate (replaces POST)
 router.put('/', async (req, res) => {
   try {
-    const { data: candidate } = await supabase
+    const db = getClientForUser(req.token);
+    const { data: candidate } = await db
       .from('candidates').select('id').eq('clerk_user_id', req.userId).single();
     if (!candidate) return res.status(404).json({ error: 'Profile not found' });
 
@@ -38,7 +40,7 @@ router.put('/', async (req, res) => {
     if (!Array.isArray(licences)) return res.status(400).json({ error: 'licences must be array' });
 
     // Delete existing licences and re-insert (simplest upsert for small arrays)
-    await supabase.from('sia_licences').delete().eq('candidate_id', candidate.id);
+    await db.from('sia_licences').delete().eq('candidate_id', candidate.id);
 
     for (const lic of licences) {
       if (!lic.licence_number && !lic.number) continue;
@@ -48,7 +50,7 @@ router.put('/', async (req, res) => {
       if (!num || !type) continue;
 
       const licence_number_encrypted = await encrypt(num);
-      await supabase.from('sia_licences').insert({
+      await db.from('sia_licences').insert({
         candidate_id: candidate.id,
         licence_number_encrypted,
         licence_type: type,
@@ -61,7 +63,7 @@ router.put('/', async (req, res) => {
 
     // Notify admin of new verification requests
     if (licences.length > 0) {
-      const { data: personal } = await supabase.from('personal_details').select('first_name, last_name').eq('candidate_id', candidate.id).single();
+      const { data: personal } = await db.from('personal_details').select('first_name, last_name').eq('candidate_id', candidate.id).single();
       const candidateName = personal ? `${personal.first_name || ''} ${personal.last_name || ''}`.trim() : 'Unknown';
       const firstLicence = licences[0];
       email.sendAdminSiaRequest({
@@ -81,7 +83,8 @@ router.put('/', async (req, res) => {
 // Keep POST for backward compatibility
 router.post('/', async (req, res) => {
   try {
-    const { data: candidate } = await supabase
+    const db = getClientForUser(req.token);
+    const { data: candidate } = await db
       .from('candidates').select('id').eq('clerk_user_id', req.userId).single();
     if (!candidate) return res.status(404).json({ error: 'Profile not found' });
 
@@ -89,7 +92,7 @@ router.post('/', async (req, res) => {
     if (!licence_number || !licence_type) return res.status(400).json({ error: 'licence_number and licence_type required' });
 
     const licence_number_encrypted = await encrypt(licence_number);
-    const { data: licence, error } = await supabase.from('sia_licences').insert({
+    const { data: licence, error } = await db.from('sia_licences').insert({
       candidate_id: candidate.id, licence_number_encrypted, licence_type, expiry_date: expiry_date || null, verified: false
     }).select().single();
 
