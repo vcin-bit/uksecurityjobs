@@ -3,6 +3,16 @@ const router = express.Router();
 const { supabase, getClientForUser, encrypt, decrypt, auditLog } = require('../lib/supabase');
 const email = require('../lib/email');
 
+router.get('/_debug_jwt', async (req, res) => {
+  try {
+    const db = getClientForUser(req.token);
+    const { data, error } = await db.rpc('debug_jwt');
+    res.json({ rpc_data: data, rpc_error: error, userId: req.userId });
+  } catch (e) {
+    res.json({ caught: e.message, userId: req.userId });
+  }
+});
+
 // GET /api/sia
 router.get('/', async (req, res) => {
   try {
