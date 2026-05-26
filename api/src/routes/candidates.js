@@ -1,12 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { supabase, getClientForUser, encrypt, decrypt, auditLog } = require('../lib/supabase');
+const { supabase, encrypt, decrypt, auditLog } = require('../lib/supabase');
 
 // GET /api/candidates/me — get the current candidate's profile, create if doesn't exist
 router.get('/me', async (req, res) => {
   try {
-    const db = getClientForUser(req.token);
-    let { data: candidate, error } = await db
+    let { data: candidate, error } = await supabase
       .from('candidates')
       .select('*')
       .eq('clerk_user_id', req.userId)
@@ -14,7 +13,7 @@ router.get('/me', async (req, res) => {
 
     // Auto-create candidate record on first login if it doesn't exist
     if (error && error.code === 'PGRST116') {
-      const { data: newCandidate, error: createError } = await db
+      const { data: newCandidate, error: createError } = await supabase
         .from('candidates')
         .insert({
           clerk_user_id: req.userId,
@@ -49,14 +48,13 @@ router.get('/me', async (req, res) => {
 // POST /api/candidates — create candidate record after registration
 router.post('/', async (req, res) => {
   try {
-    const db = getClientForUser(req.token);
     const { email, gdpr_consent } = req.body;
 
     if (!gdpr_consent) {
       return res.status(400).json({ error: 'GDPR consent is required' });
     }
 
-    const { data: candidate, error } = await db
+    const { data: candidate, error } = await supabase
       .from('candidates')
       .insert({
         clerk_user_id: req.userId,
@@ -88,10 +86,9 @@ router.post('/', async (req, res) => {
 // PATCH /api/candidates/me/step — update profile step progress
 router.patch('/me/step', async (req, res) => {
   try {
-    const db = getClientForUser(req.token);
     const { profile_step } = req.body;
 
-    const { data: candidate, error } = await db
+    const { data: candidate, error } = await supabase
       .from('candidates')
       .update({ profile_step })
       .eq('clerk_user_id', req.userId)
@@ -110,8 +107,7 @@ router.patch('/me/step', async (req, res) => {
 // GET /api/candidates/me/personal — get personal details
 router.get('/me/personal', async (req, res) => {
   try {
-    const db = getClientForUser(req.token);
-    const { data: candidate } = await db
+    const { data: candidate } = await supabase
       .from('candidates')
       .select('id')
       .eq('clerk_user_id', req.userId)
@@ -119,7 +115,7 @@ router.get('/me/personal', async (req, res) => {
 
     if (!candidate) return res.status(404).json({ error: 'Profile not found' });
 
-    const { data: personal, error } = await db
+    const { data: personal, error } = await supabase
       .from('personal_details')
       .select('*')
       .eq('candidate_id', candidate.id)
@@ -148,8 +144,7 @@ router.get('/me/personal', async (req, res) => {
 // PUT /api/candidates/me/personal — save personal details
 router.put('/me/personal', async (req, res) => {
   try {
-    const db = getClientForUser(req.token);
-    const { data: candidate } = await db
+    const { data: candidate } = await supabase
       .from('candidates')
       .select('id')
       .eq('clerk_user_id', req.userId)
@@ -170,7 +165,7 @@ router.put('/me/personal', async (req, res) => {
       sia_address_match, dvla_address_match,
     };
 
-    const { data: personal, error } = await db
+    const { data: personal, error } = await supabase
       .from('personal_details')
       .upsert(payload, { onConflict: 'candidate_id' })
       .select()
@@ -196,7 +191,6 @@ router.put('/me/personal', async (req, res) => {
 // PUT /api/candidates/me/interview
 router.put('/me/interview', async (req, res) => {
   try {
-    const db = getClientForUser(req.token);
     const { whyHire, proudOf, availability, salary } = req.body;
     const interview_answers = {
       whyHire: whyHire || null,
@@ -205,7 +199,7 @@ router.put('/me/interview', async (req, res) => {
       salary: salary || null,
     };
 
-    const { data: candidate, error } = await db
+    const { data: candidate, error } = await supabase
       .from('candidates')
       .update({ interview_answers })
       .eq('clerk_user_id', req.userId)
@@ -222,8 +216,7 @@ router.put('/me/interview', async (req, res) => {
 // GET /api/candidates/me/full — returns all profile data in one call
 router.get('/me/full', async (req, res) => {
   try {
-    const db = getClientForUser(req.token);
-    const { data: candidate } = await db
+    const { data: candidate } = await supabase
       .from('candidates')
       .select('*')
       .eq('clerk_user_id', req.userId)
@@ -243,14 +236,14 @@ router.get('/me/full', async (req, res) => {
     });
 
     const [siaRes, personalRes, drivingRes, sectorsRes, qualsRes, bgRes, empRes, addrRes] = await Promise.all([
-      db.from('sia_licences').select('*').eq('candidate_id', candidate.id),
-      db.from('personal_details').select('*').eq('candidate_id', candidate.id).single(),
-      db.from('driving_details').select('*').eq('candidate_id', candidate.id).single(),
-      db.from('preferred_sectors').select('*').eq('candidate_id', candidate.id).single(),
-      db.from('qualifications').select('*').eq('candidate_id', candidate.id).single(),
-      db.from('professional_background').select('*').eq('candidate_id', candidate.id).single(),
-      db.from('employment_history').select('*').eq('candidate_id', candidate.id).order('start_date', { ascending: false }),
-      db.from('address_history').select('*').eq('candidate_id', candidate.id).order('moved_in_date', { ascending: false }),
+      supabase.from('sia_licences').select('*').eq('candidate_id', candidate.id),
+      supabase.from('personal_details').select('*').eq('candidate_id', candidate.id).single(),
+      supabase.from('driving_details').select('*').eq('candidate_id', candidate.id).single(),
+      supabase.from('preferred_sectors').select('*').eq('candidate_id', candidate.id).single(),
+      supabase.from('qualifications').select('*').eq('candidate_id', candidate.id).single(),
+      supabase.from('professional_background').select('*').eq('candidate_id', candidate.id).single(),
+      supabase.from('employment_history').select('*').eq('candidate_id', candidate.id).order('start_date', { ascending: false }),
+      supabase.from('address_history').select('*').eq('candidate_id', candidate.id).order('moved_in_date', { ascending: false }),
     ]);
 
     res.json({
@@ -273,11 +266,10 @@ router.get('/me/full', async (req, res) => {
 // GET /api/candidates/me/applications — get candidate's job applications
 router.get('/me/applications', async (req, res) => {
   try {
-    const db = getClientForUser(req.token);
-    const { data: candidate } = await db.from('candidates').select('id').eq('clerk_user_id', req.userId).single();
+    const { data: candidate } = await supabase.from('candidates').select('id').eq('clerk_user_id', req.userId).single();
     if (!candidate) return res.json({ applications: [] });
 
-    const { data, error } = await db
+    const { data, error } = await supabase
       .from('job_applications')
       .select(`id, status, created_at, interview_date, employer_feedback,
         jobs(id, title, location, rate_from, rate_to, rate_type, contract_type,
@@ -297,15 +289,14 @@ router.get('/me/applications', async (req, res) => {
 // PATCH /api/candidates/me/availability
 router.patch('/me/availability', async (req, res) => {
   try {
-    const db = getClientForUser(req.token);
     const { availability_status, available_from } = req.body;
     const valid = ['available', 'available_from', 'not_available'];
     if (!valid.includes(availability_status)) return res.status(400).json({ error: 'Invalid status' });
 
-    const { data: candidate } = await db.from('candidates').select('id').eq('clerk_user_id', req.userId).single();
+    const { data: candidate } = await supabase.from('candidates').select('id').eq('clerk_user_id', req.userId).single();
     if (!candidate) return res.status(404).json({ error: 'Profile not found' });
 
-    const { error } = await db.from('candidates').update({
+    const { error } = await supabase.from('candidates').update({
       availability_status,
       available_from: availability_status === 'available_from' ? available_from : null,
       updated_at: new Date().toISOString()
@@ -322,23 +313,22 @@ router.patch('/me/availability', async (req, res) => {
 // DELETE /api/candidates/me — GDPR right to erasure
 router.delete('/me', async (req, res) => {
   try {
-    const db = getClientForUser(req.token);
-    const { data: candidate } = await db.from('candidates').select('id').eq('clerk_user_id', req.userId).single();
+    const { data: candidate } = await supabase.from('candidates').select('id').eq('clerk_user_id', req.userId).single();
     if (!candidate) return res.status(404).json({ error: 'Profile not found' });
 
     const id = candidate.id;
 
     // Delete all candidate data in order (child tables first)
-    await db.from('job_applications').delete().eq('candidate_id', id);
-    await db.from('sia_licences').delete().eq('candidate_id', id);
-    await db.from('personal_details').delete().eq('candidate_id', id);
-    await db.from('employment_history').delete().eq('candidate_id', id);
-    await db.from('address_history').delete().eq('candidate_id', id);
-    await db.from('qualifications').delete().eq('candidate_id', id);
-    await db.from('preferred_sectors').delete().eq('candidate_id', id);
-    await db.from('driving_details').delete().eq('candidate_id', id);
-    await db.from('professional_background').delete().eq('candidate_id', id);
-    await db.from('candidates').delete().eq('id', id);
+    await supabase.from('job_applications').delete().eq('candidate_id', id);
+    await supabase.from('sia_licences').delete().eq('candidate_id', id);
+    await supabase.from('personal_details').delete().eq('candidate_id', id);
+    await supabase.from('employment_history').delete().eq('candidate_id', id);
+    await supabase.from('address_history').delete().eq('candidate_id', id);
+    await supabase.from('qualifications').delete().eq('candidate_id', id);
+    await supabase.from('preferred_sectors').delete().eq('candidate_id', id);
+    await supabase.from('driving_details').delete().eq('candidate_id', id);
+    await supabase.from('professional_background').delete().eq('candidate_id', id);
+    await supabase.from('candidates').delete().eq('id', id);
 
     // Log the deletion for GDPR audit trail
     console.log(`GDPR deletion completed for clerk_user_id: ${req.userId} candidate_id: ${id} at ${new Date().toISOString()}`);
