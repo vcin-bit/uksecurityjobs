@@ -1,7 +1,5 @@
-// Admin authentication — transition mode.
-// Accepts EITHER a Clerk Bearer token with role=admin in metadata,
-// OR the legacy x-admin-key header. The legacy branch will be
-// removed once the admin frontend is migrated to Clerk.
+// Admin authentication. Requires a Clerk Bearer token with
+// role=admin in the user's metadata.
 
 const { verifyToken } = require('@clerk/backend');
 
@@ -35,14 +33,6 @@ async function requireAdmin(req, res, next) {
       console.error('Admin token verification failed:', err.message);
       return res.status(403).json({ error: 'Forbidden' });
     }
-  }
-
-  // Path 2: Legacy shared secret (transition — remove after admin frontend migration)
-  const adminKey = req.headers['x-admin-key'];
-  if (adminKey && adminKey === process.env.ADMIN_SECRET) {
-    req.isAdmin = true;
-    req.userId = 'legacy-admin-key';
-    return next();
   }
 
   // No valid auth

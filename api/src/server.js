@@ -29,7 +29,7 @@ app.use(cors({
     'http://localhost:5500'
   ],
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key']
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Rate limiting — 100 requests per 15 minutes per IP
