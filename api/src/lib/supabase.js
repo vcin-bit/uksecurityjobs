@@ -6,16 +6,18 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
-// Create a per-request Supabase client with the user context set
-// This ensures RLS policies fire correctly for every query
-async function getClientForUser(userId) {
-  const client = createClient(
+// Per-request client scoped to the calling user. Uses the anon
+// key + the user's Clerk JWT so RLS policies (auth.jwt()->>'sub')
+// are enforced. Build a fresh one per request.
+function getClientForUser(token) {
+  return createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
+    process.env.SUPABASE_ANON_KEY,
+    {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false }
+    }
   );
-  // Set the user ID in the session context so RLS policies can read it
-  await client.rpc('set_current_user_id', { user_id: userId });
-  return client;
 }
 
 // Encrypt a sensitive value using pgcrypto
