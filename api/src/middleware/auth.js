@@ -18,6 +18,7 @@ async function requireAuth(req, res, next) {
     }
 
     req.userId = payload.sub;
+    req.token = token;
     req.userEmail = payload.email || '';
     next();
   } catch (err) {
