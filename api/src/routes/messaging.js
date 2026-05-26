@@ -9,7 +9,7 @@ const MESSAGE_TYPES = ['general','request_info','schedule_update','offer','outco
 async function verifyAccess(client, applicationId, userId, senderType) {
   const { data: app } = await client
     .from('job_applications')
-    .select('id, candidate_id, job_id, jobs(employer_id, title), candidates(clerk_user_id, email, personal_details(first_name)), employers(contact_email, company_name)')
+    .select('id, candidate_id, job_id, jobs(employer_id, title, employers(contact_email, company_name)), candidates(clerk_user_id, email, personal_details(first_name))')
     .eq('id', applicationId)
     .single();
 
@@ -86,7 +86,7 @@ router.post('/:applicationId', async (req, res) => {
     // Email notification to recipient
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
     const jobTitle = app.jobs?.title || 'your application';
-    const companyName = app.employers?.company_name || 'the employer';
+    const companyName = app.jobs?.employers?.company_name || 'the employer';
 
     if (sender_type === 'employer') {
       const candidateEmail = app.candidates?.email;
@@ -106,7 +106,7 @@ router.post('/:applicationId', async (req, res) => {
         }).catch(() => {});
       }
     } else {
-      const empEmail = app.employers?.contact_email || app.jobs?.employers?.contact_email;
+      const empEmail = app.jobs?.employers?.contact_email;
       if (empEmail) {
         const candidateName = `${app.candidates?.personal_details?.first_name || app.candidates?.personal_details?.[0]?.first_name || 'Candidate'} ${app.candidates?.personal_details?.last_name || app.candidates?.personal_details?.[0]?.last_name || ''}`.trim();
         await sgMail.send({
