@@ -392,10 +392,15 @@ router.post('/apply', async (req, res) => {
     if (error) throw error;
 
     // Get job and employer details for emails
-    const { data: job } = await db.from('jobs').select('title, location, employer_id, employers(contact_email, company_name)').eq('id', job_id).single();
+    const { data: job } = await db.from('jobs').select('title, location, employer_id').eq('id', job_id).maybeSingle();
     const { data: candPersonal } = await db.from('personal_details').select('first_name, last_name').eq('candidate_id', candidate.id).single();
     const { data: candMain } = await db.from('candidates').select('email').eq('id', candidate.id).single();
     const candidateEmail = candMain?.email || req.userEmail || '';
+
+    // Server-side employer lookup for notification emails — never returned to client
+    const { data: emp } = job?.employer_id
+      ? await supabase.from('employers').select('contact_email, company_name').eq('id', job.employer_id).maybeSingle()
+      : { data: null };
 
     if (job) {
       // Email candidate confirmation
@@ -403,15 +408,15 @@ router.post('/apply', async (req, res) => {
         toEmail: candidateEmail,
         firstName: candPersonal?.first_name || 'Officer',
         jobTitle: job.title,
-        companyName: job.employers?.company_name || 'Employer',
+        companyName: emp?.company_name || 'Employer',
         location: job.location || '',
       }).catch(e => console.error('Application email failed:', e));
 
       // Email employer new applicant
-      if (job.employers?.contact_email) {
+      if (emp?.contact_email) {
         email.sendNewApplicant({
-          toEmail: job.employers.contact_email,
-          companyName: job.employers.company_name,
+          toEmail: emp.contact_email,
+          companyName: emp.company_name || 'Employer',
           jobTitle: job.title,
           candidateFirstName: candPersonal?.first_name || 'Candidate',
         }).catch(e => console.error('New applicant email failed:', e));

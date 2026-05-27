@@ -286,18 +286,25 @@ router.get('/me/applications', async (req, res) => {
     const { data, error } = await db
       .from('job_applications')
       .select(`id, status, applied_at, interview_slot_id,
-        jobs(id, title, location, rate_from, rate_to, rate_type, contract_type,
-          employers(company_name, logo_url)
-        ),
+        jobs(id, title, location, rate_from, rate_to, rate_type, contract_type, employer_id),
         interview_slots(slot_datetime)`)
       .eq('candidate_id', candidate.id)
       .order('applied_at', { ascending: false });
 
     if (error) throw error;
+
+    // Safe employer lookup — employers_public exposes only non-sensitive columns
+    const empIds = [...new Set((data||[]).map(a => a.jobs?.employer_id).filter(Boolean))];
+    const { data: emps } = empIds.length
+      ? await db.from('employers_public').select('id, company_name, logo_url').in('id', empIds)
+      : { data: [] };
+    const empMap = Object.fromEntries((emps||[]).map(e => [e.id, e]));
+
     const applications = (data || []).map(a => ({
       ...a,
       created_at: a.applied_at,
-      interview_date: a.interview_slots?.slot_datetime || null
+      interview_date: a.interview_slots?.slot_datetime || null,
+      jobs: a.jobs ? { ...a.jobs, employers: empMap[a.jobs.employer_id] || {} } : a.jobs,
     }));
     res.json({ applications });
   } catch(err) {

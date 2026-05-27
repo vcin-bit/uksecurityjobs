@@ -9,11 +9,19 @@ const MESSAGE_TYPES = ['general','request_info','schedule_update','offer','outco
 async function verifyAccess(client, applicationId, userId, senderType) {
   const { data: app } = await client
     .from('job_applications')
-    .select('id, candidate_id, job_id, jobs(employer_id, title, employers(contact_email, company_name)), candidates(clerk_user_id, email, personal_details(first_name))')
+    .select('id, candidate_id, job_id, jobs(employer_id, title), candidates(clerk_user_id, email, personal_details(first_name))')
     .eq('id', applicationId)
     .single();
 
   if (!app) return null;
+
+  // Safe employer lookup — display only, no sensitive fields
+  if (app.jobs?.employer_id) {
+    const { data: emp } = await client.from('employers_public').select('company_name').eq('id', app.jobs.employer_id).maybeSingle();
+    app.jobs.employers = emp || {};
+  } else if (app.jobs) {
+    app.jobs.employers = {};
+  }
 
   if (senderType === 'employer') {
     const { data: emp } = await client.from('employers').select('id').eq('clerk_user_id', userId).single();
@@ -46,7 +54,13 @@ router.get('/:applicationId', async (req, res) => {
         .in('id', unread.map(m => m.id));
     }
 
-    res.json({ messages: messages || [], application: app });
+    const safeApp = {
+      ...app,
+      candidates: app.candidates ? {
+        personal_details: app.candidates.personal_details
+      } : app.candidates,
+    };
+    res.json({ messages: messages || [], application: safeApp });
   } catch(err) {
     console.error('GET /messages error:', err);
     res.status(500).json({ error: 'Failed to fetch messages' });
@@ -106,7 +120,12 @@ router.post('/:applicationId', async (req, res) => {
         }).catch(() => {});
       }
     } else {
-      const empEmail = app.jobs?.employers?.contact_email;
+      // Server-side notification lookup — contact_email never returned to client
+      let empEmail = null;
+      if (app.jobs?.employer_id) {
+        const { data: empNotify } = await supabase.from('employers').select('contact_email').eq('id', app.jobs.employer_id).maybeSingle();
+        empEmail = empNotify?.contact_email;
+      }
       if (empEmail) {
         const candidateName = `${app.candidates?.personal_details?.first_name || app.candidates?.personal_details?.[0]?.first_name || 'Candidate'} ${app.candidates?.personal_details?.last_name || app.candidates?.personal_details?.[0]?.last_name || ''}`.trim();
         await sgMail.send({
