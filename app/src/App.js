@@ -4205,6 +4205,7 @@ function EmployerDashboard() {
   const [loading, setLoading] = React.useState(true);
   const [showPostJob, setShowPostJob] = React.useState(false);
   const [showPaywall, setShowPaywall] = React.useState(false);
+  const [editJob, setEditJob] = React.useState(null);
   const [selectedJob, setSelectedJob] = React.useState(null);
   const [applicants, setApplicants] = React.useState({});
   const [loadingApplicants, setLoadingApplicants] = React.useState(false);
@@ -4325,7 +4326,7 @@ function EmployerDashboard() {
             </div>
             <div style={{display:'flex',gap:'0.75rem',alignItems:'center'}}>
               <LogoUpload currentUrl={employer.logo_url} getToken={getToken} onUploaded={url=>setEmployer({...employer,logo_url:url})}/>
-              <button className="btn-next" onClick={() => setShowPostJob(true)}>+ Post a Job</button>
+              <button className="btn-next" onClick={() => { setEditJob(null); setShowPostJob(true); }}>+ Post a Job</button>
             </div>
           </div>
         </div>
@@ -4346,13 +4347,22 @@ function EmployerDashboard() {
             </div>
           </div>
         )}
-        {showPostJob && (
+        {(showPostJob || editJob) && (
           <PostJobForm
             employerName={employer.company_name}
             getToken={getToken}
-            onSaved={(job) => { setJobs([job, ...jobs]); setShowPostJob(false); }}
-            onCancel={() => setShowPostJob(false)}
-            onPaymentRequired={() => { setShowPostJob(false); setShowPaywall(true); }}
+            editJob={editJob}
+            onSaved={(job) => {
+              if (editJob) {
+                setJobs(jobs.map(j => j.id === job.id ? job : j));
+                setEditJob(null);
+              } else {
+                setJobs([job, ...jobs]);
+                setShowPostJob(false);
+              }
+            }}
+            onCancel={() => { setShowPostJob(false); setEditJob(null); }}
+            onPaymentRequired={() => { setShowPostJob(false); setEditJob(null); setShowPaywall(true); }}
           />
         )}
 
@@ -4399,6 +4409,12 @@ function EmployerDashboard() {
                             {selectedJob===job.id ? 'Hide' : `Applicants (${Array.isArray(job.job_applications)?job.job_applications[0]?.count||0:0})`}
                           </button>
                           <div style={{display:'flex',gap:'0.3rem'}}>
+                            {job.status!=='ended' && (
+                              <button onClick={()=>{ setShowPostJob(false); setEditJob(job); }}
+                                style={{padding:'0.3rem 0.75rem',borderRadius:'6px',border:'1px solid #bfdbfe',background:'#eff6ff',color:'#1a52a8',fontSize:'0.72rem',fontWeight:700,cursor:'pointer'}}>
+                                Edit
+                              </button>
+                            )}
                             {job.status==='active' && (
                               <button onClick={()=>setPauseModal({jobId:job.id,jobTitle:job.title})}
                                 style={{padding:'0.3rem 0.75rem',borderRadius:'6px',border:'1px solid #fde68a',background:'#fffbeb',color:'#854d0e',fontSize:'0.72rem',fontWeight:700,cursor:'pointer'}}>
@@ -4637,16 +4653,16 @@ function EmployerRegisterForm({ onSaved, getToken }) {
 }
 
 // ── POST JOB FORM ──
-function PostJobForm({ employerName, getToken, onSaved, onCancel, onPaymentRequired }) {
+function PostJobForm({ employerName, getToken, onSaved, onCancel, onPaymentRequired, editJob }) {
   const [form, setForm] = React.useState({
-    title:'', company_name: employerName, location:'', postcode:'',
-    sector:'', description:'', duties:'',
-    rate_from:'', rate_to:'', rate_type:'hourly',
-    contract_type:'', employment_type:'', min_hours:'',
-    shift_pattern:[], benefits:'',
-    parking:'', start_date:'',
-    licences_required:[], driving_licence_required:'Not Required',
-    own_transport_required:'Not Required',
+    title: editJob?.title || '', company_name: editJob?.company_name || employerName, location: editJob?.location || '', postcode: editJob?.postcode || '',
+    sector: editJob?.sector || '', description: editJob?.description || '', duties: editJob?.duties || '',
+    rate_from: editJob?.rate_from ?? '', rate_to: editJob?.rate_to ?? '', rate_type: editJob?.rate_type || 'hourly',
+    contract_type: editJob?.contract_type || '', employment_type: editJob?.employment_type || '', min_hours: editJob?.min_hours ?? '',
+    shift_pattern: editJob?.shift_pattern || [], benefits: editJob?.benefits || '',
+    parking: editJob?.parking || '', start_date: editJob?.start_date || '',
+    licences_required: editJob?.licences_required || [], driving_licence_required: editJob?.driving_licence_required || 'Not Required',
+    own_transport_required: editJob?.own_transport_required || 'Not Required',
   });
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -4666,13 +4682,18 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel, onPaymentRequi
     setSaving(true);
     try {
       const payload = { ...form, rate_from: form.rate_from ? parseFloat(form.rate_from) : null, rate_to: form.rate_to ? parseFloat(form.rate_to) : null };
-      const res = await apiRequest('/api/employers/jobs', 'POST', payload, getToken);
-      onSaved(res.job);
+      if (editJob) {
+        const res = await apiRequest(`/api/employers/jobs/${editJob.id}`, 'PUT', payload, getToken);
+        onSaved(res.job);
+      } else {
+        const res = await apiRequest('/api/employers/jobs', 'POST', payload, getToken);
+        onSaved(res.job);
+      }
     } catch(err) {
-      if (err?.message === 'payment_required') {
+      if (!editJob && err?.message === 'payment_required') {
         onPaymentRequired && onPaymentRequired();
       } else {
-        setError('Failed to post job. Please try again.');
+        setError(editJob ? 'Failed to save changes. Please try again.' : 'Failed to post job. Please try again.');
       }
     }
     setSaving(false);
@@ -4683,7 +4704,7 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel, onPaymentRequi
   return (
     <div className="dash-card" style={{marginBottom:'1.5rem',border:'2px solid #1a52a8'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.25rem'}}>
-        <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222'}}>Post a New Job</div>
+        <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222'}}>{editJob ? 'Edit Job' : 'Post a New Job'}</div>
         <button type="button" onClick={onCancel} style={{background:'none',border:'none',color:'#64748b',cursor:'pointer',fontSize:'1.25rem'}}>×</button>
       </div>
       <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'10px',padding:'1.25rem 1.5rem',marginBottom:'1.5rem',fontSize:'0.88rem',color:'#374151',lineHeight:'1.75'}}>
@@ -4810,7 +4831,7 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel, onPaymentRequi
           </div>
 
           <div style={{display:'flex',gap:'1rem'}}>
-            <button className="btn-next" type="submit" disabled={saving} style={{flex:1}}>{saving?'Posting...':'Post Job →'}</button>
+            <button className="btn-next" type="submit" disabled={saving} style={{flex:1}}>{saving ? (editJob ? 'Saving...' : 'Posting...') : (editJob ? 'Save Changes' : 'Post Job →')}</button>
             <button type="button" onClick={onCancel} style={{padding:'0.75rem 1.5rem',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',color:'#64748b',cursor:'pointer',fontFamily:'inherit',fontWeight:600}}>Cancel</button>
           </div>
         </div>
