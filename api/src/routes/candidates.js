@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase, getClientForUser, encrypt, decrypt, auditLog } = require('../lib/supabase');
+const { createClerkClient } = require('@clerk/backend');
 
 // GET /api/candidates/me — get the current candidate's profile, create if doesn't exist
 router.get('/me', async (req, res) => {
@@ -14,11 +15,21 @@ router.get('/me', async (req, res) => {
 
     // Auto-create candidate record on first login if it doesn't exist
     if (error && error.code === 'PGRST116') {
+      // Fetch email from Clerk API — JWT does not include the email claim
+      let candidateEmail = req.userEmail || '';
+      try {
+        const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const clerkUser = await clerk.users.getUser(req.userId);
+        candidateEmail = clerkUser.emailAddresses?.[0]?.emailAddress || candidateEmail;
+      } catch (e) {
+        console.error('Clerk email lookup failed for', req.userId, e.message);
+      }
+
       const { data: newCandidate, error: createError } = await db
         .from('candidates')
         .insert({
           clerk_user_id: req.userId,
-          email: req.userEmail || '',
+          email: candidateEmail,
           gdpr_consent: false,
           profile_step: 0
         })
