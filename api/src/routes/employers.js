@@ -527,11 +527,18 @@ router.post('/jobs/:jobId/interview-slots', async (req, res) => {
       const tokenExpiry = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
       // Store token against application
-      await supabase.from('job_applications').update({
-        interview_token: token,
-        interview_token_expires: tokenExpiry,
-        status: 'interview_proposed'
-      }).eq('id', appId);
+      const { data: tokUpd, error: tokErr } = await supabase
+        .from('job_applications')
+        .update({
+          interview_token: token,
+          interview_token_expires: tokenExpiry,
+          status: 'interview_proposed'
+        })
+        .eq('id', appId)
+        .select();
+      console.log('interview-slots token update:', JSON.stringify({
+        appId, rowsUpdated: (tokUpd||[]).length, error: tokErr
+      }));
 
       // Build slot buttons for email
       const slotButtons = createdSlots.map((slot, i) => {
