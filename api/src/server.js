@@ -159,6 +159,10 @@ app.get('/api/jobs/public', async (req, res) => {
   }
 });
 
+// Token-gated interview routes — no Clerk auth, validated by interview_token
+const interviewPublicRoutes = require('./routes/interview-public');
+app.use('/api/employers', interviewPublicRoutes);
+
 // Authenticated API routes — each mounts requireAuth explicitly.
 app.use('/api/candidates', requireAuth, candidateRoutes);
 app.use('/api/sia', requireAuth, siaRoutes);
