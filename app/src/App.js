@@ -3047,12 +3047,14 @@ function Dashboard() {
   const [fact] = React.useState(() => industryFacts[Math.floor(Math.random() * industryFacts.length)]);
   const [profileData, setProfileData] = React.useState(null);
   const [profileLoading, setProfileLoading] = React.useState(true);
+  const [accountChecked, setAccountChecked] = React.useState(false);
 
   React.useEffect(() => {
     async function load() {
       try {
         const emp = await apiRequest('/api/employers/me', 'GET', null, getToken);
-        if (emp && emp.employer) { setProfileLoading(false); navigate('/employer', { replace: true }); return; }
+        if (emp && emp.employer) { setAccountChecked(true); setProfileLoading(false); navigate('/employer', { replace: true }); return; }
+        setAccountChecked(true);
         await apiRequest('/api/candidates/me', 'GET', null, getToken);
         const full = await apiRequest('/api/candidates/me/full', 'GET', null, getToken);
         setProfileData({
@@ -3067,6 +3069,7 @@ function Dashboard() {
         });
       } catch(err) {
         console.error('Dashboard load error:', err);
+        setAccountChecked(true);
         // Set empty profile so dashboard renders correctly for new users
         setProfileData({ licences:[], personal:null, employment:[], addresses:[], driving:null, sectors:null, qualifications:null, background:null });
       }
@@ -3091,6 +3094,8 @@ function Dashboard() {
   const pct = Math.round((completed / total) * 100);
   const scoreLabel = pct >= 80 ? 'Premium roles unlocked' : pct >= 60 ? 'Standard roles unlocked' : 'Complete your profile to unlock roles';
   const scoreColor = pct >= 80 ? '#10b981' : pct >= 60 ? '#f59e0b' : '#1a52a8';
+
+  if (!accountChecked) return <div className="page" style={{background:'var(--off)'}}><Nav/></div>;
 
   return (
     <div className="page" style={{background:'var(--off)'}}>
