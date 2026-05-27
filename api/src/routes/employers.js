@@ -550,11 +550,12 @@ router.post('/jobs/:jobId/interview-slots', async (req, res) => {
         </div>`;
       }).join('');
 
-      await sgMail.send({
-        from: { email: 'admin@uksecurityjobs.co.uk', name: 'UKSecurityJobs' },
-        to: candidateEmail,
-        subject: `Interview Invitation — ${job.title} at ${employer?.company_name || 'Employer'}`,
-        html: `<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#f9fafb;margin:0;padding:0;">
+      try {
+        await sgMail.send({
+          from: { email: 'admin@uksecurityjobs.co.uk', name: 'UKSecurityJobs' },
+          to: candidateEmail,
+          subject: `Interview Invitation — ${job.title} at ${employer?.company_name || 'Employer'}`,
+          html: `<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#f9fafb;margin:0;padding:0;">
 <div style="max-width:600px;margin:0 auto;padding:2rem 1rem;">
   <div style="text-align:center;padding:1.25rem 0 1rem;">
     <a href="https://www.uksecurityjobs.co.uk" style="font-size:1.2rem;font-weight:800;text-decoration:none;">
@@ -591,9 +592,11 @@ router.post('/jobs/:jobId/interview-slots', async (req, res) => {
   </div>
 </div>
 </body></html>`
-      });
-
-      emailsSent++;
+        });
+        emailsSent++;
+      } catch (e) {
+        console.error('Interview invite email failed for', candidateEmail, e.message);
+      }
     }
 
     res.json({ success: true, slots_created: createdSlots.length, emails_sent: emailsSent });
