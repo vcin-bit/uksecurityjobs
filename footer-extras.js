@@ -106,6 +106,11 @@
     // footer link
     var footerBlock = document.querySelector('.foot-legal') || document.querySelector('.foot-links');
     if (footerBlock) {
+      var rightsLink = document.createElement('a');
+      rightsLink.href = '/privacy#your-rights';
+      rightsLink.textContent = 'Your Rights';
+      footerBlock.appendChild(rightsLink);
+
       var link = document.createElement('a');
       link.href = '#';
       link.textContent = 'Cookie Settings';
