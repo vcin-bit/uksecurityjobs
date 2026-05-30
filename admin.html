@@ -414,9 +414,13 @@ async function verify(id) {
 
 async function reject(id) {
   const notes = prompt('Reason for rejection:');
-  if (!notes) return;
-  try { await req(`/admin/api/sia/${id}/reject`, 'POST', { notes }); loadQueue(); loadStats(); }
-  catch(e) { alert('Failed to reject licence'); }
+  if (notes === null) return;
+  if (!notes.trim()) { alert('A rejection reason is required.'); return; }
+  try {
+    await req(`/admin/api/sia/${id}/reject`, 'POST', { notes: notes.trim() });
+    loadQueue();
+    loadStats();
+  } catch(e) { alert('Failed to reject licence'); }
 }
 
 async function viewCandidate(id) {
