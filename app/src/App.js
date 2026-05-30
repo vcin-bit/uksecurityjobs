@@ -5013,9 +5013,9 @@ function JobListingsPage() {
                         {job.start_date && <span>Start: {job.start_date}</span>}
                         {job.parking && job.parking!=='No parking available' && <span>{job.parking}</span>}
                       </div>
-                      {job.description && <div style={{fontSize:'0.78rem',color:'#374151',lineHeight:'1.6',marginBottom:'0.5rem'}}>{job.description}</div>}
-                      {job.duties && <div style={{fontSize:'0.75rem',color:'#475569',lineHeight:'1.6',marginBottom:'0.5rem',background:'#f8fafc',borderRadius:'6px',padding:'0.5rem 0.75rem'}}><span style={{fontWeight:700,color:'#0b1222'}}>Key duties: </span>{job.duties}</div>}
-                      {job.benefits && <div style={{fontSize:'0.75rem',color:'#475569',lineHeight:'1.6',marginBottom:'0.75rem'}}><span style={{fontWeight:700,color:'#0b1222'}}>Benefits: </span>{job.benefits}</div>}
+                      {job.description && <div style={{fontSize:'0.78rem',color:'#374151',lineHeight:'1.6',marginBottom:'0.5rem',whiteSpace:'pre-line'}}>{job.description}</div>}
+                      {job.duties && <div style={{fontSize:'0.75rem',color:'#475569',lineHeight:'1.6',marginBottom:'0.5rem',background:'#f8fafc',borderRadius:'6px',padding:'0.5rem 0.75rem',whiteSpace:'pre-line'}}><span style={{fontWeight:700,color:'#0b1222'}}>Key duties: </span>{job.duties}</div>}
+                      {job.benefits && <div style={{fontSize:'0.75rem',color:'#475569',lineHeight:'1.6',marginBottom:'0.75rem',whiteSpace:'pre-line'}}><span style={{fontWeight:700,color:'#0b1222'}}>Benefits: </span>{job.benefits}</div>}
                       {(job.shift_pattern||[]).length>0 && <div style={{fontSize:'0.72rem',color:'#64748b',marginBottom:'0.75rem'}}><span style={{fontWeight:600}}>Shifts: </span>{(job.shift_pattern||[]).join(', ')}</div>}
                       <div style={{display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
                         {(job.licences_required||[]).map(l=><span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8',border:'1px solid #bfdbfe'}}>{l}</span>)}
