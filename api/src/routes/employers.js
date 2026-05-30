@@ -3,6 +3,16 @@ const router = express.Router();
 const { supabase, getClientForUser, auditLog } = require('../lib/supabase');
 const email = require('../lib/email');
 
+// Strip markdown-style formatting from employer-entered text
+function stripMarkdown(text) {
+  if (!text || typeof text !== 'string') return text;
+  return text
+    .replace(/\*\*/g, '')                  // remove bold markers
+    .replace(/^\s*-\s+/gm, '')             // remove leading "- " on each line
+    .replace(/\n{3,}/g, '\n\n')            // collapse 3+ newlines to 2
+    .replace(/[ \t]+$/gm, '');             // trim trailing whitespace per line
+}
+
 // Helper
 async function getEmployerId(client, userId) {
   const { data } = await client.from('employers').select('id').eq('clerk_user_id', userId).single();
@@ -80,8 +90,12 @@ router.post('/jobs', async (req, res) => {
     }
 
     const expires_at = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
+    const body = req.body || {};
     const { data, error } = await db.from('jobs').insert({
-      ...req.body,
+      ...body,
+      description: stripMarkdown(body.description),
+      duties: stripMarkdown(body.duties),
+      benefits: stripMarkdown(body.benefits),
       employer_id: employerId,
       status: 'active',
       expires_at,
@@ -99,8 +113,13 @@ router.put('/jobs/:id', async (req, res) => {
     const db = getClientForUser(req.token);
     const employerId = await getEmployerId(db, req.userId);
     if (!employerId) return res.status(404).json({ error: 'Not found' });
+    const body = req.body || {};
+    const update = { ...body, updated_at: new Date() };
+    if (typeof body.description !== 'undefined') update.description = stripMarkdown(body.description);
+    if (typeof body.duties !== 'undefined')      update.duties      = stripMarkdown(body.duties);
+    if (typeof body.benefits !== 'undefined')    update.benefits    = stripMarkdown(body.benefits);
     const { data, error } = await db.from('jobs')
-      .update({ ...req.body, updated_at: new Date() })
+      .update(update)
       .eq('id', req.params.id).eq('employer_id', employerId).select().single();
     if (error) throw error;
     res.json({ success: true, job: data });
