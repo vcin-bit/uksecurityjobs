@@ -26,6 +26,7 @@ router.get('/sia/queue', async (req, res) => {
       .from('sia_licences')
       .select('*, candidates(clerk_user_id, email, personal_details(first_name, last_name))')
       .eq('verified', false)
+      .is('verified_at', null)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
@@ -178,7 +179,7 @@ router.get('/stats', async (req, res) => {
     const [totalRes, verifiedRes, pendingRes, completeRes, waitlistRes] = await Promise.allSettled([
       supabase.from('candidates').select('*', { count: 'exact', head: true }),
       supabase.from('sia_licences').select('*', { count: 'exact', head: true }).eq('verified', true),
-      supabase.from('sia_licences').select('*', { count: 'exact', head: true }).eq('verified', false),
+      supabase.from('sia_licences').select('*', { count: 'exact', head: true }).eq('verified', false).is('verified_at', null),
       supabase.from('candidates').select('*', { count: 'exact', head: true }).eq('profile_complete', true),
       supabase.from('waitlist').select('*', { count: 'exact', head: true }),
     ]);
