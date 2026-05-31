@@ -256,7 +256,7 @@ router.post('/waitlist/launch-email', async (req, res) => {
         await sgMail.send({
           from: { email: 'admin@uksecurityjobs.co.uk', name: 'David Foster — UKSecurityJobs' },
           to: person.email,
-          subject: `Thank you for registering — an honest update`,
+          subject: `You're in — UKSecurityJobs is open`,
           html: `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#f9fafb;margin:0;padding:0;">
 <div style="max-width:580px;margin:0 auto;padding:2rem 1rem;">
 
@@ -268,51 +268,41 @@ router.post('/waitlist/launch-email', async (req, res) => {
 
   <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:2rem;">
 
-    <h1 style="font-size:1.2rem;font-weight:800;color:#0b1222;margin:0 0 1.25rem;">Thank you, ${person.first_name}.</h1>
+    <h1 style="font-size:1.2rem;font-weight:800;color:#0b1222;margin:0 0 1.25rem;">Hi ${person.first_name},</h1>
 
     <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1rem;">
-      You registered your interest in UKSecurityJobs and I wanted to write to you personally to say thank you — and to be straight with you about where we are.
+      When you registered your interest in UKSecurityJobs, the platform wasn&rsquo;t open yet. It is now &mdash; and because you signed up early, you&rsquo;re among the first who can create a full profile.
     </p>
 
     <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1rem;">
-      The platform is built. The profile system, the SIA licence verification, the BS7858-ready vetting profiles, the employer dashboard, the interview scheduling — it is all there and working.
+      Here&rsquo;s what that means. You build a proper professional profile: your SIA licence (verified against the public register), your BS7858-ready details, your experience. Once it&rsquo;s complete and verified, you get a verified badge and you&rsquo;re visible to employers looking specifically for licensed, vetted security professionals &mdash; not lost in a pile of unfiltered applications on a generic job board.
     </p>
 
     <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1rem;">
-      But we have a classic chicken and egg problem. Employers want to see candidates before they post jobs. Candidates want to see jobs before they register. Someone has to move first.
+      This is the platform the industry should have had years ago. Every candidate holds a valid SIA licence and a complete profile. Employers get quality. You get treated like the professional you are.
     </p>
 
     <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1.5rem;">
-      You already have. You are one of 17 people who registered early — which means you understand what this platform is trying to do and you believe it is worth doing. That matters more than you might think.
+      If you haven&rsquo;t already registered, head to the site and create your account &mdash; it takes a few minutes:
     </p>
-
-    <div style="background:#f8fafc;border-left:4px solid #1a52a8;border-radius:0 8px 8px 0;padding:1rem 1.25rem;margin:1.5rem 0;font-size:0.92rem;color:#334155;line-height:1.8;">
-      <strong style="color:#0b1222;display:block;margin-bottom:0.5rem;">What UKSecurityJobs is trying to do:</strong>
-      The security industry deserves a platform built for it — not a generic job board that treats a security professional the same as any other job seeker. Every candidate on this platform holds a valid SIA licence and has a complete, BS7858-ready profile. Employers get quality. Candidates get treated like the professionals they are.
-    </div>
-
-    <p style="font-size:0.95rem;color:#4a5568;line-height:1.85;margin:0 0 1rem;">
-      Right now, what would help most is simple — tell other security professionals about this. Officers, supervisors, managers, close protection officers. The more people who register their interest, the faster we can get the platform fully open.
-    </p>
-
-    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:1rem 1.25rem;margin:0 0 1.5rem;font-size:0.88rem;color:#0369a1;line-height:1.75;">
-      <strong style="display:block;margin-bottom:0.3rem;">Share this link with anyone in security:</strong>
-      <a href="https://www.uksecurityjobs.co.uk/early-access" style="color:#1a52a8;font-weight:700;">www.uksecurityjobs.co.uk/early-access</a>
-    </div>
-
-    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:1rem 1.25rem;margin:0 0 1.5rem;font-size:0.88rem;color:#334155;line-height:1.75;">
-      <strong style="color:#0b1222;display:block;margin-bottom:0.4rem;">A note on your data and security:</strong>
-      We know that the information required to work in this industry is sensitive — SIA licence details, employment history, address history, right to work documents. We have built this platform with that in mind from day one. Your data is stored securely in encrypted EU-based servers, is never sold, never shared without your explicit consent, and is handled in full compliance with UK GDPR. We are pursuing Cyber Essentials certification and ICO registration. Your trust is not something we take lightly.
-    </div>
 
     <div style="text-align:center;margin:1.75rem 0;">
-      <a href="https://www.uksecurityjobs.co.uk/early-access" style="display:inline-block;background:#0b1222;color:#fff;font-weight:700;font-size:0.95rem;padding:0.875rem 2.25rem;border-radius:10px;text-decoration:none;">
-        Register Your Interest &rarr;
+      <a href="https://www.uksecurityjobs.co.uk" style="display:inline-block;background:#0b1222;color:#fff;font-weight:700;font-size:0.95rem;padding:0.875rem 2.25rem;border-radius:10px;text-decoration:none;">
+        Register Now &rarr;
       </a>
     </div>
 
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:1rem 1.25rem;margin:0 0 1.5rem;font-size:0.88rem;color:#0369a1;line-height:1.75;">
+      And one favour: if you know other security professionals &mdash; officers, supervisors, CCTV operators, close protection &mdash; please share this with them, or post it to your networks. The more licensed professionals on the platform, the more employers it attracts, and the better it works for everyone on it. Forward this email, or share the link: www.uksecurityjobs.co.uk
+    </div>
+
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:1rem 1.25rem;margin:0 0 1.5rem;font-size:0.88rem;color:#334155;line-height:1.75;">
+      <strong style="color:#0b1222;display:block;margin-bottom:0.4rem;">A note on your data:</strong>
+      The information this industry runs on is sensitive &mdash; licence details, employment and address history, right-to-work status. We built this platform with that in mind from day one. Your data is encrypted, stored on EU-based servers, never sold, and never shared without your explicit consent, in full compliance with UK GDPR. We&rsquo;re registered with the ICO and pursuing Cyber Essentials certification.
+    </div>
+
     <p style="font-size:0.88rem;color:#64748b;line-height:1.75;margin:1.25rem 0 0;">
-      Any questions at all — just reply to this email. I read and respond to every one personally.
+      Any questions, just reply &mdash; I read and respond to every one personally.
     </p>
 
     <p style="font-size:0.88rem;color:#64748b;margin:0.75rem 0 0;">
@@ -325,7 +315,7 @@ router.post('/waitlist/launch-email', async (req, res) => {
 
   <div style="text-align:center;padding:1.5rem 0;font-size:0.75rem;color:#94a3b8;">
     You registered your interest at uksecurityjobs.co.uk.<br/>
-    <a href="https://www.uksecurityjobs.co.uk/unsubscribe?email=${encodeURIComponent(person.email)}" style="color:#94a3b8;">Unsubscribe</a><br/>
+    To unsubscribe, reply to this email and I will remove you from the list.<br/>
     &copy; 2026 UKSecurityJobs.co.uk &mdash; Digital Software Group Ltd
   </div>
 
