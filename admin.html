@@ -153,6 +153,7 @@ tr:hover td{background:#fafbfc;}
         <button class="topnav-tab active" onclick="showSection('overview',this)">Overview</button>
         <button class="topnav-tab" onclick="showSection('verification',this)">SIA Verification</button>
         <button class="topnav-tab" onclick="showSection('candidates',this)">Candidates</button>
+        <button class="topnav-tab" onclick="showSection('employers',this)">Employers</button>
         <button class="topnav-tab" onclick="showSection('waitlist',this)">Waitlist</button>
       </div>
       <div class="topnav-right">
@@ -233,6 +234,16 @@ tr:hover td{background:#fafbfc;}
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <div class="section" id="section-employers">
+      <div class="page-hd">
+        <div class="page-title">Employers</div>
+        <div class="page-sub">Every registered employer on the platform.</div>
+      </div>
+      <div class="card">
+        <div id="employersList"><div class="loading">Loading...</div></div>
       </div>
     </div>
 
@@ -406,6 +417,31 @@ async function loadCandidates() {
   } catch(e) { el.innerHTML = '<div class="empty">Failed to load candidates</div>'; }
 }
 
+async function loadEmployers() {
+  const el = document.getElementById('employersList');
+  el.innerHTML = '<div class="loading">Loading...</div>';
+  try {
+    const d = await req('/admin/api/employers');
+    const list = d.employers || [];
+    if (!list.length) { el.innerHTML = '<div class="empty">No employers registered yet</div>'; return; }
+    el.innerHTML = `<table>
+      <thead><tr><th>Company</th><th>Contact</th><th>Phone</th><th>Website</th><th>Company No.</th><th>SIA ACS</th><th>Registered</th></tr></thead>
+      <tbody>${list.map(e => `<tr>
+        <td>
+          <div style="font-weight:600">${e.company_name||'—'}</div>
+          <div style="font-size:0.78rem;color:var(--body)">${e.contact_email||''}</div>
+        </td>
+        <td><div style="font-weight:500">${e.contact_name||'—'}</div></td>
+        <td style="color:var(--body);font-size:0.85rem">${e.phone||e.contact_mobile||'—'}</td>
+        <td>${e.website ? `<a href="${e.website}" target="_blank" style="color:var(--blue);font-size:0.82rem">${e.website}</a>` : '—'}</td>
+        <td style="color:var(--body);font-size:0.85rem">${e.company_number||'—'}</td>
+        <td>${e.sia_acs ? `<span class="badge badge-green">${e.sia_acs}</span>` : '<span class="badge badge-grey">No</span>'}</td>
+        <td style="color:var(--body);font-size:0.8rem">${fd(e.created_at)}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  } catch(e) { el.innerHTML = '<div class="empty">Failed to load employers</div>'; }
+}
+
 async function verify(id) {
   const notes = prompt('Verification notes (optional — press OK to use default):') ?? 'Verified against SIA register';
   try { await req(`/admin/api/sia/${id}/verify`, 'POST', { notes }); loadQueue(); loadStats(); }
@@ -506,6 +542,7 @@ function showSection(name, el) {
   document.getElementById('section-' + name).classList.add('active');
   el.classList.add('active');
   if (name === 'candidates') loadCandidates();
+  if (name === 'employers') loadEmployers();
   if (name === 'verification') loadQueue();
   if (name === 'waitlist') loadWaitlist();
 }
