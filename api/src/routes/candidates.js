@@ -102,9 +102,14 @@ router.patch('/me/step', async (req, res) => {
     const db = getClientForUser(req.token);
     const { profile_step } = req.body;
 
+    const update = { profile_step };
+    if (typeof profile_step === 'number' && profile_step >= 10) {
+      update.profile_complete = true;
+    }
+
     const { data: candidate, error } = await db
       .from('candidates')
-      .update({ profile_step })
+      .update(update)
       .eq('clerk_user_id', req.userId)
       .select()
       .single();
