@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase, getClientForUser, auditLog } = require('../lib/supabase');
 const email = require('../lib/email');
+const { requireVerifiedEmployer } = require('../middleware/employer');
 
 // Strip markdown-style formatting from employer-entered text
 function stripMarkdown(text) {
@@ -68,7 +69,7 @@ router.get('/jobs', async (req, res) => {
 });
 
 // POST /api/employers/jobs — post a job (first job free, subsequent require payment)
-router.post('/jobs', async (req, res) => {
+router.post('/jobs', requireVerifiedEmployer, async (req, res) => {
   try {
     const db = getClientForUser(req.token);
     const employerId = await getEmployerId(db, req.userId);
@@ -167,7 +168,7 @@ router.get('/public', async (req, res) => {
 });
 
 // GET /api/employers/jobs/:id/applicants — cross-user candidate read, ownership checked in code — service client
-router.get('/jobs/:id/applicants', async (req, res) => {
+router.get('/jobs/:id/applicants', requireVerifiedEmployer, async (req, res) => {
   try {
     const employerId = await getEmployerId(supabase, req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
@@ -198,7 +199,7 @@ router.get('/jobs/:id/applicants', async (req, res) => {
 });
 
 // PATCH /api/employers/applications/:id — cross-user candidate read/write, ownership checked in code — service client
-router.patch('/applications/:id', async (req, res) => {
+router.patch('/applications/:id', requireVerifiedEmployer, async (req, res) => {
   try {
     const employerId = await getEmployerId(supabase, req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
@@ -298,7 +299,7 @@ router.patch('/applications/:id', async (req, res) => {
 });
 
 // GET /api/employers/candidate/:id — cross-user candidate profile read, ownership checked in code — service client
-router.get('/candidate/:id', async (req, res) => {
+router.get('/candidate/:id', requireVerifiedEmployer, async (req, res) => {
   try {
     const employerId = await getEmployerId(supabase, req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
@@ -491,7 +492,7 @@ router.post('/logo', async (req, res) => {
 // ── INTERVIEW SLOT SYSTEM ──────────────────────────────────────────────
 
 // POST /api/employers/jobs/:jobId/interview-slots — cross-user candidate data via joins, ownership checked in code — service client
-router.post('/jobs/:jobId/interview-slots', async (req, res) => {
+router.post('/jobs/:jobId/interview-slots', requireVerifiedEmployer, async (req, res) => {
   try {
     const employerId = await getEmployerId(supabase, req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
@@ -626,7 +627,7 @@ router.post('/jobs/:jobId/interview-slots', async (req, res) => {
 });
 
 // POST /api/employers/applications/:id/no-show — cross-user write to candidates, ownership checked in code — service client
-router.post('/applications/:id/no-show', async (req, res) => {
+router.post('/applications/:id/no-show', requireVerifiedEmployer, async (req, res) => {
   try {
     const employerId = await getEmployerId(supabase, req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
@@ -689,7 +690,7 @@ router.post('/applications/:id/no-show', async (req, res) => {
 });
 
 // POST /api/employers/applications/:id/feedback — cross-user, ownership checked in code — service client
-router.post('/applications/:id/feedback', async (req, res) => {
+router.post('/applications/:id/feedback', requireVerifiedEmployer, async (req, res) => {
   try {
     const employerId = await getEmployerId(supabase, req.userId);
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
