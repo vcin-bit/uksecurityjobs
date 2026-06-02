@@ -24,7 +24,7 @@ router.get('/employers', async (req, res) => {
   try {
     const { data: employers, error } = await supabase
       .from('employers')
-      .select('id, company_name, contact_name, contact_email, contact_mobile, phone, website, address, postcode, company_number, sia_acs, logo_url, created_at')
+      .select('id, company_name, contact_name, contact_email, contact_mobile, phone, website, address, postcode, company_number, sia_acs, logo_url, created_at, verified, verified_at, verified_by, verification_notes')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -94,6 +94,78 @@ router.post('/sia/:id/verify', async (req, res) => {
   } catch (err) {
     console.error('Admin POST /sia/:id/verify error:', err);
     res.status(500).json({ error: 'Failed to verify licence' });
+  }
+});
+
+// POST /admin/employers/:id/verify — approve an employer
+router.post('/employers/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+
+    const { data, error } = await supabase
+      .from('employers')
+      .update({
+        verified: true,
+        verified_at: new Date().toISOString(),
+        verified_by: 'admin',
+        verification_notes: notes || 'Verified — employer approved'
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    await auditLog({
+      tableName: 'employers',
+      recordId: id,
+      action: 'UPDATE',
+      performedBy: req.userId,
+      ipAddress: req.ip,
+      changes: { verified: true }
+    });
+
+    res.json({ success: true, employer: data });
+  } catch (err) {
+    console.error('Admin POST /employers/:id/verify error:', err);
+    res.status(500).json({ error: 'Failed to verify employer' });
+  }
+});
+
+// POST /admin/employers/:id/reject — reject an employer
+router.post('/employers/:id/reject', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+
+    const { data, error } = await supabase
+      .from('employers')
+      .update({
+        verified: false,
+        verified_at: new Date().toISOString(),
+        verified_by: 'admin',
+        verification_notes: notes || 'Rejected'
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    await auditLog({
+      tableName: 'employers',
+      recordId: id,
+      action: 'UPDATE',
+      performedBy: req.userId,
+      ipAddress: req.ip,
+      changes: { verified: false, rejected: true }
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Admin POST /employers/:id/reject error:', err);
+    res.status(500).json({ error: 'Failed to reject employer' });
   }
 });
 
