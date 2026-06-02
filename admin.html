@@ -425,7 +425,7 @@ async function loadEmployers() {
     const list = d.employers || [];
     if (!list.length) { el.innerHTML = '<div class="empty">No employers registered yet</div>'; return; }
     el.innerHTML = `<table>
-      <thead><tr><th>Company</th><th>Contact</th><th>Phone</th><th>Website</th><th>Company No.</th><th>SIA ACS</th><th>Status</th><th>Registered</th><th></th></tr></thead>
+      <thead><tr><th>Company</th><th>Contact</th><th>Phone</th><th>Website</th><th>Company No.</th><th>SIA ACS</th><th>Status</th><th>Registered</th></tr></thead>
       <tbody>${list.map(e => {
         const status = e.verified ? 'verified' : e.verified_at ? 'rejected' : 'pending';
         const badge = status === 'verified' ? '<span class="badge badge-green">Verified</span>'
@@ -440,13 +440,12 @@ async function loadEmployers() {
         <td style="color:var(--body);font-size:0.85rem">${e.phone||e.contact_mobile||'—'}</td>
         <td>${e.website ? `<a href="${e.website}" target="_blank" style="color:var(--blue);font-size:0.82rem">${e.website}</a>` : '—'}</td>
         <td style="color:var(--body);font-size:0.85rem">${e.company_number||'—'}</td>
-        <td>${e.sia_acs ? `<span class="badge badge-green">${e.sia_acs}</span>` : '<span class="badge badge-grey">No</span>'}</td>
-        <td>${badge}</td>
-        <td style="color:var(--body);font-size:0.8rem">${fd(e.created_at)}</td>
-        <td><div class="btn-row">
+        <td>${e.sia_acs ? `<span class="badge badge-green">${e.sia_acs}</span>` : '—'}</td>
+        <td>${badge}<div class="btn-row" style="margin-top:0.4rem">
           <button class="btn btn-success" onclick="verifyEmployer('${e.id}')">Verify</button>
           <button class="btn btn-danger" onclick="rejectEmployer('${e.id}')">Reject</button>
         </div></td>
+        <td style="color:var(--body);font-size:0.8rem">${fd(e.created_at)}</td>
       </tr>`;
       }).join('')}</tbody>
     </table>`;
