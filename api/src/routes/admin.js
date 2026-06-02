@@ -19,6 +19,22 @@ router.get('/candidates', async (req, res) => {
   }
 });
 
+// GET /admin/employers — list all registered employers
+router.get('/employers', async (req, res) => {
+  try {
+    const { data: employers, error } = await supabase
+      .from('employers')
+      .select('id, company_name, contact_name, contact_email, contact_mobile, phone, website, address, postcode, company_number, sia_acs, logo_url, created_at')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json({ employers });
+  } catch (err) {
+    console.error('Admin GET /employers error:', err);
+    res.status(500).json({ error: 'Failed to fetch employers' });
+  }
+});
+
 // GET /admin/sia/queue — all unverified SIA licences
 router.get('/sia/queue', async (req, res) => {
   try {
