@@ -4851,6 +4851,7 @@ function JobListingsPage() {
   const [applying, setApplying] = React.useState(null);
   const [applied, setApplied] = React.useState(new Set());
   const [profileComplete, setProfileComplete] = React.useState(false);
+  const [profileMissing, setProfileMissing] = React.useState([]);
 
   React.useEffect(() => {
     fetch('https://uksecurityjobs-api.onrender.com/api/jobs/public')
@@ -4863,21 +4864,10 @@ function JobListingsPage() {
     if (!isSignedIn) return;
     (async () => {
       try {
-        const full = await apiRequest('/api/candidates/me/full', 'GET', null, getToken);
-        const c = full.candidate;
-        if (!c) { setProfileComplete(false); return; }
-        const licences = full.licences || [];
-        const personal = full.personal || null;
-        const driving = full.driving || null;
-        const sectors = full.sectors || null;
-        const qualifications = full.qualifications || null;
-        const background = full.background || null;
-        const employment = full.employment || [];
-        const addresses = full.addresses || [];
-        const siaVerified = licences[0]?.verified === true;
-        const done = siaVerified && personal?.first_name && driving && sectors && qualifications && background && employment.length > 0 && addresses.length > 0;
-        setProfileComplete(!!done);
-      } catch { setProfileComplete(false); }
+        const result = await apiRequest('/api/candidates/me/completeness', 'GET', null, getToken);
+        setProfileComplete(result.complete);
+        setProfileMissing(result.missing || []);
+      } catch { setProfileComplete(false); setProfileMissing([]); }
     })();
   }, [isSignedIn]);
 
@@ -4925,6 +4915,10 @@ function JobListingsPage() {
       if (msg.includes('already applied') || msg.includes('duplicate')) {
         setApplied(prev => new Set([...prev, confirmJob.id]));
         setConfirmJob(null);
+      } else if (msg.includes('PROFILE_INCOMPLETE')) {
+        setProfileComplete(false);
+        setConfirmJob(null);
+        alert('Please complete your profile before applying.');
       } else {
         alert('Failed to apply. Please try again.');
       }
@@ -5029,7 +5023,12 @@ function JobListingsPage() {
                         ? <div style={{background:'#dcfce7',color:'#15803d',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.85rem',fontWeight:700}}>✓ Applied</div>
                         : isSignedIn && !profileComplete
                         ? <div style={{textAlign:'right'}}>
-                            <div style={{background:'#fef3c7',color:'#92400e',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.78rem',fontWeight:600,lineHeight:1.5}}>Complete your profile to apply</div>
+                            <button disabled style={{background:'#94a3b8',color:'#fff',border:'none',borderRadius:'8px',padding:'0.65rem 1.5rem',fontSize:'0.85rem',fontWeight:700,cursor:'not-allowed',fontFamily:'inherit',whiteSpace:'nowrap',opacity:0.7}}>
+                              Apply Now
+                            </button>
+                            <div style={{background:'#fef3c7',color:'#92400e',borderRadius:'6px',padding:'0.4rem 0.75rem',fontSize:'0.7rem',fontWeight:600,lineHeight:1.5,marginTop:'0.4rem'}}>
+                              Missing: {profileMissing.join(', ') || 'Complete your profile'}
+                            </div>
                             <a href="/profile" style={{fontSize:'0.72rem',color:'#1a52a8',fontWeight:600,marginTop:'0.3rem',display:'inline-block'}}>Continue Profile →</a>
                           </div>
                         : <button onClick={()=>applyForJob(job)} disabled={applying===job.id} style={{background:'#1a52a8',color:'#fff',border:'none',borderRadius:'8px',padding:'0.65rem 1.5rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>

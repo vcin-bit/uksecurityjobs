@@ -3,6 +3,36 @@ const router = express.Router();
 const { supabase, getClientForUser, encrypt, decrypt, auditLog } = require('../lib/supabase');
 const { createClerkClient } = require('@clerk/backend');
 
+// ── Profile completeness helper ──────────────────────────────────────────────
+// Single source of truth: a profile is complete when all 8 data areas exist.
+// Returns { complete: bool, missing: string[] }.
+async function isProfileComplete(db, candidateId) {
+  const missing = [];
+
+  const [siaRes, personalRes, drivingRes, sectorsRes, qualsRes, bgRes, empRes, addrRes] = await Promise.all([
+    db.from('sia_licences').select('verified').eq('candidate_id', candidateId),
+    db.from('personal_details').select('first_name').eq('candidate_id', candidateId).maybeSingle(),
+    db.from('driving_details').select('id').eq('candidate_id', candidateId).maybeSingle(),
+    db.from('preferred_sectors').select('id').eq('candidate_id', candidateId).maybeSingle(),
+    db.from('qualifications').select('id').eq('candidate_id', candidateId).maybeSingle(),
+    db.from('professional_background').select('id').eq('candidate_id', candidateId).maybeSingle(),
+    db.from('employment_history').select('id').eq('candidate_id', candidateId),
+    db.from('address_history').select('id').eq('candidate_id', candidateId),
+  ]);
+
+  const siaVerified = (siaRes.data || []).some(l => l.verified === true);
+  if (!siaVerified) missing.push('Verified SIA licence');
+  if (!personalRes.data?.first_name) missing.push('Personal details');
+  if (!drivingRes.data) missing.push('Driving details');
+  if (!sectorsRes.data) missing.push('Preferred sectors');
+  if (!qualsRes.data) missing.push('Qualifications');
+  if (!bgRes.data) missing.push('Professional background');
+  if (!(empRes.data || []).length) missing.push('Employment history');
+  if (!(addrRes.data || []).length) missing.push('Address history');
+
+  return { complete: missing.length === 0, missing };
+}
+
 // GET /api/candidates/me — get the current candidate's profile, create if doesn't exist
 router.get('/me', async (req, res) => {
   try {
@@ -102,9 +132,17 @@ router.patch('/me/step', async (req, res) => {
     const db = getClientForUser(req.token);
     const { profile_step } = req.body;
 
+    // Get candidate id for completeness check
+    const { data: existing } = await db
+      .from('candidates')
+      .select('id')
+      .eq('clerk_user_id', req.userId)
+      .single();
+
     const update = { profile_step };
-    if (typeof profile_step === 'number' && profile_step >= 10) {
-      update.profile_complete = true;
+    if (existing && typeof profile_step === 'number' && profile_step >= 10) {
+      const { complete } = await isProfileComplete(db, existing.id);
+      update.profile_complete = complete;
     }
 
     const { data: candidate, error } = await db
@@ -120,6 +158,32 @@ router.patch('/me/step', async (req, res) => {
   } catch (err) {
     console.error('PATCH /candidates/me/step error:', err);
     res.status(500).json({ error: 'Failed to update step' });
+  }
+});
+
+// GET /api/candidates/me/completeness — check profile completeness
+router.get('/me/completeness', async (req, res) => {
+  try {
+    const db = getClientForUser(req.token);
+    const { data: candidate } = await db
+      .from('candidates')
+      .select('id')
+      .eq('clerk_user_id', req.userId)
+      .single();
+
+    if (!candidate) return res.status(404).json({ error: 'Profile not found' });
+
+    const result = await isProfileComplete(db, candidate.id);
+
+    // Keep the profile_complete flag in sync
+    await db.from('candidates')
+      .update({ profile_complete: result.complete })
+      .eq('id', candidate.id);
+
+    res.json(result);
+  } catch (err) {
+    console.error('GET /candidates/me/completeness error:', err);
+    res.status(500).json({ error: 'Failed to check completeness' });
   }
 });
 
@@ -386,3 +450,4 @@ router.delete('/me', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.isProfileComplete = isProfileComplete;

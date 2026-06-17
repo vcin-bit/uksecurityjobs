@@ -3,6 +3,7 @@ const router = express.Router();
 const { supabase, getClientForUser, auditLog } = require('../lib/supabase');
 const email = require('../lib/email');
 const { requireVerifiedEmployer } = require('../middleware/employer');
+const { isProfileComplete } = require('./candidates');
 
 // Strip markdown-style formatting from employer-entered text
 function stripMarkdown(text) {
@@ -400,6 +401,12 @@ router.post('/apply', async (req, res) => {
     const { data: candidate } = await db
       .from('candidates').select('id').eq('clerk_user_id', req.userId).single();
     if (!candidate) return res.status(404).json({ error: 'Candidate profile not found' });
+
+    // ── Apply gate: reject incomplete profiles ──
+    const { complete, missing } = await isProfileComplete(db, candidate.id);
+    if (!complete) {
+      return res.status(403).json({ error: 'PROFILE_INCOMPLETE', missing });
+    }
 
     const { data, error } = await db.from('job_applications').insert({
       job_id,
