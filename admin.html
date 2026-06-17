@@ -408,7 +408,7 @@ async function loadCandidates() {
           </td>
           <td><span class="badge badge-blue">Step ${c.profile_step||0} / 10</span></td>
           <td>${sia.length ? `<span class="badge ${ver===sia.length?'badge-green':ver>0?'badge-amber':'badge-red'}">${ver}/${sia.length} verified</span>` : '<span class="badge badge-grey">None added</span>'}</td>
-          <td>${c.gdpr_consent ? `<span class="badge badge-green">Consented</span>` : '<span class="badge badge-red">No</span>'}</td>
+          <td>${c.gdpr_consent === true ? `<span class="badge badge-green">Consented</span>` : c.gdpr_consent === null ? '<span class="badge badge-amber">Pending</span>' : '<span class="badge badge-red">No</span>'}</td>
           <td style="color:var(--body);font-size:0.8rem">${fd(c.created_at)}</td>
           <td><button class="btn btn-ghost" onclick="viewCandidate('${c.id}')">View profile</button></td>
         </tr>`;
@@ -506,7 +506,7 @@ async function viewCandidate(id) {
         <div class="detail-grid">
           <div class="detail"><label>Email</label><span>${c?.email||'—'}</span></div>
           <div class="detail"><label>Profile Step</label><span>${c?.profile_step||0} of 10</span></div>
-          <div class="detail"><label>GDPR Consent</label><span>${c?.gdpr_consent?'Yes — '+fd(c.gdpr_consent_at):'Not recorded'}</span></div>
+          <div class="detail"><label>GDPR Consent</label><span>${c?.gdpr_consent === true ? 'Yes — '+fd(c.gdpr_consent_at) : c?.gdpr_consent === null ? 'Pending re-consent' : 'Not recorded'}</span></div>
           <div class="detail"><label>Registered</label><span>${fd(c?.created_at)}</span></div>
         </div>
       </div>

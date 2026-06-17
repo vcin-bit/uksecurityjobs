@@ -55,12 +55,15 @@ router.get('/me', async (req, res) => {
         console.error('Clerk email lookup failed for', req.userId, e.message);
       }
 
+      // Auto-create is a fallback for users whose POST /api/candidates failed
+      // during signup. Real consent capture happens on the signup form; null here
+      // means consent was never recorded (not the same as declined).
       const { data: newCandidate, error: createError } = await db
         .from('candidates')
         .insert({
           clerk_user_id: req.userId,
           email: candidateEmail,
-          gdpr_consent: false,
+          gdpr_consent: null,
           profile_step: 0
         })
         .select()
@@ -184,6 +187,39 @@ router.get('/me/completeness', async (req, res) => {
   } catch (err) {
     console.error('GET /candidates/me/completeness error:', err);
     res.status(500).json({ error: 'Failed to check completeness' });
+  }
+});
+
+// PATCH /api/candidates/me/gdpr — record GDPR consent
+router.patch('/me/gdpr', async (req, res) => {
+  try {
+    const { gdpr_consent } = req.body;
+    if (gdpr_consent !== true) {
+      return res.status(400).json({ error: 'Only gdpr_consent: true is accepted' });
+    }
+
+    const db = getClientForUser(req.token);
+    const { data: candidate, error } = await db
+      .from('candidates')
+      .update({ gdpr_consent: true, gdpr_consent_at: new Date().toISOString() })
+      .eq('clerk_user_id', req.userId)
+      .select('id')
+      .single();
+
+    if (error) throw error;
+
+    await auditLog({
+      tableName: 'candidates',
+      recordId: candidate.id,
+      action: 'gdpr_consent_granted',
+      performedBy: req.userId,
+      ipAddress: req.ip,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PATCH /candidates/me/gdpr error:', err);
+    res.status(500).json({ error: 'Failed to update consent' });
   }
 });
 

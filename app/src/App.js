@@ -3048,6 +3048,9 @@ function Dashboard() {
   const [profileData, setProfileData] = React.useState(null);
   const [profileLoading, setProfileLoading] = React.useState(true);
   const [accountChecked, setAccountChecked] = React.useState(false);
+  const [gdprConsent, setGdprConsent] = React.useState(true);
+  const [gdprModal, setGdprModal] = React.useState(false);
+  const [gdprSaving, setGdprSaving] = React.useState(false);
 
   React.useEffect(() => {
     async function load() {
@@ -3055,7 +3058,8 @@ function Dashboard() {
         const emp = await apiRequest('/api/employers/me', 'GET', null, getToken);
         if (emp && emp.employer) { setAccountChecked(true); setProfileLoading(false); navigate('/employer', { replace: true }); return; }
         setAccountChecked(true);
-        await apiRequest('/api/candidates/me', 'GET', null, getToken);
+        const me = await apiRequest('/api/candidates/me', 'GET', null, getToken);
+        if (!me.candidate?.gdpr_consent) setGdprConsent(false);
         const full = await apiRequest('/api/candidates/me/full', 'GET', null, getToken);
         setProfileData({
           licences: full.licences || [],
@@ -3070,7 +3074,6 @@ function Dashboard() {
       } catch(err) {
         console.error('Dashboard load error:', err);
         setAccountChecked(true);
-        // Set empty profile so dashboard renders correctly for new users
         setProfileData({ licences:[], personal:null, employment:[], addresses:[], driving:null, sectors:null, qualifications:null, background:null });
       }
       setProfileLoading(false);
@@ -3101,6 +3104,49 @@ function Dashboard() {
     <div className="page" style={{background:'var(--off)'}}>
       <Nav/>
       <div className="dashboard">
+        {/* GDPR re-consent banner */}
+        {!gdprConsent && (
+          <div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'10px',padding:'1rem 1.25rem',marginBottom:'1rem',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
+            <div style={{fontSize:'0.88rem',color:'#991b1b',fontWeight:600,lineHeight:1.6}}>
+              We need your consent to process your data under UK GDPR.
+            </div>
+            <button onClick={()=>setGdprModal(true)} style={{background:'#1a52a8',color:'#fff',border:'none',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
+              Review and accept
+            </button>
+          </div>
+        )}
+
+        {/* GDPR consent modal */}
+        {gdprModal && (
+          <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem'}}>
+            <div style={{background:'#fff',borderRadius:'16px',padding:'2rem',width:'100%',maxWidth:'520px',maxHeight:'80vh',overflow:'auto'}}>
+              <div style={{fontWeight:800,fontSize:'1.05rem',color:'#0b1222',marginBottom:'0.75rem'}}>UK GDPR Consent</div>
+              <div style={{fontSize:'0.85rem',color:'#374151',lineHeight:1.7,marginBottom:'1.25rem'}}>
+                I agree to the <a href="https://www.uksecurityjobs.co.uk/privacy" target="_blank" rel="noopener noreferrer" style={{color:'#1a52a8',fontWeight:600}}>Privacy Policy</a> and consent to UKSecurityJobs storing my personal data securely for the purpose of matching me with security employment opportunities. I understand I can withdraw consent at any time.
+              </div>
+              <div style={{display:'flex',gap:'0.75rem'}}>
+                <button disabled={gdprSaving} onClick={async()=>{
+                  setGdprSaving(true);
+                  try {
+                    await apiRequest('/api/candidates/me/gdpr', 'PATCH', { gdpr_consent: true }, getToken);
+                    setGdprConsent(true);
+                    setGdprModal(false);
+                  } catch(err) {
+                    console.error('GDPR consent failed:', err);
+                    alert('Failed to save consent. Please try again.');
+                  }
+                  setGdprSaving(false);
+                }} style={{flex:2,padding:'0.75rem',borderRadius:'8px',background:'#1a52a8',color:'#fff',fontWeight:700,fontSize:'0.88rem',border:'none',cursor:'pointer',fontFamily:'inherit'}}>
+                  {gdprSaving ? 'Saving...' : 'I consent'}
+                </button>
+                <button onClick={()=>setGdprModal(false)} style={{flex:1,padding:'0.75rem',borderRadius:'8px',background:'#f8fafc',color:'#475569',fontWeight:600,fontSize:'0.88rem',border:'1px solid #e2e8f0',cursor:'pointer',fontFamily:'inherit'}}>
+                  Later
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="dash-header">
           <div className="dash-greeting">Welcome{!profileLoading && !profileData?.personal?.first_name ? `, ${user?.firstName || 'Officer'}` : `, ${profileData?.personal?.first_name || user?.firstName || 'Officer'}`}</div>
           <div className="dash-sub">Complete your profile to unlock security vacancies and exclusive member benefits.</div>
@@ -3234,6 +3280,7 @@ function SignUpPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp, setActive } = useSignUp();
+  const { getToken } = useAuth();
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
@@ -3256,12 +3303,25 @@ function SignUpPage() {
       const result = await signUp.attemptEmailAddressVerification({ code });
       await setActive({ session: result.createdSessionId });
       try {
-        await fetch('https://uksecurityjobs-api.onrender.com/api/candidates', {
+        const token = await getToken();
+        const res = await fetch('https://uksecurityjobs-api.onrender.com/api/candidates', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${result.createdSessionId}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ email: form.email, gdpr_consent: true })
         });
-      } catch(apiErr) { console.error('API create failed:', apiErr); }
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          console.error('API create failed:', res.status, body);
+          setError('Account created but profile setup failed. Please try signing in.');
+          setLoading(false);
+          return;
+        }
+      } catch(apiErr) {
+        console.error('API create failed:', apiErr);
+        setError('Account created but profile setup failed. Please try signing in.');
+        setLoading(false);
+        return;
+      }
       navigate('/dashboard');
     } catch(err) { setError(err.errors?.[0]?.message || 'Invalid code. Please try again.'); }
     setLoading(false);
