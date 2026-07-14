@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const cron = require('node-cron');
+const { runNudges } = require('./lib/nudges');
 
 const candidateRoutes = require('./routes/candidates');
 const siaRoutes = require('./routes/sia');
@@ -178,6 +180,13 @@ app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
+
+// ── Daily nudge job — incomplete profile reminders ──────────────────────────
+// Runs at 09:00 UTC every day. Sends 24h and 72h reminder emails to candidates
+// who signed up but haven't completed their profile. Deduped via candidate_nudges.
+cron.schedule('0 9 * * *', () => {
+  runNudges().catch(err => console.error('[nudges] Cron job error:', err.message));
+}, { timezone: 'UTC' });
 
 app.listen(PORT, () => {
   console.log(`UKSecurityJobs API running on port ${PORT}`);

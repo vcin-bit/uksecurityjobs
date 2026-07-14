@@ -215,6 +215,42 @@ async function sendAdminSiaRequest({ candidateName, licenceType, licenceNumber }
   return send(adminEmail, `SIA verification required — ${candidateName}`, html);
 }
 
+// ── 8. INCOMPLETE PROFILE NUDGE — 24h ──
+async function sendNudge24h({ toEmail, firstName, missing }) {
+  const missingList = missing.map(m => `<li style="margin-bottom:0.35rem;">${m}</li>`).join('');
+  const html = baseTemplate(`
+    <h1>Your profile is almost there, ${firstName}</h1>
+    <p>Hi ${firstName},</p>
+    <p>You started building your UKSecurityJobs profile yesterday — good start. You just need to complete a few more sections before verified employers can see you and you can apply for roles.</p>
+    <p><strong>Still to complete:</strong></p>
+    <ul style="font-size:0.9rem;color:#4a5568;line-height:1.8;margin:0.5rem 0 1.25rem 1.25rem;">
+      ${missingList}
+    </ul>
+    <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn">Continue My Profile →</a>
+    <hr class="divider"/>
+    <p style="font-size:0.85rem;color:#64748b;">Each section only takes a few minutes. Once your SIA licence is verified and your profile is complete, you'll be visible to security employers across the UK with a single-click application on every role.</p>
+  `);
+  return send(toEmail, 'Complete your profile — UKSecurityJobs', html);
+}
+
+// ── 9. INCOMPLETE PROFILE NUDGE — 72h ──
+async function sendNudge72h({ toEmail, firstName, missing }) {
+  const missingList = missing.map(m => `<li style="margin-bottom:0.35rem;">${m}</li>`).join('');
+  const html = baseTemplate(`
+    <h1>Don't miss out on new security roles</h1>
+    <p>Hi ${firstName},</p>
+    <p>New security vacancies are being posted on UKSecurityJobs — but you won't be able to apply until your profile is complete and your SIA licence is verified.</p>
+    <p><strong>Your profile is still missing:</strong></p>
+    <ul style="font-size:0.9rem;color:#4a5568;line-height:1.8;margin:0.5rem 0 1.25rem 1.25rem;">
+      ${missingList}
+    </ul>
+    <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn">Finish My Profile Now →</a>
+    <hr class="divider"/>
+    <div class="notice"><strong>Verified candidates get first look at new roles.</strong> Complete your profile today so you're ready to apply the moment a relevant vacancy goes live.</div>
+  `);
+  return send(toEmail, 'New roles available — finish your profile to apply', html);
+}
+
 module.exports = {
   sendSiaVerified,
   sendApplicationConfirmation,
@@ -224,4 +260,6 @@ module.exports = {
   sendNewApplicant,
   sendEmployerWelcome,
   sendAdminSiaRequest,
+  sendNudge24h,
+  sendNudge72h,
 };
