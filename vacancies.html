@@ -242,6 +242,7 @@ async function loadJobs() {
     const data = await res.json();
     allJobs = data.jobs || [];
     renderJobs(allJobs);
+    injectJobsSchema(allJobs);
   } catch(e) {
     document.getElementById('jobsList').innerHTML = '<div class="empty-state"><h2>No vacancies yet</h2><p>We are building our employer network. Register your profile now so you are ready when roles go live.</p><a href="https://app.uksecurityjobs.co.uk/sign-up" class="btn-primary">Register Free →</a></div>';
     document.getElementById('jobsCount').textContent = '';
@@ -296,6 +297,61 @@ function clearFilters() {
 }
 
 function toggle(btn) { btn.parentElement.classList.toggle('open'); }
+
+function buildAddress(job) {
+  var addr = { '@type': 'PostalAddress', addressCountry: 'GB' };
+  if (job.location) addr.addressLocality = job.location;
+  if (job.postcode) addr.postalCode = job.postcode;
+  return addr;
+}
+
+function buildJobPosting(job) {
+  var posting = {
+    '@context': 'https://schema.org',
+    '@type': 'JobPosting',
+    title: (job.title || '').trim(),
+    description: job.description || (job.title || '').trim(),
+    datePosted: new Date(job.created_at).toISOString().split('T')[0],
+    url: 'https://app.uksecurityjobs.co.uk/jobs/' + job.id,
+    hiringOrganization: {
+      '@type': 'Organization',
+      name: (job.employers && job.employers.company_name) ? job.employers.company_name : 'UKSecurityJobs Employer',
+      sameAs: 'https://www.uksecurityjobs.co.uk'
+    },
+    jobLocation: { '@type': 'Place', address: buildAddress(job) }
+  };
+  if (job.expires_at) posting.validThrough = new Date(job.expires_at).toISOString().split('T')[0];
+  if (job.employment_type) {
+    var typeMap = { 'Full Time': 'FULL_TIME', 'Part Time': 'PART_TIME', 'Either': ['FULL_TIME', 'PART_TIME'] };
+    var mapped = typeMap[job.employment_type];
+    if (mapped) posting.employmentType = mapped;
+  }
+  if (job.rate_from) {
+    var unitMap = { hourly: 'HOUR', daily: 'DAY', annual: 'YEAR' };
+    posting.baseSalary = {
+      '@type': 'MonetaryAmount',
+      currency: 'GBP',
+      value: {
+        '@type': 'QuantitativeValue',
+        minValue: parseFloat(job.rate_from),
+        maxValue: parseFloat(job.rate_to || job.rate_from),
+        unitText: unitMap[job.rate_type] || 'HOUR'
+      }
+    };
+  }
+  return posting;
+}
+
+function injectJobsSchema(jobs) {
+  var existing = document.getElementById('jobs-schema');
+  if (existing) existing.remove();
+  if (!jobs || !jobs.length) return;
+  var script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.id = 'jobs-schema';
+  script.textContent = JSON.stringify(jobs.map(buildJobPosting));
+  document.head.appendChild(script);
+}
 
 loadJobs();
 </script>
