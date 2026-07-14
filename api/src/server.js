@@ -182,11 +182,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// ── 06:00 UTC — aggregated job ingestion (Adzuna + Reed) ────────────────────
-// Fetches security-sector jobs from external APIs and upserts into jobs table.
+// ── 07:00 UTC — Reed job ingestion ──────────────────────────────────────────
+// Fetches security-sector jobs from Reed Jobseeker API and upserts into jobs.
 // Jobs not seen for 7+ days are marked status='ended'.
-// Requires: ADZUNA_APP_ID, ADZUNA_APP_KEY, REED_API_KEY env vars.
-cron.schedule('0 6 * * *', () => {
+// Requires: REED_API_KEY env var.
+cron.schedule('0 7 * * *', () => {
   runIngestion().catch(err => console.error('[ingestion] Cron job error:', err.message));
 }, { timezone: 'UTC' });
 

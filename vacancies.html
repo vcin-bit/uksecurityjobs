@@ -268,7 +268,7 @@ function renderJobs(jobs) {
     const applyAttrs = isDirect ? '' : 'target="_blank" rel="noopener noreferrer"';
     const sourceBadge = isDirect
       ? '<span class="job-badge badge-green">Verified Employer</span>'
-      : `<span class="job-badge badge-grey">via ${job.source === 'adzuna' ? 'Adzuna' : 'Reed'}</span>`;
+      : '<span class="job-badge badge-grey">via Reed</span>';
     return `<div class="job-card">
       <div style="flex:1">
         <div class="job-title">${job.title}</div>
