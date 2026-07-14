@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
 const { runNudges } = require('./lib/nudges');
+const { runIngestion } = require('./lib/jobIngestion');
 
 const candidateRoutes = require('./routes/candidates');
 const siaRoutes = require('./routes/sia');
@@ -181,9 +182,17 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// ── Daily nudge job — incomplete profile reminders ──────────────────────────
-// Runs at 09:00 UTC every day. Sends 24h and 72h reminder emails to candidates
-// who signed up but haven't completed their profile. Deduped via candidate_nudges.
+// ── 06:00 UTC — aggregated job ingestion (Adzuna + Reed) ────────────────────
+// Fetches security-sector jobs from external APIs and upserts into jobs table.
+// Jobs not seen for 7+ days are marked status='ended'.
+// Requires: ADZUNA_APP_ID, ADZUNA_APP_KEY, REED_API_KEY env vars.
+cron.schedule('0 6 * * *', () => {
+  runIngestion().catch(err => console.error('[ingestion] Cron job error:', err.message));
+}, { timezone: 'UTC' });
+
+// ── 09:00 UTC — incomplete profile nudge emails ──────────────────────────────
+// Sends 24h and 72h reminder emails to candidates who signed up but haven't
+// completed their profile. Deduped via candidate_nudges table.
 cron.schedule('0 9 * * *', () => {
   runNudges().catch(err => console.error('[nudges] Cron job error:', err.message));
 }, { timezone: 'UTC' });

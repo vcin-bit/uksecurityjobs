@@ -258,13 +258,23 @@ function renderJobs(jobs) {
   }
   count.textContent = `${jobs.length} vacanc${jobs.length === 1 ? 'y' : 'ies'} available`;
   document.getElementById('jobsList').innerHTML = jobs.map(job => {
-    const rate = job.rate_from ? `£${job.rate_from}${job.rate_to ? '–'+job.rate_to : ''}` : '';
+    const isDirect = !job.source || job.source === 'direct';
+    const companyName = job.employers?.company_name || job.company_name || '';
+    const rate = job.rate_from ? `£${job.rate_from}${job.rate_to && job.rate_to !== job.rate_from ? '–'+job.rate_to : ''}` : '';
     const rateType = job.rate_type === 'hourly' ? '/hr' : job.rate_type === 'daily' ? '/day' : '/yr';
+    const applyUrl = isDirect
+      ? `https://app.uksecurityjobs.co.uk/jobs/${job.id}`
+      : (job.source_url || `https://app.uksecurityjobs.co.uk/jobs/${job.id}`);
+    const applyAttrs = isDirect ? '' : 'target="_blank" rel="noopener noreferrer"';
+    const sourceBadge = isDirect
+      ? '<span class="job-badge badge-green">Verified Employer</span>'
+      : `<span class="job-badge badge-grey">via ${job.source === 'adzuna' ? 'Adzuna' : 'Reed'}</span>`;
     return `<div class="job-card">
       <div style="flex:1">
         <div class="job-title">${job.title}</div>
-        <div class="job-company">${job.employers?.company_name || ''} &mdash; ${job.location || ''}</div>
+        <div class="job-company">${companyName} &mdash; ${job.location || ''}</div>
         <div class="job-meta">
+          ${sourceBadge}
           ${job.licence_type ? `<span class="job-badge badge-blue">${job.licence_type}</span>` : ''}
           ${job.contract_type ? `<span class="job-badge badge-grey">${job.contract_type}</span>` : ''}
           ${job.employers?.sia_acs ? '<span class="job-badge badge-green">SIA ACS</span>' : ''}
@@ -272,7 +282,7 @@ function renderJobs(jobs) {
       </div>
       <div style="text-align:right;flex-shrink:0">
         ${rate ? `<div class="job-rate">${rate}<span class="job-rate-sub">${rateType}</span></div>` : ''}
-        <a href="https://app.uksecurityjobs.co.uk/jobs/${job.id}" class="job-apply">Apply →</a>
+        <a href="${applyUrl}" class="job-apply" ${applyAttrs}>Apply →</a>
       </div>
     </div>`;
   }).join('');
@@ -306,18 +316,23 @@ function buildAddress(job) {
 }
 
 function buildJobPosting(job) {
+  var isDirect = !job.source || job.source === 'direct';
+  var companyName = (job.employers && job.employers.company_name)
+    ? job.employers.company_name
+    : (job.company_name || 'Unknown Employer');
+  var applyUrl = isDirect
+    ? ('https://app.uksecurityjobs.co.uk/jobs/' + job.id)
+    : (job.source_url || ('https://app.uksecurityjobs.co.uk/jobs/' + job.id));
+  var org = { '@type': 'Organization', name: companyName };
+  if (isDirect) org.sameAs = 'https://www.uksecurityjobs.co.uk';
   var posting = {
     '@context': 'https://schema.org',
     '@type': 'JobPosting',
     title: (job.title || '').trim(),
     description: job.description || (job.title || '').trim(),
     datePosted: new Date(job.created_at).toISOString().split('T')[0],
-    url: 'https://app.uksecurityjobs.co.uk/jobs/' + job.id,
-    hiringOrganization: {
-      '@type': 'Organization',
-      name: (job.employers && job.employers.company_name) ? job.employers.company_name : 'UKSecurityJobs Employer',
-      sameAs: 'https://www.uksecurityjobs.co.uk'
-    },
+    url: applyUrl,
+    hiringOrganization: org,
     jobLocation: { '@type': 'Place', address: buildAddress(job) }
   };
   if (job.expires_at) posting.validThrough = new Date(job.expires_at).toISOString().split('T')[0];
