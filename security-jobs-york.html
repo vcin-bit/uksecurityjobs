@@ -19,10 +19,10 @@
   "@context":"https://schema.org",
   "@type":"FAQPage",
   "mainEntity":[
-    {"@type":"Question","name":"What security jobs are available in York?","acceptedAnswer":{"@type":"Answer","text":"UKSecurityJobs lists verified security vacancies in York including door supervisor jobs, security guard positions, CCTV operator roles and close protection opportunities. Every role requires a valid SIA licence."}},
-    {"@type":"Question","name":"Do I need an SIA licence to work as a security officer in York?","acceptedAnswer":{"@type":"Answer","text":"Yes. All front-line security roles in the UK require a valid SIA licence. Depending on the role, you will need a Door Supervisor, Security Guard, CCTV Operator or Close Protection licence. UKSecurityJobs verifies every candidate's licence before their profile goes live."}},
-    {"@type":"Question","name":"What is BS7858 vetting and do I need it for security jobs in York?","acceptedAnswer":{"@type":"Answer","text":"BS7858 is the British Standard for vetting individuals working in security environments. It requires a verified 5-year employment and address history. Most security employers in York require BS7858 vetting. UKSecurityJobs candidates complete their BS7858-ready profile before applying for any role."}},
-    {"@type":"Question","name":"How do I register for security jobs in York?","acceptedAnswer":{"@type":"Answer","text":"Register free at UKSecurityJobs, complete your BS7858-ready profile including your SIA licence details, and your licence will be verified within 24 hours. Once verified, you can apply for security vacancies in York and across the UK with a single click."}}
+    {"@type":"Question","name":"What security jobs are available in York?","acceptedAnswer":{"@type":"Answer","text":"UKSecurityJobs lists verified security vacancies in York across York Minster and heritage tourist attractions, the Shambles and city centre retail, racecourse events, hospitality venues, and night-time economy. Roles include door supervisor positions, security guard roles, CCTV operator jobs and close protection opportunities. Every role requires a valid SIA licence — there are no unlicensed or unverified positions on the platform."}},
+    {"@type":"Question","name":"Do I need an SIA licence to work as a security officer in York?","acceptedAnswer":{"@type":"Answer","text":"Yes. All front-line security roles in the UK require a valid SIA licence issued by the Security Industry Authority. Depending on the role, you will need a Door Supervisor, Security Guard, CCTV Operator or Close Protection licence. UKSecurityJobs verifies every candidate licence before their profile goes live to employers."}},
+    {"@type":"Question","name":"What is BS7858 vetting and do I need it for security jobs in York?","acceptedAnswer":{"@type":"Answer","text":"BS7858 is the British Standard for vetting individuals working in security environments. It requires a verified 5-year employment and address history with no unexplained gaps. Most security employers in York require BS7858 vetting. UKSecurityJobs candidates complete their full BS7858-ready profile before applying for any role."}},
+    {"@type":"Question","name":"How do I register for security jobs in York?","acceptedAnswer":{"@type":"Answer","text":"Register free at UKSecurityJobs, complete your BS7858-ready profile including your SIA licence details, employment history, address history and reference contacts. Your licence will be verified within 24 hours. Once verified, you can apply for security vacancies in York and across the UK with a single click."}}
   ]
 }</script>
 <style>
@@ -37,14 +37,18 @@ a{color:var(--blue);text-decoration:none;}a:hover{text-decoration:underline;}
 .nav-links{display:flex;align-items:center;gap:1.5rem;}
 .nav-link{font-size:0.88rem;font-weight:500;color:var(--mid);text-decoration:none;}
 .nav-cta{background:var(--navy);color:#fff;font-size:0.85rem;font-weight:700;padding:0.55rem 1.25rem;border-radius:8px;text-decoration:none;}
+.nav-cta:hover{background:#1e293b;text-decoration:none;}
 .hero{background:var(--navy);padding:4rem 2rem;color:#fff;}
 .hero-inner{max-width:860px;margin:0 auto;}
 .hero-tag{display:inline-block;background:rgba(26,82,168,0.4);color:#93c5fd;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;padding:0.3rem 0.875rem;border-radius:999px;margin-bottom:1.25rem;border:1px solid rgba(26,82,168,0.5);}
 .hero h1{font-size:2.5rem;font-weight:900;line-height:1.12;letter-spacing:-0.03em;margin-bottom:1rem;}
 .hero p{font-size:1rem;color:#94a3b8;line-height:1.75;max-width:640px;margin-bottom:1.75rem;}
+.live-count{font-size:0.82rem;color:#93c5fd;margin-top:-1rem;margin-bottom:1.5rem;min-height:1.2em;}
 .hero-btns{display:flex;flex-wrap:wrap;gap:0.875rem;}
 .btn-primary{display:inline-block;background:#1a52a8;color:#fff;font-size:0.92rem;font-weight:700;padding:0.8rem 2rem;border-radius:9px;text-decoration:none;}
+.btn-primary:hover{background:#1641873;text-decoration:none;}
 .btn-secondary{display:inline-block;background:rgba(255,255,255,0.08);color:#fff;font-size:0.92rem;font-weight:600;padding:0.8rem 2rem;border-radius:9px;text-decoration:none;border:1px solid rgba(255,255,255,0.15);}
+.btn-secondary:hover{background:rgba(255,255,255,0.14);text-decoration:none;}
 .badges{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1.5rem;}
 .badge{font-size:0.72rem;font-weight:600;padding:0.3rem 0.75rem;border-radius:999px;background:rgba(26,82,168,0.3);color:#93c5fd;border:1px solid rgba(26,82,168,0.5);}
 .section{padding:4rem 2rem;}
@@ -95,10 +99,10 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
 .foot-legal a:hover{color:#94a3b8;}
 @media(max-width:900px){.hero h1{font-size:1.85rem;}.cards{grid-template-columns:1fr 1fr;}.foot-top{grid-template-columns:1fr;gap:2rem;}.foot-nav{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:600px){.cards{grid-template-columns:1fr;}.links-grid{grid-template-columns:repeat(2,1fr);}.foot-nav{grid-template-columns:1fr;}}
-
 </style>
 </head>
 <body>
+
 <nav class="nav">
   <div class="nav-inner">
     <a href="/" class="logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a>
@@ -107,18 +111,19 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
       <a class="nav-link" href="/security-salary-guide">Salary Guide</a>
       <a class="nav-link" href="/blog">Blog</a>
       <a class="nav-cta" href="/officers">Candidate Registration</a>
-      <a class="nav-cta-outline" href="/employers">Company Registration</a>
+      <a class="nav-cta" href="/employers" style="background:#1a52a8;margin-left:0.5rem;">Company Registration</a>
     </div>
   </div>
 </nav>
 
 <section class="hero">
   <div class="hero-inner">
-    <span class="hero-tag">SIA Licensed Roles · North Yorkshire</span>
+    <span class="hero-tag">SIA Licensed Roles &middot; North Yorkshire</span>
     <h1>Security Jobs in York</h1>
-    <p>UKSecurityJobs lists verified security vacancies in York — a specialist security market in North Yorkshire. Every role requires a valid SIA licence. Register once and apply to multiple York employers without filling in another application form.</p>
+    <p>UKSecurityJobs lists verified security vacancies in York &mdash; a specialist security market in North Yorkshire. Every role requires a valid SIA licence. Register once and apply to multiple York employers without filling in another application form.</p>
+    <p class="live-count" id="live-count"></p>
     <div class="hero-btns">
-      <a href="https://app.uksecurityjobs.co.uk/sign-up" class="btn-primary">Register Free →</a>
+      <a href="https://app.uksecurityjobs.co.uk/sign-up" class="btn-primary">Register Free &rarr;</a>
       <a href="https://app.uksecurityjobs.co.uk/jobs" class="btn-secondary">View Current Jobs</a>
     </div>
     <div class="badges">
@@ -135,31 +140,31 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
     <div class="section-tag">Security Jobs in York</div>
     <h2>Why Security Work in York?</h2>
     <p>York's major tourist industry, historic venues, retail sector and active night-time economy create year-round demand for experienced, customer-focused security professionals.</p>
-    <p>Every vacancy listed on UKSecurityJobs requires a valid SIA licence. Employers on this platform have been verified before they can post a role — and every candidate has a complete, BS7858-ready profile including verified employment history, full address history and reference contacts ready to go.</p>
+    <p>Every vacancy listed on UKSecurityJobs requires a valid SIA licence. Employers on this platform have been verified before they can post a role &mdash; and every candidate has a complete, BS7858-ready profile including verified employment history, full address history and reference contacts ready to go.</p>
     <div class="cards">
       <div class="card">
         <div class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
         <h3>Door Supervisor Jobs York</h3>
         <p>Licensed premises, events and retail security roles requiring an SIA Door Supervisor licence.</p>
-        <a href="/door-supervisor-jobs">View Door Supervisor roles →</a>
+        <a href="/door-supervisor-jobs">View Door Supervisor roles &rarr;</a>
       </div>
       <div class="card">
         <div class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
         <h3>Security Guard Jobs York</h3>
         <p>Static guarding, corporate, retail and construction site roles requiring an SIA Security Guard licence.</p>
-        <a href="/security-guard-jobs">View Security Guard roles →</a>
+        <a href="/security-guard-jobs">View Security Guard roles &rarr;</a>
       </div>
       <div class="card">
         <div class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
         <h3>CCTV Operator Jobs York</h3>
         <p>Control room and public space surveillance roles requiring an SIA CCTV (PSS) licence.</p>
-        <a href="/cctv-jobs">View CCTV Operator roles →</a>
+        <a href="/cctv-jobs">View CCTV Operator roles &rarr;</a>
       </div>
       <div class="card">
         <div class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg></div>
         <h3>Close Protection Jobs York</h3>
         <p>Personal protection and specialist security roles requiring an SIA Close Protection licence.</p>
-        <a href="/close-protection-jobs">View Close Protection roles →</a>
+        <a href="/close-protection-jobs">View Close Protection roles &rarr;</a>
       </div>
     </div>
   </div>
@@ -206,38 +211,45 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
 
 <section class="faq">
   <div class="faq-inner">
-    <h2>Security Jobs in York — Frequently Asked Questions</h2>
+    <h2>Security Jobs in York &mdash; Frequently Asked Questions</h2>
+
     <div class="faq-item">
       <button class="faq-q" onclick="toggle(this)">What security jobs are available in York?<span class="faq-icon">+</span></button>
-      <div class="faq-a">UKSecurityJobs lists verified security vacancies in York including door supervisor positions, security guard roles, CCTV operator jobs and close protection opportunities. Every role on this platform requires a valid SIA licence — there are no unlicensed or unverified positions.</div>
+      <div class="faq-a">UKSecurityJobs lists verified security vacancies in York across York Minster and heritage tourist attractions, the Shambles and city centre retail, racecourse events, hospitality venues, and night-time economy. Roles include door supervisor positions, security guard roles, CCTV operator jobs and close protection opportunities. Every role on this platform requires a valid SIA licence &mdash; there are no unlicensed or unverified positions.</div>
     </div>
+
     <div class="faq-item">
       <button class="faq-q" onclick="toggle(this)">Do I need an SIA licence to work as a security officer in York?<span class="faq-icon">+</span></button>
-      <div class="faq-a">Yes. All front-line security roles in the UK require a valid SIA licence issued by the Security Industry Authority. Depending on the role, you will need a Door Supervisor, Security Guard, CCTV Operator (PSS) or Close Protection licence. UKSecurityJobs verifies every candidate's licence against the public SIA register before their profile goes live to employers.</div>
+      <div class="faq-a">Yes. All front-line security roles in the UK require a valid SIA licence issued by the Security Industry Authority. Depending on the role, you will need a Door Supervisor, Security Guard, CCTV Operator (PSS) or Close Protection licence. UKSecurityJobs verifies every candidate&apos;s licence against the public SIA register before their profile goes live to employers.</div>
     </div>
+
     <div class="faq-item">
       <button class="faq-q" onclick="toggle(this)">What does BS7858 vetting involve for security jobs in York?<span class="faq-icon">+</span></button>
-      <div class="faq-a">BS7858 is the British Standard for screening individuals in security environments. It requires a fully verified 5-year employment history with no unexplained gaps, a complete 5-year address history, identity verification and a criminal record check. Most security employers in York require candidates to pass BS7858 vetting before starting work. UKSecurityJobs candidates complete their BS7858-ready profile before applying for any role — giving your vetting team a head start with employment history, addresses and references already collected.</div>
+      <div class="faq-a">BS7858 is the British Standard for screening individuals in security environments. It requires a fully verified 5-year employment history with no unexplained gaps, a complete 5-year address history, identity verification and criminal record disclosure. Most security employers in York &mdash; including those operating across York Minster and heritage tourist attractions, the Shambles and city centre retail, racecourse events, hospitality venues, and night-time economy &mdash; require candidates to pass BS7858 vetting before starting work. UKSecurityJobs candidates complete their full BS7858-ready profile before applying for any role, giving employers a head start with employment history, addresses and references already collected.</div>
     </div>
+
     <div class="faq-item">
       <button class="faq-q" onclick="toggle(this)">How much do security jobs pay in York?<span class="faq-icon">+</span></button>
-      <div class="faq-a">Security job pay in York varies by role, licence type and experience. Door supervisors typically earn £13–£18 per hour. Security guards earn £12–£15 per hour. CCTV operators earn £12–£16 per hour. Close protection officers can earn significantly more depending on the client and deployment. Every job listing on UKSecurityJobs displays the pay rate before you apply — there are no hidden rates or bait-and-switch listings.</div>
+      <div class="faq-a">Security pay rates in York vary by role, employer, shift pattern and experience level. Every job listing on UKSecurityJobs displays the pay rate before you apply &mdash; there are no hidden rates or bait-and-switch listings. For a full breakdown of current rates by licence type and region, see the <a href="/security-salary-guide">UKSecurityJobs Salary Guide</a>.</div>
     </div>
+
     <div class="faq-item">
       <button class="faq-q" onclick="toggle(this)">How do I register for security jobs in York?<span class="faq-icon">+</span></button>
-      <div class="faq-a">Register free at UKSecurityJobs and complete your profile — it takes approximately 20 minutes and covers your SIA licence details, employment history, address history and reference contacts. Your SIA licence will be verified within 24 hours. Once verified, you can apply for security vacancies in York and anywhere in the UK with a single click, without having to fill in another application form.</div>
+      <div class="faq-a">Register free at UKSecurityJobs and complete your profile &mdash; it takes approximately 20 minutes and covers your SIA licence details, employment history, address history and reference contacts. Your SIA licence will be verified within 24 hours. Once verified, you can apply for security vacancies in York and anywhere in the UK with a single click, without having to fill in another application form.</div>
     </div>
+
     <div class="faq-item">
       <button class="faq-q" onclick="toggle(this)">Can security companies in York post jobs on UKSecurityJobs?<span class="faq-icon">+</span></button>
-      <div class="faq-a">Yes. Security companies in York and across the UK can register as employers and post verified security vacancies on the platform. All applications come from SIA-licensed, BS7858-ready candidates — no unsuitable applicants, no unlicensed candidates and no time wasters. Register your company at the employer sign-up page.</div>
+      <div class="faq-a">Yes. Security companies in York and across the UK can register as employers and post verified security vacancies on the platform. All applications come from SIA-licensed, BS7858-ready candidates &mdash; no unsuitable applicants, no unlicensed candidates and no time wasters. <a href="/employers">Register your company here</a>.</div>
     </div>
+
   </div>
 </section>
 
 <section class="cta">
   <h2>Find Your Next Security Role in York</h2>
   <p>Register free. SIA licence verified within 24 hours. Apply to verified employers with one click.</p>
-  <a href="https://app.uksecurityjobs.co.uk/sign-up" style="display:inline-block;background:#fff;color:var(--navy);font-size:0.95rem;font-weight:700;padding:0.875rem 2.25rem;border-radius:10px;text-decoration:none;">Create My Profile →</a>
+  <a href="https://app.uksecurityjobs.co.uk/sign-up" style="display:inline-block;background:#fff;color:var(--navy);font-size:0.95rem;font-weight:700;padding:0.875rem 2.25rem;border-radius:10px;text-decoration:none;">Create My Profile &rarr;</a>
 </section>
 
 <footer>
@@ -245,14 +257,14 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
     <div class="foot-top">
       <div class="foot-brand">
         <a href="/" class="foot-logo"><span class="uk">UK</span><span class="sec">Security</span><span class="job">Jobs</span></a>
-        <p>The UK's only verified security jobs platform. Built by the industry, for the industry.</p>
+        <p>The UK&apos;s only verified security jobs platform. Built by the industry, for the industry.</p>
         <p style="margin-top:0.5rem;font-size:0.75rem;color:#334155;">Digital Software Group Ltd<br>Registered in England &amp; Wales</p>
       </div>
       <nav class="foot-nav">
         <div class="foot-col">
           <h4>Security Officers</h4>
           <a href="/officers">For Security Officers</a>
-          <a href="/officers">Candidate Registration</a>
+          <a href="https://app.uksecurityjobs.co.uk/sign-up">Register Free</a>
           <a href="https://app.uksecurityjobs.co.uk/jobs">Security Jobs</a>
           <a href="https://app.uksecurityjobs.co.uk/sign-in">Sign In</a>
         </div>
@@ -275,7 +287,7 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
           <a href="/about">About</a>
           <a href="/privacy">Privacy Policy</a>
           <a href="/terms">Terms &amp; Conditions</a>
-          <a href="/about#contact">Contact Us</a>
+          <a href="mailto:support@uksecurityjobs.co.uk">Contact Us</a>
         </div>
       </nav>
     </div>
@@ -292,12 +304,31 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
 
 <script>
 function toggle(btn) {
-  const item = btn.parentElement;
+  var item = btn.parentElement;
   item.classList.toggle('open');
 }
-</script>
 
-</div>
+// Live job count — fetches from public API and updates the hero span.
+// Falls back silently if the API is unavailable.
+(function() {
+  var city = 'York';
+  var el = document.getElementById('live-count');
+  if (!el) return;
+  fetch('https://uksecurityjobs-api.onrender.com/api/jobs/public')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var jobs = (data.jobs || []).filter(function(j) {
+        return j.location && j.location.toLowerCase().indexOf(city.toLowerCase()) !== -1;
+      });
+      if (jobs.length === 0) {
+        el.textContent = 'No live vacancies in York right now — register to be first when roles are posted.';
+      } else {
+        el.textContent = jobs.length + ' live ' + (jobs.length === 1 ? 'vacancy' : 'vacancies') + ' in York right now.';
+      }
+    })
+    .catch(function() { el.textContent = ''; });
+})();
+</script>
 
 <script src="/footer-extras.js" defer></script>
 </body>
