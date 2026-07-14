@@ -360,11 +360,12 @@ function buildJobPosting(job) {
 function injectJobsSchema(jobs) {
   var existing = document.getElementById('jobs-schema');
   if (existing) existing.remove();
-  if (!jobs || !jobs.length) return;
+  var directJobs = (jobs || []).filter(function(j) { return !j.source || j.source === 'direct'; });
+  if (!directJobs.length) return;
   var script = document.createElement('script');
   script.type = 'application/ld+json';
   script.id = 'jobs-schema';
-  script.textContent = JSON.stringify(jobs.map(buildJobPosting));
+  script.textContent = JSON.stringify(directJobs.map(buildJobPosting));
   document.head.appendChild(script);
 }
 
