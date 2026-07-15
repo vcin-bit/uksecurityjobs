@@ -26,6 +26,50 @@
 
 const { supabase } = require('./supabase');
 
+// ── Relevance filter ──────────────────────────────────────────────────────────
+// Reed's `keywords` parameter does loose word-level matching across the full
+// job record (title + description + employer). We apply a post-fetch title
+// filter: only ingest jobs whose title contains at least one physical-security
+// term (WHITELIST) AND none of the known false-positive patterns (EXCLUSIONS).
+//
+// Whitelist — title must match at least one:
+const TITLE_WHITELIST = [
+  /\bsecurity\b/i,       // security guard/officer/manager/supervisor/operative…
+  /door supervisor/i,
+  /\bcctv\b/i,
+  /close protection/i,
+  /\bbodyguard\b/i,
+  /\bsia\b/i,            // word boundary avoids "Malaysia" / "Asia"
+  /manned guarding/i,
+  /key.?holder/i,        // keyholder or key holder
+  /keyholding/i,
+  /night watchman/i,
+  /loss prevention/i,
+  /door staff/i,
+];
+
+// Exclusions — reject even if whitelist matched (common false-positive patterns
+// that slip through "security" / "protection" matching):
+const TITLE_EXCLUSIONS = [
+  /\bit security\b/i,
+  /cyber/i,              // cyber security, cybersecurity
+  /information security/i,
+  /network security/i,
+  /data protection/i,
+  /cloud security/i,
+  /application security/i,
+  /\bsoftware\b/i,
+  /\bfinancial\b/i,
+  /health (and|&) safety/i,
+];
+
+function isSecurityRelevant(title) {
+  const t = (title || '').trim();
+  if (!TITLE_WHITELIST.some(re => re.test(t))) return false;
+  if (TITLE_EXCLUSIONS.some(re => re.test(t))) return false;
+  return true;
+}
+
 const KEYWORDS = [
   'door supervisor',
   'security guard',
@@ -105,6 +149,7 @@ function mapReedJob(job) {
 
 async function ingestReed(requestCounter) {
   let upserted = 0;
+  let skipped  = 0;
   let errors   = 0;
 
   for (const keyword of KEYWORDS) {
@@ -120,6 +165,11 @@ async function ingestReed(requestCounter) {
         if (!results.length) break;
 
         for (const job of results) {
+          if (!isSecurityRelevant(job.jobTitle)) {
+            skipped++;
+            continue;
+          }
+
           const { error } = await supabase
             .from('jobs')
             .upsert(mapReedJob(job), { onConflict: 'source,external_id', ignoreDuplicates: false });
@@ -150,7 +200,7 @@ async function ingestReed(requestCounter) {
     }
   }
 
-  return { upserted, errors };
+  return { upserted, skipped, errors };
 }
 
 // ── Stale job cleanup ─────────────────────────────────────────────────────────
@@ -186,13 +236,14 @@ async function runIngestion() {
   const requestCounter = { count: 0 };
 
   try {
-    const { upserted, errors } = await ingestReed(requestCounter);
+    const { upserted, skipped, errors } = await ingestReed(requestCounter);
     const staled = await markStaleJobs();
 
     console.log(
       `[ingestion] Run complete — ` +
       `${requestCounter.count} Reed API request(s) made, ` +
       `${upserted} job(s) upserted, ` +
+      `${skipped} skipped (irrelevant title), ` +
       `${staled} marked ended, ` +
       `${errors} error(s)`
     );
