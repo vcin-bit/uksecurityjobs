@@ -152,6 +152,7 @@ app.get('/api/jobs/public', async (req, res) => {
     const { data, error } = await sb.from('jobs')
       .select('*, employers(company_name, logo_url, sia_acs)')
       .eq('status', 'active')
+      .eq('source', 'direct') // TEMP: hide Reed jobs while relevance filtering is fixed
       .or(`expires_at.gt.${now},expires_at.is.null`)
       .order('created_at', { ascending: false });
     if (error) throw error;
