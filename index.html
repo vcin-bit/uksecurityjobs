@@ -484,6 +484,13 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
 @media(max-width:900px){.foot-top{grid-template-columns:1fr;gap:2rem;}.foot-nav{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:500px){.foot-nav{grid-template-columns:1fr;}.foot-bottom{flex-direction:column;gap:0.5rem;}}
 
+/* POPULAR LOCATIONS */
+.loc-section{background:var(--bg);padding:80px 2rem;border-top:1px solid var(--border);}
+.loc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1rem;margin-top:2rem;}
+.loc-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:1.2rem 1.4rem;font-size:0.9rem;font-weight:600;color:var(--text);transition:border-color 0.15s,box-shadow 0.15s;display:block;text-decoration:none;}
+.loc-card:hover{border-color:var(--blue);box-shadow:0 4px 12px rgba(26,82,168,0.12);color:var(--blue);text-decoration:none;}
+.loc-card span{display:block;font-size:0.75rem;font-weight:400;color:var(--body);margin-top:0.2rem;}
+
 /* COOKIE CONSENT BANNER */
 #cookie-banner{position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#0b1222;border-top:1px solid #1e293b;padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;transform:translateY(100%);transition:transform 0.3s ease;}
 #cookie-banner.show{transform:translateY(0);}
@@ -865,6 +872,25 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
 </div>
 
 <!-- FOOTER -->
+
+<!-- POPULAR LOCATIONS -->
+<section class="loc-section">
+  <div class="container">
+    <div class="over">Browse by Location</div>
+    <h2>Security Jobs Near You</h2>
+    <p class="sbody">Verified SIA-licensed security vacancies in major UK cities. Every employer is checked. Every candidate is licenced.</p>
+    <div class="loc-grid">
+      <a class="loc-card" href="/security-jobs-london">London<span>Greater London</span></a>
+      <a class="loc-card" href="/security-jobs-manchester">Manchester<span>Greater Manchester</span></a>
+      <a class="loc-card" href="/security-jobs-birmingham">Birmingham<span>West Midlands</span></a>
+      <a class="loc-card" href="/security-jobs-glasgow">Glasgow<span>Scotland</span></a>
+      <a class="loc-card" href="/security-jobs-leeds">Leeds<span>West Yorkshire</span></a>
+      <a class="loc-card" href="/security-jobs-liverpool">Liverpool<span>Merseyside</span></a>
+      <a class="loc-card" href="/security-jobs-bristol">Bristol<span>South West England</span></a>
+      <a class="loc-card" href="/security-jobs-newcastle">Newcastle<span>North East England</span></a>
+    </div>
+  </div>
+</section>
 
 <!-- FAQ SECTION -->
 <section class="faq-section">
