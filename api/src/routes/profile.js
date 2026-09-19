@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase, getClientForUser, encrypt, decrypt, auditLog } = require('../lib/supabase');
+const { refreshBadge } = require('./candidates');
 
 // Helper to get candidate ID from Clerk user ID
 async function getCandidateId(db, userId) {
@@ -62,6 +63,7 @@ router.put('/driving', async (req, res) => {
 
     if (error) throw error;
     await auditLog({ tableName: 'driving_details', recordId: data.id, action: 'UPDATE', performedBy: req.userId, ipAddress: req.ip });
+    refreshBadge(db, candidateId).catch(e => console.error('refreshBadge /driving:', e));
     res.json({ success: true });
   } catch (err) {
     console.error('PUT /driving error:', err);
@@ -112,6 +114,7 @@ router.put('/sectors', async (req, res) => {
 
     if (error) throw error;
     await auditLog({ tableName: 'preferred_sectors', recordId: data.id, action: 'UPDATE', performedBy: req.userId, ipAddress: req.ip });
+    refreshBadge(db, candidateId).catch(e => console.error('refreshBadge /sectors:', e));
     res.json({ success: true });
   } catch (err) {
     console.error('PUT /sectors error:', err);
@@ -166,6 +169,7 @@ router.put('/qualifications', async (req, res) => {
 
     if (error) throw error;
     await auditLog({ tableName: 'qualifications', recordId: data.id, action: 'UPDATE', performedBy: req.userId, ipAddress: req.ip });
+    refreshBadge(db, candidateId).catch(e => console.error('refreshBadge /qualifications:', e));
     res.json({ success: true });
   } catch (err) {
     console.error('PUT /qualifications error:', err);
@@ -218,6 +222,7 @@ router.put('/background', async (req, res) => {
 
     if (error) throw error;
     await auditLog({ tableName: 'professional_background', recordId: data.id, action: 'UPDATE', performedBy: req.userId, ipAddress: req.ip });
+    refreshBadge(db, candidateId).catch(e => console.error('refreshBadge /background:', e));
     res.json({ success: true });
   } catch (err) {
     console.error('PUT /background error:', err);
@@ -232,6 +237,7 @@ router.delete('/addresses/clear', async (req, res) => {
     const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
     await db.from('address_history').delete().eq('candidate_id', candidateId);
+    refreshBadge(db, candidateId).catch(e => console.error('refreshBadge /addresses/clear:', e));
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to clear addresses' });
@@ -286,6 +292,7 @@ router.post('/addresses', async (req, res) => {
 
     if (error) throw error;
     await auditLog({ tableName: 'address_history', recordId: data.id, action: 'INSERT', performedBy: req.userId, ipAddress: req.ip });
+    refreshBadge(db, candidateId).catch(e => console.error('refreshBadge /addresses:', e));
     res.status(201).json({ success: true, id: data.id });
   } catch (err) {
     console.error('POST /addresses error:', err);
@@ -300,6 +307,7 @@ router.delete('/employment/clear', async (req, res) => {
     const candidateId = await getCandidateId(db, req.userId);
     if (!candidateId) return res.status(404).json({ error: 'Profile not found' });
     await db.from('employment_history').delete().eq('candidate_id', candidateId);
+    refreshBadge(db, candidateId).catch(e => console.error('refreshBadge /employment/clear:', e));
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to clear employment' });
@@ -361,6 +369,7 @@ router.post('/employment', async (req, res) => {
 
     if (error) throw error;
     await auditLog({ tableName: 'employment_history', recordId: data.id, action: 'INSERT', performedBy: req.userId, ipAddress: req.ip });
+    refreshBadge(db, candidateId).catch(e => console.error('refreshBadge /employment:', e));
     res.status(201).json({ success: true, id: data.id });
   } catch (err) {
     console.error('POST /employment error:', err);

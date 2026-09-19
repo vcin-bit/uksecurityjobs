@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const email = require('../lib/email');
 const { supabase, decrypt, auditLog } = require('../lib/supabase');
+const { refreshBadge } = require('./candidates');
 
 // GET /admin/candidates — list all candidates with profile status
 router.get('/candidates', async (req, res) => {
@@ -89,6 +90,9 @@ router.post('/sia/:id/verify', async (req, res) => {
       ipAddress: req.ip,
       changes: { verified: true }
     });
+
+    // Recompute badge now that SIA is verified — candidate may have all 8 areas complete
+    refreshBadge(supabase, data.candidate_id).catch(e => console.error('refreshBadge /admin/sia/verify:', e));
 
     res.json({ success: true, licence: data });
   } catch (err) {
@@ -197,6 +201,9 @@ router.post('/sia/:id/reject', async (req, res) => {
       ipAddress: req.ip,
       changes: { verified: false, rejected: true }
     });
+
+    // Recompute badge — rejection may remove the candidate's only verified licence
+    refreshBadge(supabase, data.candidate_id).catch(e => console.error('refreshBadge /admin/sia/reject:', e));
 
     res.json({ success: true });
   } catch (err) {

@@ -4530,6 +4530,9 @@ function EmployerDashboard() {
                                       )}
                                     </div>
                                     <div style={{display:'flex',gap:'0.4rem',flexWrap:'wrap',marginTop:'0.3rem'}}>
+                                      {app.bs7858_ready && (
+                                        <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8',border:'1px solid #bfdbfe'}}>BS7858 Ready</span>
+                                      )}
                                       {licences.slice(0,2).map((l,i) => (
                                         <span key={i} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:l.verified?'#dcfce7':'#fef9c3',color:l.verified?'#15803d':'#854d0e'}}>{l.licence_type} {l.verified?'✓':''}</span>
                                       ))}
@@ -4725,6 +4728,7 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel, onPaymentRequi
     parking: editJob?.parking || '', start_date: editJob?.start_date || '',
     licences_required: editJob?.licences_required || [], driving_licence_required: editJob?.driving_licence_required || 'Not Required',
     own_transport_required: editJob?.own_transport_required || 'Not Required',
+    badged_only: editJob?.badged_only ?? false,
   });
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -4891,6 +4895,14 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel, onPaymentRequi
               </Select>
             </Field>
           </div>
+
+          <label style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',padding:'1rem',background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'10px',cursor:'pointer'}}>
+            <input type="checkbox" checked={form.badged_only} onChange={()=>u('badged_only',!form.badged_only)} style={{marginTop:'0.2rem',width:'16px',height:'16px',flexShrink:0,accentColor:'#1a52a8'}}/>
+            <div>
+              <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222'}}>BS7858 Ready applicants only</div>
+              <div style={{fontSize:'0.78rem',color:'#0369a1',lineHeight:1.6,marginTop:'0.2rem'}}>When on, only candidates with a fully complete BS7858 profile appear in your applicant list. Candidates without the badge can still apply — they are hidden from your view, not blocked from submitting.</div>
+            </div>
+          </label>
 
           <div style={{display:'flex',gap:'1rem'}}>
             <button className="btn-next" type="submit" disabled={saving} style={{flex:1}}>{saving ? (editJob ? 'Saving...' : 'Posting...') : (editJob ? 'Save Changes' : 'Post Job →')}</button>

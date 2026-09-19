@@ -101,7 +101,8 @@ router.post('/jobs', requireVerifiedEmployer, async (req, res) => {
       employer_id: employerId,
       status: 'active',
       expires_at,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      badged_only: body.badged_only === true,
     }).select().single();
     if (error) throw error;
     await auditLog({ tableName: 'jobs', recordId: data.id, action: 'INSERT', performedBy: req.userId, ipAddress: req.ip, changes: { title: data.title } });
@@ -120,6 +121,7 @@ router.put('/jobs/:id', async (req, res) => {
     if (typeof body.description !== 'undefined') update.description = stripMarkdown(body.description);
     if (typeof body.duties !== 'undefined')      update.duties      = stripMarkdown(body.duties);
     if (typeof body.benefits !== 'undefined')    update.benefits    = stripMarkdown(body.benefits);
+    if (typeof body.badged_only === 'boolean')   update.badged_only = body.badged_only;
     const { data, error } = await db.from('jobs')
       .update(update)
       .eq('id', req.params.id).eq('employer_id', employerId).select().single();
@@ -175,7 +177,7 @@ router.get('/jobs/:id/applicants', requireVerifiedEmployer, async (req, res) => 
     if (!employerId) return res.status(403).json({ error: 'Not authorised' });
 
     // Verify job belongs to this employer
-    const { data: job } = await supabase.from('jobs').select('id').eq('id', req.params.id).eq('employer_id', employerId).single();
+    const { data: job } = await supabase.from('jobs').select('id, badged_only').eq('id', req.params.id).eq('employer_id', employerId).single();
     if (!job) return res.status(404).json({ error: 'Job not found' });
 
     const { data, error } = await supabase
@@ -187,11 +189,24 @@ router.get('/jobs/:id/applicants', requireVerifiedEmployer, async (req, res) => 
           sia_licences(licence_type, expiry_date, verified)
         )
       `)
-      .eq('job_id', req.params.id)
-      .order('applied_at', { ascending: false });
+      .eq('job_id', req.params.id);
 
     if (error) throw error;
-    const applicants = (data || []).map(a => ({ ...a, created_at: a.applied_at }));
+
+    let applicants = (data || []).map(a => ({
+      ...a,
+      created_at: a.applied_at,
+      bs7858_ready: a.candidates?.profile_complete === true,
+    }));
+
+    // Badged first, then most-recent application date within each group
+    applicants.sort((a, b) => {
+      if (a.bs7858_ready !== b.bs7858_ready) return a.bs7858_ready ? -1 : 1;
+      return new Date(b.applied_at) - new Date(a.applied_at);
+    });
+
+    if (job.badged_only) applicants = applicants.filter(a => a.bs7858_ready);
+
     res.json({ applicants });
   } catch(err) {
     console.error('GET /employers/jobs/:id/applicants error:', err);

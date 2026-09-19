@@ -51,6 +51,17 @@ async function isBS7858Ready(db, candidateId) {
   return { complete: missing.length === 0, missing };
 }
 
+// ── Badge refresh helper ──────────────────────────────────────────────────────
+// Recomputes isBS7858Ready and persists the result to candidates.profile_complete.
+// Call fire-and-forget (.catch()) after any write that touches one of the 8 areas
+// so employers always see a current badge without waiting for the candidate to
+// reload their dashboard.
+async function refreshBadge(db, candidateId) {
+  const { complete } = await isBS7858Ready(db, candidateId);
+  await db.from('candidates').update({ profile_complete: complete }).eq('id', candidateId);
+}
+
+
 // GET /api/candidates/me — get the current candidate's profile, create if doesn't exist
 router.get('/me', async (req, res) => {
   try {
@@ -320,6 +331,7 @@ router.put('/me/personal', async (req, res) => {
       ipAddress: req.ip
     });
 
+    refreshBadge(db, candidate.id).catch(e => console.error('refreshBadge /personal:', e));
     res.json({ success: true });
   } catch (err) {
     console.error('PUT /candidates/me/personal error:', err);
@@ -506,3 +518,4 @@ router.delete('/me', async (req, res) => {
 module.exports = router;
 module.exports.canApply = canApply;
 module.exports.isBS7858Ready = isBS7858Ready;
+module.exports.refreshBadge = refreshBadge;

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase, getClientForUser, encrypt, decrypt, auditLog } = require('../lib/supabase');
 const email = require('../lib/email');
+const { refreshBadge } = require('./candidates');
 
 // GET /api/sia
 router.get('/', async (req, res) => {
@@ -60,6 +61,10 @@ router.put('/', async (req, res) => {
     }
 
     await auditLog({ tableName: 'sia_licences', recordId: candidate.id, action: 'UPDATE', performedBy: req.userId, ipAddress: req.ip });
+
+    // Recompute badge — all re-inserted licences are unverified, so badge will flip to false
+    // if the candidate held a verified licence before this PUT
+    refreshBadge(db, candidate.id).catch(e => console.error('refreshBadge PUT /sia:', e));
 
     // Notify admin of new verification requests
     if (licences.length > 0) {
