@@ -3,10 +3,28 @@ const router = express.Router();
 const { supabase, getClientForUser, encrypt, decrypt, auditLog } = require('../lib/supabase');
 const { createClerkClient } = require('@clerk/backend');
 
-// ── Profile completeness helper ──────────────────────────────────────────────
-// Single source of truth: a profile is complete when all 8 data areas exist.
+// ── Apply gate ───────────────────────────────────────────────────────────────
+// Minimum requirement to submit a job application.
+// Returns { ok: bool, missing: ('sia' | 'personal')[] }.
+async function canApply(db, candidateId) {
+  const missing = [];
+
+  const [siaRes, personalRes] = await Promise.all([
+    db.from('sia_licences').select('verified').eq('candidate_id', candidateId),
+    db.from('personal_details').select('first_name').eq('candidate_id', candidateId).maybeSingle(),
+  ]);
+
+  if (!(siaRes.data || []).some(l => l.verified === true)) missing.push('sia');
+  if (!personalRes.data?.first_name) missing.push('personal');
+
+  return { ok: missing.length === 0, missing };
+}
+
+// ── BS7858 badge ─────────────────────────────────────────────────────────────
+// Full profile completeness — all 8 data areas. Used for the badge only;
+// does not gate job applications.
 // Returns { complete: bool, missing: string[] }.
-async function isProfileComplete(db, candidateId) {
+async function isBS7858Ready(db, candidateId) {
   const missing = [];
 
   const [siaRes, personalRes, drivingRes, sectorsRes, qualsRes, bgRes, empRes, addrRes] = await Promise.all([
@@ -144,7 +162,7 @@ router.patch('/me/step', async (req, res) => {
 
     const update = { profile_step };
     if (existing && typeof profile_step === 'number' && profile_step >= 10) {
-      const { complete } = await isProfileComplete(db, existing.id);
+      const { complete } = await isBS7858Ready(db, existing.id);
       update.profile_complete = complete;
     }
 
@@ -176,7 +194,7 @@ router.get('/me/completeness', async (req, res) => {
 
     if (!candidate) return res.status(404).json({ error: 'Profile not found' });
 
-    const result = await isProfileComplete(db, candidate.id);
+    const result = await isBS7858Ready(db, candidate.id);
 
     // Keep the profile_complete flag in sync
     await db.from('candidates')
@@ -486,4 +504,5 @@ router.delete('/me', async (req, res) => {
 });
 
 module.exports = router;
-module.exports.isProfileComplete = isProfileComplete;
+module.exports.canApply = canApply;
+module.exports.isBS7858Ready = isBS7858Ready;

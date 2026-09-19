@@ -13,7 +13,7 @@
 // slightly off-schedule or the server restarts mid-run.
 
 const { supabase } = require('./supabase');
-const { isProfileComplete } = require('../routes/candidates');
+const { isBS7858Ready } = require('../routes/candidates');
 const email = require('./email');
 
 const NUDGE_WINDOWS = [
@@ -78,7 +78,7 @@ async function nudgeOne(candidate, nudgeType) {
   try {
     // Re-check completeness at send time — profile may have been completed
     // between the window query and now.
-    const { missing } = await isProfileComplete(supabase, candidate.id);
+    const { missing } = await isBS7858Ready(supabase, candidate.id);
     if (missing.length === 0) {
       console.log(`[nudges] Skipping ${candidate.id} — profile now complete.`);
       return;
