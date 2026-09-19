@@ -5047,11 +5047,11 @@ function JobListingsPage() {
                   <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
                     <div style={{flex:1}}>
                       <div style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',marginBottom:'0.5rem'}}>
-                        {profileComplete && job.employers?.logo_url && <img src={job.employers.logo_url} alt={job.company_name} style={{width:'44px',height:'44px',borderRadius:'8px',objectFit:'contain',border:'1px solid #e2e8f0',background:'#f8fafc',padding:'3px',flexShrink:0}}/>}
+                        {canApplyNow && job.employers?.logo_url && <img src={job.employers.logo_url} alt={job.company_name} style={{width:'44px',height:'44px',borderRadius:'8px',objectFit:'contain',border:'1px solid #e2e8f0',background:'#f8fafc',padding:'3px',flexShrink:0}}/>}
                         <div>
                           <div style={{fontWeight:800,fontSize:'1.05rem',color:'#0b1222',marginBottom:'0.1rem'}}>{job.title}</div>
                           <div style={{fontWeight:600,fontSize:'0.85rem',color:'#1a52a8',display:'flex',alignItems:'center',gap:'0.4rem'}}>
-                            {profileComplete ? job.company_name : 'Verified Employer'}
+                            {canApplyNow ? job.company_name : 'Verified Employer'}
                             {job.employers?.reputation_score && (
                               <span style={{fontSize:'0.7rem',fontWeight:700,color:'#15803d',background:'#f0fdf4',padding:'0.1rem 0.4rem',borderRadius:'4px'}}>
                                 ★ {job.employers.reputation_score}
