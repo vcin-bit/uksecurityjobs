@@ -2043,6 +2043,7 @@ function CoverLetterBuilder({ profileData, userName }) {
 function ProfileBuilder() {
   const { user } = useUser();
   const { getToken } = useAuth();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
   const [forceEditKey, setForceEditKey] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -2105,7 +2106,8 @@ function ProfileBuilder() {
           if (Math.round(total) >= 60) completed.add('addresses');
         }
         setCompletedSteps(completed);
-        setStep(full.candidate?.profile_step || 0);
+        const stepParam = parseInt(searchParams.get('step'), 10);
+        setStep(Number.isFinite(stepParam) && stepParam > 0 ? stepParam : (full.candidate?.profile_step || 0));
 
       } catch(err) {
         console.error('Failed to load profile:', err);
@@ -4910,8 +4912,10 @@ function JobListingsPage() {
   const [filters, setFilters] = React.useState({ licence:'', location:'', type:'' });
   const [applying, setApplying] = React.useState(null);
   const [applied, setApplied] = React.useState(new Set());
-  const [profileComplete, setProfileComplete] = React.useState(false);
   const [profileMissing, setProfileMissing] = React.useState([]);
+  const canApplyNow = isSignedIn &&
+    !profileMissing.includes('Verified SIA licence') &&
+    !profileMissing.includes('Personal details');
 
   React.useEffect(() => {
     fetch('https://uksecurityjobs-api.onrender.com/api/jobs/public')
@@ -4925,9 +4929,8 @@ function JobListingsPage() {
     (async () => {
       try {
         const result = await apiRequest('/api/candidates/me/completeness', 'GET', null, getToken);
-        setProfileComplete(result.complete);
         setProfileMissing(result.missing || []);
-      } catch { setProfileComplete(false); setProfileMissing([]); }
+      } catch { setProfileMissing([]); }
     })();
   }, [isSignedIn]);
 
@@ -4975,10 +4978,10 @@ function JobListingsPage() {
       if (msg.includes('already applied') || msg.includes('duplicate')) {
         setApplied(prev => new Set([...prev, confirmJob.id]));
         setConfirmJob(null);
-      } else if (msg.includes('PROFILE_INCOMPLETE')) {
-        setProfileComplete(false);
+      } else if (msg.includes('CANNOT_APPLY')) {
         setConfirmJob(null);
-        alert('Please complete your profile before applying.');
+        const goToStep = profileMissing.includes('Verified SIA licence') ? 1 : 2;
+        navigate(`/profile?step=${goToStep}`);
       } else {
         alert('Failed to apply. Please try again.');
       }
@@ -5081,15 +5084,15 @@ function JobListingsPage() {
                       <div style={{fontSize:'0.68rem',color:'#94a3b8'}}>{new Date(job.created_at).toLocaleDateString('en-GB')}</div>
                       {applied.has(job.id)
                         ? <div style={{background:'#dcfce7',color:'#15803d',borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.85rem',fontWeight:700}}>✓ Applied</div>
-                        : isSignedIn && !profileComplete
+                        : isSignedIn && !canApplyNow
                         ? <div style={{textAlign:'right'}}>
                             <button disabled style={{background:'#94a3b8',color:'#fff',border:'none',borderRadius:'8px',padding:'0.65rem 1.5rem',fontSize:'0.85rem',fontWeight:700,cursor:'not-allowed',fontFamily:'inherit',whiteSpace:'nowrap',opacity:0.7}}>
                               Apply Now
                             </button>
                             <div style={{background:'#fef3c7',color:'#92400e',borderRadius:'6px',padding:'0.4rem 0.75rem',fontSize:'0.7rem',fontWeight:600,lineHeight:1.5,marginTop:'0.4rem'}}>
-                              Missing: {profileMissing.join(', ') || 'Complete your profile'}
+                              {profileMissing.includes('Verified SIA licence') ? 'SIA licence not yet verified' : 'Personal details required'}
                             </div>
-                            <a href="/profile" style={{fontSize:'0.72rem',color:'#1a52a8',fontWeight:600,marginTop:'0.3rem',display:'inline-block'}}>Continue Profile →</a>
+                            <a href="/profile" style={{fontSize:'0.72rem',color:'#1a52a8',fontWeight:600,marginTop:'0.3rem',display:'inline-block'}}>Complete profile →</a>
                           </div>
                         : <button onClick={()=>applyForJob(job)} disabled={applying===job.id} style={{background:'#1a52a8',color:'#fff',border:'none',borderRadius:'8px',padding:'0.65rem 1.5rem',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
                             {applying===job.id?'Applying...':isSignedIn?'Apply Now':'Sign in to Apply'}
