@@ -15,6 +15,7 @@ const aiRoutes = require('./routes/ai');
 const employerRoutes = require('./routes/employers');
 const { requireAuth } = require('./middleware/auth');
 const { requireAdmin } = require('./middleware/admin');
+const { supabase } = require('./lib/supabase');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -159,6 +160,68 @@ app.get('/api/jobs/public', async (req, res) => {
   } catch(err) {
     console.error('Public jobs error:', err.message);
     res.status(500).json({ error: 'Failed to fetch jobs' });
+  }
+});
+
+// Public platform stats — no auth, cached 5 minutes.
+// can_apply and bs7858_ready are floored to the nearest 10 (raw value if floor is 0).
+// licence_types is a small bounded set — returned as a plain count, no flooring.
+let _statsCache = null;
+let _statsCacheAt = 0;
+const STATS_TTL_MS = 5 * 60 * 1000;
+
+app.get('/api/stats/public', async (req, res) => {
+  try {
+    if (_statsCache && Date.now() - _statsCacheAt < STATS_TTL_MS) {
+      return res.json(_statsCache);
+    }
+
+    // Supabase select() defaults to 1000 rows. Explicit range used here to avoid
+    // silent truncation as the platform grows. Convert to an RPC if candidates
+    // exceed ~5,000 and these queries become a concern.
+    const [siaRes, personalRes, badgeRes] = await Promise.all([
+      supabase.from('sia_licences').select('candidate_id, licence_type').eq('verified', true).range(0, 9999),
+      supabase.from('personal_details').select('candidate_id').not('first_name', 'is', null).neq('first_name', '').range(0, 9999),
+      supabase.from('candidates').select('id', { count: 'exact', head: true }).eq('profile_complete', true),
+    ]);
+
+    // canApply: candidates with a verified SIA licence AND personal details populated.
+    // Mirrors canApply() logic without per-row DB calls.
+    const siaRows = siaRes.data || [];
+    const siaSet = new Set(siaRows.map(r => r.candidate_id));
+    const canApplyCount = (personalRes.data || []).filter(r => siaSet.has(r.candidate_id)).length;
+
+    // BS7858 badge: authoritative flag maintained by refreshBadge() after every write.
+    const bs7858Count = badgeRes.count || 0;
+
+    // Distinct licence types across all verified licences (from the same query).
+    // Bounded by the SIA licence type taxonomy — not floored.
+    const licenceTypeCount = new Set(siaRows.map(r => r.licence_type).filter(Boolean)).size;
+
+    function floorStat(n) {
+      const floored = Math.floor(n / 10) * 10;
+      return floored === 0
+        ? { value: n, display: String(n) }
+        : { value: floored, display: `${floored}+` };
+    }
+
+    const canApply = floorStat(canApplyCount);
+    const bs7858   = floorStat(bs7858Count);
+
+    _statsCache = {
+      can_apply:             canApply.value,
+      can_apply_display:     canApply.display,
+      bs7858_ready:          bs7858.value,
+      bs7858_ready_display:  bs7858.display,
+      licence_types:         licenceTypeCount,
+      licence_types_display: String(licenceTypeCount),
+    };
+    _statsCacheAt = Date.now();
+
+    res.json(_statsCache);
+  } catch (err) {
+    console.error('Public stats error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch stats' });
   }
 });
 
