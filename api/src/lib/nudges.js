@@ -13,7 +13,7 @@
 // slightly off-schedule or the server restarts mid-run.
 
 const { supabase } = require('./supabase');
-const { isBS7858Ready } = require('../routes/candidates');
+const { isBS7858Ready, canApply } = require('../routes/candidates');
 const email = require('./email');
 
 const NUDGE_WINDOWS = [
@@ -74,15 +74,37 @@ async function sendNudgesForWindow(nudgeType, minHours, maxHours) {
   }
 }
 
+// Maps canApply() missing keys to display strings used in nudge emails.
+// Driven by canApply() return values — won't drift from the apply gate.
+const APPLY_LABEL = { sia: 'Verified SIA licence', personal: 'Personal details' };
+
 async function nudgeOne(candidate, nudgeType) {
   try {
     // Re-check completeness at send time — profile may have been completed
     // between the window query and now.
-    const { missing } = await isBS7858Ready(supabase, candidate.id);
-    if (missing.length === 0) {
+    // Run both checks in parallel — canApply() drives the blocking split;
+    // isBS7858Ready() provides the full badge-missing list.
+    const [applyCheck, badgeCheck] = await Promise.all([
+      canApply(supabase, candidate.id),
+      isBS7858Ready(supabase, candidate.id),
+    ]);
+    if (badgeCheck.missing.length === 0) {
       console.log(`[nudges] Skipping ${candidate.id} — profile now complete.`);
       return;
     }
+
+    // blocking: derived from canApply() — correct by construction, won't drift.
+    // If a key has no label, canApply() has grown a new case we haven't handled —
+    // log clearly and skip rather than silently sending the wrong email.
+    const unmapped = applyCheck.missing.filter(m => !APPLY_LABEL[m]);
+    if (unmapped.length > 0) {
+      console.error(`[nudges] Unknown canApply() key(s) for ${candidate.id}: ${unmapped.join(', ')} — skipping nudge`);
+      return;
+    }
+    const blocking = applyCheck.missing.map(m => APPLY_LABEL[m]);
+    // badge: everything isBS7858Ready() flags that isn't already in blocking
+    const blockingSet = new Set(blocking);
+    const badge = badgeCheck.missing.filter(m => !blockingSet.has(m));
 
     // Get first name for personalisation (may be null if personal_details not yet saved).
     const { data: personal } = await supabase
@@ -94,7 +116,7 @@ async function nudgeOne(candidate, nudgeType) {
     const firstName = personal?.first_name || 'there';
 
     const sendFn = nudgeType === '24h' ? email.sendNudge24h : email.sendNudge72h;
-    const sent = await sendFn({ toEmail: candidate.email, firstName, missing });
+    const sent = await sendFn({ toEmail: candidate.email, firstName, blocking, badge });
 
     if (!sent) {
       // send() already logged the SendGrid error — don't record the nudge so

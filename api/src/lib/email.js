@@ -216,39 +216,80 @@ async function sendAdminSiaRequest({ candidateName, licenceType, licenceNumber }
 }
 
 // ── 8. INCOMPLETE PROFILE NUDGE — 24h ──
-async function sendNudge24h({ toEmail, firstName, missing }) {
-  const missingList = missing.map(m => `<li style="margin-bottom:0.35rem;">${m}</li>`).join('');
-  const html = baseTemplate(`
-    <h1>Your profile is almost there, ${firstName}</h1>
-    <p>Hi ${firstName},</p>
-    <p>You started building your UKSecurityJobs profile yesterday — good start. You just need to complete a few more sections before verified employers can see you and you can apply for roles.</p>
-    <p><strong>Still to complete:</strong></p>
-    <ul style="font-size:0.9rem;color:#4a5568;line-height:1.8;margin:0.5rem 0 1.25rem 1.25rem;">
-      ${missingList}
-    </ul>
-    <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn">Continue My Profile →</a>
-    <hr class="divider"/>
-    <p style="font-size:0.85rem;color:#64748b;">Each section only takes a few minutes. Once your SIA licence is verified and your profile is complete, you'll be visible to security employers across the UK with a single-click application on every role.</p>
-  `);
-  return send(toEmail, 'Complete your profile — UKSecurityJobs', html);
+// blocking = items that prevent applying (verified SIA, personal details)
+// badge    = items that prevent the BS7858-ready badge (the other 6 areas)
+async function sendNudge24h({ toEmail, firstName, blocking, badge }) {
+  let subject, content;
+
+  if (blocking.length > 0) {
+    // Case A: candidate cannot apply yet
+    const list = blocking.map(m => `<li style="margin-bottom:0.35rem;">${m}</li>`).join('');
+    subject = 'Finish your profile to start applying — UKSecurityJobs';
+    content = `
+      <h1>You're almost ready to apply, ${firstName}</h1>
+      <p>Hi ${firstName},</p>
+      <p>You started building your profile yesterday. A couple of things still need to be in place before you can apply for roles.</p>
+      <p><strong>Still needed to apply:</strong></p>
+      <ul style="font-size:0.9rem;color:#4a5568;line-height:1.8;margin:0.5rem 0 1.25rem 1.25rem;">${list}</ul>
+      <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn">Continue My Profile →</a>
+      <hr class="divider"/>
+      <p style="font-size:0.85rem;color:#64748b;">Once these are in place, you can apply to any role with a single click — no forms to fill in.</p>
+    `;
+  } else {
+    // Case B: candidate can apply, badge sections remaining
+    const list = badge.map(m => `<li style="margin-bottom:0.35rem;">${m}</li>`).join('');
+    subject = 'You can apply now — complete your profile to earn your badge';
+    content = `
+      <h1>You can apply now, ${firstName}</h1>
+      <p>Hi ${firstName},</p>
+      <p>Your SIA licence is verified and your profile is ready — you can apply for roles on UKSecurityJobs right now.</p>
+      <p>To earn the <strong>BS7858-ready badge</strong> — which shows employers you are ready for security clearance checks — you still need to add:</p>
+      <ul style="font-size:0.9rem;color:#4a5568;line-height:1.8;margin:0.5rem 0 1.25rem 1.25rem;">${list}</ul>
+      <a href="https://app.uksecurityjobs.co.uk/jobs" class="btn">Browse Security Jobs →</a>
+      <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn" style="background:#0b1222;">Add Remaining Details →</a>
+      <hr class="divider"/>
+      <p style="font-size:0.85rem;color:#64748b;">Employers running BS7858 background checks look for a full five-year address and employment history, plus reference contacts.</p>
+    `;
+  }
+
+  return send(toEmail, subject, baseTemplate(content));
 }
 
 // ── 9. INCOMPLETE PROFILE NUDGE — 72h ──
-async function sendNudge72h({ toEmail, firstName, missing }) {
-  const missingList = missing.map(m => `<li style="margin-bottom:0.35rem;">${m}</li>`).join('');
-  const html = baseTemplate(`
-    <h1>Don't miss out on new security roles</h1>
-    <p>Hi ${firstName},</p>
-    <p>New security vacancies are being posted on UKSecurityJobs — but you won't be able to apply until your profile is complete and your SIA licence is verified.</p>
-    <p><strong>Your profile is still missing:</strong></p>
-    <ul style="font-size:0.9rem;color:#4a5568;line-height:1.8;margin:0.5rem 0 1.25rem 1.25rem;">
-      ${missingList}
-    </ul>
-    <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn">Finish My Profile Now →</a>
-    <hr class="divider"/>
-    <div class="notice"><strong>Verified candidates get first look at new roles.</strong> Complete your profile today so you're ready to apply the moment a relevant vacancy goes live.</div>
-  `);
-  return send(toEmail, 'New roles available — finish your profile to apply', html);
+async function sendNudge72h({ toEmail, firstName, blocking, badge }) {
+  let subject, content;
+
+  if (blocking.length > 0) {
+    // Case A: candidate cannot apply yet
+    const list = blocking.map(m => `<li style="margin-bottom:0.35rem;">${m}</li>`).join('');
+    subject = 'New roles available — your profile needs attention';
+    content = `
+      <h1>New roles are live, ${firstName}</h1>
+      <p>Hi ${firstName},</p>
+      <p>Security vacancies are being added to UKSecurityJobs. To apply, you need to complete the following:</p>
+      <ul style="font-size:0.9rem;color:#4a5568;line-height:1.8;margin:0.5rem 0 1.25rem 1.25rem;">${list}</ul>
+      <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn">Finish My Profile →</a>
+      <hr class="divider"/>
+      <div class="notice"><strong>Verified candidates apply with a single click.</strong> Once your profile is in order, every role on the platform is one click away — no forms to fill in.</div>
+    `;
+  } else {
+    // Case B: candidate can apply, badge sections remaining
+    const list = badge.map(m => `<li style="margin-bottom:0.35rem;">${m}</li>`).join('');
+    subject = 'New roles available — add your history to earn the BS7858 badge';
+    content = `
+      <h1>New roles are live and you can apply, ${firstName}</h1>
+      <p>Hi ${firstName},</p>
+      <p>Security vacancies are being added to UKSecurityJobs and you are already set up to apply. Your SIA licence is verified and your basic details are in place.</p>
+      <p>To earn the <strong>BS7858-ready badge</strong> — prioritised by employers running security clearance checks — you still need to add:</p>
+      <ul style="font-size:0.9rem;color:#4a5568;line-height:1.8;margin:0.5rem 0 1.25rem 1.25rem;">${list}</ul>
+      <a href="https://app.uksecurityjobs.co.uk/jobs" class="btn">Browse Security Jobs →</a>
+      <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn" style="background:#0b1222;">Add Remaining Details →</a>
+      <hr class="divider"/>
+      <div class="notice"><strong>BS7858-ready candidates are prioritised by employers running background checks.</strong> Adding your history now means you will be at the front of the queue when relevant roles go live.</div>
+    `;
+  }
+
+  return send(toEmail, subject, baseTemplate(content));
 }
 
 module.exports = {
