@@ -185,10 +185,15 @@ app.use((err, req, res, next) => {
 // ── 07:00 UTC — Reed job ingestion ──────────────────────────────────────────
 // Fetches security-sector jobs from Reed Jobseeker API and upserts into jobs.
 // Jobs not seen for 7+ days are marked status='ended'.
-// Requires: REED_API_KEY env var.
-cron.schedule('0 7 * * *', () => {
-  runIngestion().catch(err => console.error('[ingestion] Cron job error:', err.message));
-}, { timezone: 'UTC' });
+// Requires: REED_API_KEY env var. Gated by REED_INGESTION_ENABLED=true.
+if (process.env.REED_INGESTION_ENABLED === 'true') {
+  cron.schedule('0 7 * * *', () => {
+    runIngestion().catch(err => console.error('[ingestion] Cron job error:', err.message));
+  }, { timezone: 'UTC' });
+  console.log('[ingestion] Reed ingestion cron scheduled (07:00 UTC).');
+} else {
+  console.log('[ingestion] Reed ingestion disabled (REED_INGESTION_ENABLED not set).');
+}
 
 // ── 09:00 UTC — incomplete profile nudge emails ──────────────────────────────
 // Sends 24h and 72h reminder emails to candidates who signed up but haven't
