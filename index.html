@@ -122,14 +122,34 @@ nav{position:sticky;top:0;z-index:200;background:rgba(249,250,251,0.96);backdrop
 }
 .btn-s:hover{border-color:#b0bec5;box-shadow:0 4px 12px rgba(0,0,0,0.08);}
 
-.hero-proof{
-  display:flex;align-items:center;justify-content:center;
-  gap:1.5rem;flex-wrap:wrap;
-  font-size:0.78rem;color:var(--mid);font-weight:500;
-  margin-bottom:0.25rem;
+.hero-candidate-link{
+  font-size:0.88rem;font-weight:500;color:var(--body);
+  text-decoration:underline;text-underline-offset:3px;
+  transition:color 0.15s;padding:0.78rem 0;
 }
-.proof-sep{width:1px;height:14px;background:var(--border);}
-.proof-check{color:var(--blue);margin-right:0.3rem;}
+.hero-candidate-link:hover{color:var(--text);}
+
+/* free-to-post section */
+.free-post{background:var(--blue);color:#fff;padding:5rem 2rem;}
+.free-post .container{max-width:720px;margin:0 auto;text-align:center;}
+.free-post h2{font-size:clamp(1.5rem,3vw,2.4rem);font-weight:900;letter-spacing:-0.02em;margin-bottom:1rem;}
+.free-post p{font-size:1rem;line-height:1.7;opacity:0.88;margin-bottom:0.5rem;}
+.free-post .btn-free{
+  display:inline-block;background:#fff;color:var(--blue);
+  font-size:0.95rem;font-weight:700;padding:0.85rem 2.2rem;
+  border-radius:8px;margin-top:2rem;
+  transition:opacity 0.15s;
+}
+.free-post .btn-free:hover{opacity:0.9;}
+
+/* candidates strip */
+.cand-strip{background:var(--bg);border-top:1px solid var(--border);padding:3rem 2rem;}
+.cand-strip .container{max-width:760px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap;}
+.cand-strip-text h3{font-size:1.1rem;font-weight:700;margin-bottom:0.4rem;}
+.cand-strip-text p{font-size:0.9rem;color:var(--body);line-height:1.65;max-width:480px;}
+.cand-strip-cta{white-space:nowrap;font-size:0.9rem;font-weight:600;color:var(--blue);text-decoration:underline;text-underline-offset:3px;flex-shrink:0;}
+.cand-strip-cta:hover{color:var(--blue2);}
+@media(max-width:600px){.cand-strip .container{flex-direction:column;align-items:flex-start;}.cand-strip-cta{margin-top:0.5rem;}}
 
 /* ═══════════════════════════════════════
    DEVICE MOCKUP SCENE
@@ -523,8 +543,8 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
     </ul>
     <div class="nav-right">
       <a class="nav-signin" href="https://app.uksecurityjobs.co.uk/sign-in">Sign in</a>
-      <a class="nav-cta" href="/officers">Candidate Registration</a>
-      <a class="nav-cta-outline" href="/employers">Company Registration</a>
+      <a class="nav-signin" href="/officers">Looking for work?</a>
+      <a class="nav-cta" href="/employers">Post a role — free</a>
     </div>
     <button class="nav-mob" id="menuBtn" aria-label="Menu">&#9776;</button>
   </div>
@@ -538,8 +558,8 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
   </div>
   <a href="/blog">Blog</a>
   <a href="https://app.uksecurityjobs.co.uk/sign-in">Sign in</a>
-  <a class="mob-cta" href="/officers">Candidate Registration ›</a>
-  <a class="mob-cta" href="/employers">Company Registration ›</a>
+  <a class="mob-cta" href="/employers">Post a role — free ›</a>
+  <a href="/officers" style="padding:0.9rem 1.5rem;color:#4a5568;font-size:0.95rem;">Looking for work?</a>
 </div>
 
 <!-- HERO -->
@@ -552,22 +572,14 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
 
   <div class="hero-inner">
     <div class="pill">
-      <span class="pill-tag">New</span>
+      <span class="pill-tag">Now live</span>
       <span>The UK's first verified security jobs platform</span>
     </div>
-    <h1>Security Jobs UK</h1>
-    <p class="hero-sub">Every candidate SIA licensed, professionally assessed and BS7858 ready — before they ever apply.</p>
+    <h1><span id="h1-num"></span>SIA-verified security professionals. Ready to apply today.</h1>
+    <p class="hero-sub">Every candidate's licence is checked against the SIA register before they can apply. No unlicensed applicants. No time-wasters.</p>
     <div class="hero-btns">
-      <a class="btn-p" href="/officers">I'm a Security Officer ›</a>
-      <a class="btn-s" href="/employers">I'm a Security Company ›</a>
-    </div>
-    <div class="hero-proof">
-      <span><span class="proof-check">✓</span>SIA Verified Only</span>
-      <span class="proof-sep"></span>
-      <span><span class="proof-check">✓</span>BS7858 Ready</span>
-      <span class="proof-sep"></span>
-      <span><span class="proof-check">✓</span>Professionally Assessed</span>
-      
+      <a class="btn-p" href="/employers">Post a role — free ›</a>
+      <a class="hero-candidate-link" href="/officers">Looking for work?</a>
     </div>
   </div>
 
@@ -780,13 +792,12 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
   </div>
 </section>
 
-<!-- STATS -->
-<div class="stats">
+<!-- PROOF STRIP — populated from /api/stats/public, hidden until loaded -->
+<div class="stats" id="proof-strip" style="display:none" aria-hidden="true">
   <div class="stats-inner">
-    <div class="stat"><div class="stat-n">350k+</div><div class="stat-l">Active SIA Licences in the UK</div></div>
-    <div class="stat"><div class="stat-n">2&#8209;Stage</div><div class="stat-l">Candidate Verification</div></div>
-    
-    <div class="stat"><div class="stat-n">100%</div><div class="stat-l">SIA Verified Candidates Only</div></div>
+    <div class="stat"><div class="stat-n" id="stat-can-apply"></div><div class="stat-l">SIA-verified candidates</div></div>
+    <div class="stat"><div class="stat-n" id="stat-bs7858"></div><div class="stat-l">BS7858 Ready</div></div>
+    <div class="stat"><div class="stat-n" id="stat-licences"></div><div class="stat-l">Licence types covered</div></div>
   </div>
 </div>
 
@@ -812,56 +823,52 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
   </div>
 </div>
 
-<!-- WHY -->
+<!-- WHY POST HERE -->
 <section class="sec-grey">
   <div class="container">
-    <div class="over">Why UKSecurityJobs</div>
-    <h2>Security Vacancies — The Platform the UK Security Industry Always Needed</h2>
-    <p class="sbody">Generic job boards have no mechanism to filter unlicensed or unvettable candidates. Every unsuitable application costs you time and money.</p>
+    <div class="over">Why post here</div>
+    <h2>Every applicant is already verified before you see them</h2>
+    <p class="sbody">Generic job boards have no mechanism to filter unlicensed candidates. Every unsuitable application costs you time. This platform removes that problem entirely.</p>
     <div class="feat-grid">
       <div class="feat">
-        <div class="feat-n">01 — Eligibility</div>
-        <h3>SIA Verified Only</h3>
-        <p>Every candidate is verified against the SIA public register before they access the platform. No valid licence means no access. No exceptions.</p>
+        <div class="feat-n">01 — Licence check</div>
+        <h3>Licence-checked before they apply</h3>
+        <p>Every candidate is verified against the SIA public register before they can submit a single application. Not self-declared — checked.</p>
       </div>
       <div class="feat">
-        <div class="feat-n">02 — Assessment</div>
-        <h3>Professionally Assessed</h3>
-        <p>Candidates complete a written professional assessment before their profile goes live. Literacy, tone and situational awareness — all scored.</p>
-      </div>
-      <div class="feat">
-        <div class="feat-n">03 — Profile</div>
+        <div class="feat-n">02 — BS7858</div>
         <h3>BS7858 Ready</h3>
-        <p>Every profile is built around BS7858 requirements. No gaps, full 5-year employment and address history, documents held on file.</p>
+        <p><span id="feat-bs7858-count">50+</span> candidates have already supplied five years of address and employment history with reference contacts. You will know before you start vetting.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-n">03 — Filter</div>
+        <h3>Filter to badged only</h3>
+        <p>Choose to see only BS7858 Ready applicants on any role. One toggle at the point of posting — no manual sifting required.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- TWO PATHS -->
-<section class="sec-white">
+<!-- FREE TO POST -->
+<div class="free-post">
   <div class="container">
-    <div class="over">Who Is This For</div>
-    <h2>Security Vacancies for Officers &amp; Companies</h2>
-    <p class="sbody">Whether you are a security professional or a security company, UKSecurityJobs was built for you.</p>
-    <div class="paths">
-      <a class="path path-officer" href="/officers">
-        <div class="path-stripe"></div>
-        <span class="path-tag">Security Professionals</span>
-        <h3>I'm a Security Officer</h3>
-        <p>The UK's only platform built exclusively for licensed security professionals. Verified roles, exclusive member benefits, and employers who meet our standards.</p>
-        <div class="path-cta">Register as a Candidate ›</div>
-      </a>
-      <a class="path path-employer" href="/employers">
-        <div class="path-stripe"></div>
-        <span class="path-tag">Security Companies</span>
-        <h3>I'm a Security Company</h3>
-        <p>SIA licensed, BS7858 ready candidates. No sifting. No no-shows. No wasted manager time. Every applicant verified before they reach you.</p>
-        <div class="path-cta">Register as an Employer ›</div>
-      </a>
-    </div>
+    <h2>Post your first role free.</h2>
+    <p>Live as soon as you are verified. No card required. No subscription.</p>
+    <p>Every applicant who reaches you holds a valid SIA licence — confirmed before they applied.</p>
+    <a class="btn-free" href="/employers">Post a role — free ›</a>
   </div>
-</section>
+</div>
+
+<!-- FOR CANDIDATES -->
+<div class="cand-strip">
+  <div class="container">
+    <div class="cand-strip-text">
+      <h3>Looking for security work?</h3>
+      <p>Register with your SIA licence and apply in one click. Complete your employment and address history to earn the BS7858 Ready badge and get seen first by employers.</p>
+    </div>
+    <a class="cand-strip-cta" href="/officers">Register as a candidate ›</a>
+  </div>
+</div>
 
 <!-- QUOTE -->
 <div class="quote-sec">
@@ -1151,5 +1158,36 @@ document.querySelectorAll('.faq-q').forEach(btn => {
 });
 </script>
 <script src="/footer-extras.js" defer></script>
+<script>
+// Fetch live platform stats — no auth required.
+// On success: populate proof strip and hero headline number, then show strip.
+// On failure: do nothing — proof strip stays hidden, headline stays numberless.
+(async function() {
+  try {
+    const res = await fetch('https://uksecurityjobs-api.onrender.com/api/stats/public');
+    if (!res.ok) return;
+    const d = await res.json();
+
+    // Hero headline number
+    const h1Num = document.getElementById('h1-num');
+    if (h1Num && d.can_apply_display) h1Num.textContent = d.can_apply_display + ' ';
+
+    // Proof strip figures
+    document.getElementById('stat-can-apply').textContent = d.can_apply_display || '';
+    document.getElementById('stat-bs7858').textContent    = d.bs7858_ready_display || '';
+    document.getElementById('stat-licences').textContent  = d.licence_types_display || '';
+
+    // BS7858 count in "Why" feature card
+    const featCount = document.getElementById('feat-bs7858-count');
+    if (featCount && d.bs7858_ready_display) featCount.textContent = d.bs7858_ready_display;
+
+    // Show proof strip now that it has real data
+    const strip = document.getElementById('proof-strip');
+    if (strip) { strip.style.display = ''; strip.removeAttribute('aria-hidden'); }
+  } catch (_) {
+    // Network or parse error — leave page in default state
+  }
+}());
+</script>
 </body>
 </html>
