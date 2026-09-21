@@ -1,4 +1,9 @@
 const sgMail = require('@sendgrid/mail');
+const { POOL_INVITE_EMAIL_PARA } = require('./poolWording');
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 const FROM = {
   email: 'admin@uksecurityjobs.co.uk',
@@ -292,6 +297,23 @@ async function sendNudge72h({ toEmail, firstName, blocking, badge }) {
   return send(toEmail, subject, baseTemplate(content));
 }
 
+// ── 10. TALENT POOL INVITE (CANDIDATE) ──
+// candidateFirstName and employerName are HTML-escaped before insertion.
+async function sendPoolInvite({ toEmail, candidateFirstName, employerName, token }) {
+  const acceptUrl = `https://app.uksecurityjobs.co.uk/invite/${token}`;
+  const safeName     = escHtml(candidateFirstName);
+  const safeEmployer = escHtml(employerName);
+  const html = baseTemplate(`
+    <h1>You have been invited to a talent pool</h1>
+    <p>Hi ${safeName},</p>
+    <p><strong>${safeEmployer}</strong> ${POOL_INVITE_EMAIL_PARA}</p>
+    <a href="${acceptUrl}" class="btn">View Invitation →</a>
+    <hr class="divider"/>
+    <p style="font-size:0.82rem;color:#64748b;">If you did not expect this email, you can safely ignore it. No action is required unless you want to accept.</p>
+  `);
+  return send(toEmail, `Talent pool invitation from ${employerName} — UKSecurityJobs`, html);
+}
+
 module.exports = {
   sendSiaVerified,
   sendApplicationConfirmation,
@@ -303,4 +325,5 @@ module.exports = {
   sendAdminSiaRequest,
   sendNudge24h,
   sendNudge72h,
+  sendPoolInvite,
 };
