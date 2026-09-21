@@ -15,6 +15,7 @@ const aiRoutes = require('./routes/ai');
 const employerRoutes = require('./routes/employers');
 const { requireAuth } = require('./middleware/auth');
 const { requireAdmin } = require('./middleware/admin');
+const { requireTalentPoolEmployer } = require('./middleware/requireTalentPoolEmployer');
 const { supabase } = require('./lib/supabase');
 
 const app = express();
@@ -263,6 +264,8 @@ app.use('/api/employers', requireAuth, employerRoutes);
 app.use('/api/jobs', requireAuth, employerRoutes);
 const messagingRoutes = require('./routes/messaging');
 app.use('/api/messages', requireAuth, messagingRoutes);
+const talentPoolRoutes = require('./routes/talentPool');
+app.use('/api/talent-pool', requireAuth, requireTalentPoolEmployer, talentPoolRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
