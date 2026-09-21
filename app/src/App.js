@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut, useUser, useClerk, useAuth, useSignUp, useSignIn } from '@clerk/clerk-react';
-import { apiRequest, startApiKeepAlive, getDiscoverability, updateDiscoverability, updateVisibilityRules, getPoolEmployers } from './api';
+import { apiRequest, startApiKeepAlive, getDiscoverability, updateDiscoverability, updateVisibilityRules, getPoolEmployers, getShortlist, sendInvite, getCandidateInvites, getInviteByToken, acceptInvite, declineInvite } from './api';
 import './styles.css';
 
 startApiKeepAlive();
@@ -3284,6 +3284,52 @@ function AccountDeletion({ getToken }) {
   );
 }
 
+// ── CANDIDATE INVITATIONS WIDGET ──
+// Shows pending talent pool invitations. Hidden when there are none.
+function CandidateInvitations({ getToken }) {
+  const [pending, setPending] = React.useState([]);
+  const [loaded, setLoaded] = React.useState(false);
+
+  React.useEffect(() => {
+    async function load() {
+      try {
+        const data = await getCandidateInvites(getToken);
+        setPending((data.invites || []).filter(i => i.status === 'invited'));
+      } catch(e) {
+        if (e.status !== 404) console.error('CandidateInvitations load error:', e);
+      }
+      setLoaded(true);
+    }
+    load();
+  }, []);
+
+  if (!loaded || pending.length === 0) return null;
+
+  return (
+    <div className="dash-card" style={{borderLeft:'3px solid #1a52a8'}}>
+      <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'1rem'}}>
+        Talent Pool {pending.length === 1 ? 'Invitation' : 'Invitations'} ({pending.length})
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
+        {pending.map(inv => (
+          <div key={inv.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
+            <div>
+              <div style={{fontWeight:600,fontSize:'0.9rem',color:'#0b1222'}}>{inv.employer_name || 'An employer'}</div>
+              <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.1rem'}}>
+                Invited {new Date(inv.invited_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}
+              </div>
+            </div>
+            <a href={`/invite/${inv.token}`}
+              style={{padding:'0.4rem 1rem',borderRadius:'8px',background:'#1a52a8',color:'#fff',fontSize:'0.78rem',fontWeight:700,textDecoration:'none',flexShrink:0}}>
+              View Invite
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Dashboard() {
   const { user } = useUser();
   const { getToken } = useAuth();
@@ -3487,6 +3533,7 @@ function Dashboard() {
 
         {/* TALENT POOL */}
         <DiscoverabilityWidget getToken={getToken}/>
+        <CandidateInvitations getToken={getToken}/>
 
         {/* ACCOUNT DELETION */}
         <AccountDeletion getToken={getToken}/>
@@ -3621,6 +3668,7 @@ function SignUpPage() {
 function SignInPage() {
   const { isSignedIn } = useUser();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [form, setForm] = useState({ email:'', password:'' });
   const [step, setStep] = useState(1);
   const [code, setCode] = useState('');
@@ -3628,10 +3676,15 @@ function SignInPage() {
   const [loading, setLoading] = useState(false);
   const { signIn, setActive, isLoaded } = useSignIn();
 
-  // Single source of truth: navigate only when Clerk confirms signed in
+  // Single source of truth: navigate only when Clerk confirms signed in.
+  // Honour ?redirect= if it is a safe relative path (starts with /).
   React.useEffect(() => {
-    if (isSignedIn) navigate('/dashboard', { replace: true });
-  }, [isSignedIn, navigate]);
+    if (isSignedIn) {
+      const redirect = searchParams.get('redirect');
+      const safeRedirect = redirect && redirect.startsWith('/') && !redirect.startsWith('//') && !redirect.startsWith('/\\');
+      navigate(safeRedirect ? redirect : '/dashboard', { replace: true });
+    }
+  }, [isSignedIn, navigate, searchParams]);
 
   const handleSignIn = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
@@ -4504,6 +4557,130 @@ function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken,
   );
 }
 
+// ── TALENT POOL TAB (employer shortlist) ──
+// Filtering is server-side. Both licence_type and city are sent as query params.
+// City uses a 300ms debounce; licence change triggers an immediate re-fetch.
+function TalentPoolTab({ getToken }) {
+  const [candidates, setCandidates] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [licenceFilter, setLicenceFilter] = React.useState('');
+  const [cityFilter, setCityFilter] = React.useState('');
+  const [inviting, setInviting] = React.useState(null);
+  const [inviteStatusMap, setInviteStatusMap] = React.useState({});
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const data = await getShortlist(getToken, { licenceType: licenceFilter, city: cityFilter });
+        if (cancelled) return;
+        const list = data.candidates || [];
+        setCandidates(list);
+        const m = {};
+        list.forEach(c => { if (c.invite_status) m[c.candidate_id] = c.invite_status; });
+        setInviteStatusMap(m);
+      } catch(e) { if (!cancelled) console.error('TalentPoolTab load:', e); }
+      if (!cancelled) setLoading(false);
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [licenceFilter, cityFilter]);
+
+  const handleInvite = async (candidateId) => {
+    setInviting(candidateId);
+    try {
+      await sendInvite(getToken, candidateId);
+      setInviteStatusMap(prev => ({ ...prev, [candidateId]: 'invited' }));
+    } catch(e) {
+      if (e.code === 'duplicate_invite') {
+        setInviteStatusMap(prev => ({ ...prev, [candidateId]: 'invited' }));
+      } else {
+        alert(e.message || 'Failed to send invite');
+      }
+    }
+    setInviting(null);
+  };
+
+  const OPEN = ['invited', 'accepted', 'call_booked'];
+  const AVAIL = { available: 'Available', available_from: 'Available soon', not_available: 'Not available' };
+
+  return (
+    <div className="dash-card">
+      <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.25rem'}}>Talent Pool</div>
+      <div style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1.25rem'}}>
+        Discoverable candidates with verified SIA licences and complete profiles.
+      </div>
+      <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap',marginBottom:'1.25rem'}}>
+        <select value={licenceFilter} onChange={e=>setLicenceFilter(e.target.value)}
+          style={{padding:'0.5rem 0.875rem',borderRadius:'8px',border:'1px solid #e2e8f0',fontSize:'0.85rem',background:'#fff',fontFamily:'inherit',minWidth:'180px'}}>
+          <option value="">All licence types</option>
+          <option>Door Supervisor</option>
+          <option>Security Guard</option>
+          <option>CCTV Operator</option>
+          <option>Close Protection</option>
+          <option>Cash &amp; Valuables in Transit</option>
+          <option>Key Holding</option>
+        </select>
+        <input value={cityFilter} onChange={e=>setCityFilter(e.target.value)}
+          placeholder="Town or city"
+          style={{padding:'0.5rem 0.875rem',borderRadius:'8px',border:'1px solid #e2e8f0',fontSize:'0.85rem',fontFamily:'inherit',minWidth:'150px',flex:1}}/>
+      </div>
+      {loading ? (
+        <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>Loading...</div>
+      ) : candidates.length === 0 ? (
+        <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>
+          {licenceFilter || cityFilter ? 'No candidates match these filters.' : 'No discoverable candidates yet. Check back soon.'}
+        </div>
+      ) : (
+        <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
+          {candidates.map(c => {
+            const status = inviteStatusMap[c.candidate_id];
+            const isOpen = OPEN.includes(status);
+            return (
+              <div key={c.candidate_id} style={{background:'#f8fafc',borderRadius:'10px',border:'1px solid #e2e8f0',padding:'1rem 1.25rem',display:'flex',alignItems:'center',gap:'1rem',flexWrap:'wrap'}}>
+                <div style={{flex:1,minWidth:'180px'}}>
+                  <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222'}}>
+                    {c.first_name} {c.last_name ? c.last_name[0] + '.' : ''}
+                  </div>
+                  <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.15rem'}}>
+                    {c.city || 'Location not specified'}
+                    {c.availability_status && ` · ${AVAIL[c.availability_status] || c.availability_status}`}
+                  </div>
+                  <div style={{marginTop:'0.4rem',display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
+                    {(c.licence_types || []).map(l => (
+                      <span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8'}}>{l}</span>
+                    ))}
+                    {c.address_gap && (
+                      <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#fffbeb',color:'#b45309'}}>Address history &lt;5yr</span>
+                    )}
+                    {c.employment_gap && (
+                      <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#fffbeb',color:'#b45309'}}>Employment history &lt;5yr</span>
+                    )}
+                  </div>
+                </div>
+                <div style={{flexShrink:0}}>
+                  {c.is_member ? (
+                    <span style={{fontSize:'0.78rem',fontWeight:700,color:'#15803d',background:'#dcfce7',padding:'0.3rem 0.75rem',borderRadius:'999px'}}>Pool member</span>
+                  ) : isOpen ? (
+                    <span style={{fontSize:'0.78rem',fontWeight:700,color:'#1d4ed8',background:'#eff6ff',padding:'0.3rem 0.75rem',borderRadius:'999px'}}>
+                      {status === 'invited' ? 'Invited' : status === 'accepted' ? 'Accepted' : 'Call booked'}
+                    </span>
+                  ) : (
+                    <button onClick={()=>handleInvite(c.candidate_id)} disabled={inviting===c.candidate_id}
+                      style={{padding:'0.4rem 1rem',borderRadius:'8px',background:'#1a52a8',color:'#fff',border:'none',fontSize:'0.78rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',opacity:inviting===c.candidate_id?0.7:1}}>
+                      {inviting===c.candidate_id ? 'Sending...' : 'Invite to pool'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function EmployerDashboard() {
   const { user } = useUser();
   const { getToken } = useAuth();
@@ -4521,6 +4698,7 @@ function EmployerDashboard() {
   const [pauseReason, setPauseReason] = React.useState('');
   const [pauseNotes, setPauseNotes] = React.useState('');
   const [statusUpdating, setStatusUpdating] = React.useState(null);
+  const [poolTab, setPoolTab] = React.useState('jobs');
 
   const PAUSE_REASONS = [
     'Role filled externally',
@@ -4673,7 +4851,25 @@ function EmployerDashboard() {
           />
         )}
 
-        {/* Job listings + applicants */}
+        {/* Tab switcher — only shown to talent_pool_enabled employers */}
+        {employer.talent_pool_enabled && (
+          <div style={{display:'flex',gap:'0.5rem',marginBottom:'1rem'}}>
+            <button onClick={()=>setPoolTab('jobs')}
+              style={{padding:'0.5rem 1.25rem',borderRadius:'8px',border:'none',background:poolTab==='jobs'?'#0b1222':'#f1f5f9',color:poolTab==='jobs'?'#fff':'#475569',fontWeight:700,fontSize:'0.85rem',cursor:'pointer',fontFamily:'inherit'}}>
+              Jobs
+            </button>
+            <button onClick={()=>setPoolTab('pool')}
+              style={{padding:'0.5rem 1.25rem',borderRadius:'8px',border:'none',background:poolTab==='pool'?'#0b1222':'#f1f5f9',color:poolTab==='pool'?'#fff':'#475569',fontWeight:700,fontSize:'0.85rem',cursor:'pointer',fontFamily:'inherit'}}>
+              Talent Pool
+            </button>
+          </div>
+        )}
+
+        {poolTab === 'pool' && employer.talent_pool_enabled && (
+          <TalentPoolTab getToken={getToken}/>
+        )}
+
+        {poolTab !== 'pool' && (<>{/* Job listings + applicants */}
         <div className="dash-card">
           <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'1.25rem'}}>Your Job Postings</div>
           {jobs.length === 0 ? (
@@ -4818,6 +5014,7 @@ function EmployerDashboard() {
             UKSecurityJobs provides interview guidance and scoring frameworks as a reference only, based on UK employment legislation including the Equality Act 2010 and Rehabilitation of Offenders Act 1974. This does not constitute legal advice. Employers are solely responsible for their recruitment decisions and must ensure their processes comply with applicable legislation. Candidates with spent convictions cannot be automatically excluded unless the specific role is exempt. Working Time Regulations 1998 apply to all roles. Digital Software Group Ltd accepts no liability for recruitment outcomes. If in doubt, seek independent HR or legal advice.
           </div>
         </div>
+        </>)}
 
         {/* Pause job modal */}
         {pauseModal && (
@@ -5489,10 +5686,144 @@ function JobListingsPage() {
   );
 }
 
+// ── INVITE PAGE (/invite/:token) ──
+function InvitePage() {
+  const { token } = useParams();
+  const { getToken } = useAuth();
+  const [invite, setInvite] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [pageError, setPageError] = React.useState(null);
+  const [expired, setExpired] = React.useState(false);
+  const [acting, setActing] = React.useState(false);
+  const [done, setDone] = React.useState(null); // 'accepted' | 'declined'
+
+  React.useEffect(() => {
+    async function load() {
+      try {
+        const data = await getInviteByToken(getToken, token);
+        setInvite(data);
+      } catch(e) {
+        if (e.status === 410 || e.code === 'invite_expired') {
+          setExpired(true);
+        } else {
+          setPageError(e.message || 'Failed to load invite');
+        }
+      }
+      setLoading(false);
+    }
+    load();
+  }, [token]);
+
+  const handleAccept = async () => {
+    setActing(true);
+    try {
+      await acceptInvite(getToken, token, invite.invite_wording_version);
+      setDone('accepted');
+    } catch(e) {
+      if (e.status === 410 || e.code === 'invite_expired') {
+        setExpired(true);
+      } else if (e.code === 'wording_version_mismatch') {
+        setPageError('The consent wording has been updated. Please reload this page and read again before accepting.');
+      } else {
+        setPageError(e.message || 'Failed to accept invite');
+      }
+    }
+    setActing(false);
+  };
+
+  const handleDecline = async () => {
+    setActing(true);
+    try {
+      await declineInvite(getToken, token);
+      setDone('declined');
+    } catch(e) {
+      if (e.status === 410 || e.code === 'invite_expired') {
+        setExpired(true);
+      } else {
+        setPageError(e.message || 'Failed to decline invite');
+      }
+    }
+    setActing(false);
+  };
+
+  if (loading) return (
+    <div className="page" style={{background:'var(--off)'}}>
+      <Nav/>
+      <div style={{textAlign:'center',padding:'4rem',color:'#94a3b8'}}>Loading...</div>
+    </div>
+  );
+
+  return (
+    <div className="page" style={{background:'var(--off)'}}>
+      <Nav/>
+      <div style={{maxWidth:'560px',margin:'0 auto',padding:'2rem 1.5rem'}}>
+        {expired ? (
+          <div className="dash-card">
+            <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.5rem'}}>This invitation has expired</div>
+            <div style={{fontSize:'0.88rem',color:'#64748b',lineHeight:1.7}}>
+              The invitation link is no longer valid. Contact the employer directly if you are still interested in the role.
+            </div>
+          </div>
+        ) : done === 'accepted' ? (
+          <div className="dash-card" style={{textAlign:'center'}}>
+            <div style={{fontSize:'2.5rem',marginBottom:'0.75rem',color:'#15803d'}}>&#10003;</div>
+            <div style={{fontWeight:800,fontSize:'1.1rem',color:'#0b1222',marginBottom:'0.5rem'}}>Invitation accepted</div>
+            <div style={{fontSize:'0.88rem',color:'#64748b',lineHeight:1.7}}>
+              {invite?.accept_confirmation || `Thanks — ${invite?.employer_name || 'the employer'} will be in touch.`}
+            </div>
+          </div>
+        ) : done === 'declined' ? (
+          <div className="dash-card" style={{textAlign:'center'}}>
+            <div style={{fontWeight:800,fontSize:'1.1rem',color:'#0b1222',marginBottom:'0.5rem'}}>Invitation declined</div>
+            <div style={{fontSize:'0.88rem',color:'#64748b'}}>You have declined this invitation. No further action is needed.</div>
+          </div>
+        ) : pageError && !invite ? (
+          <div className="dash-card">
+            <div style={{fontWeight:700,color:'#b91c1c',marginBottom:'0.5rem'}}>Error</div>
+            <div style={{fontSize:'0.88rem',color:'#64748b'}}>{pageError}</div>
+          </div>
+        ) : invite && invite.status !== 'invited' ? (
+          <div className="dash-card">
+            <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.5rem'}}>Invitation from {invite.employer_name}</div>
+            <div style={{fontSize:'0.88rem',color:'#64748b'}}>
+              This invitation has already been {invite.status}.
+            </div>
+          </div>
+        ) : invite ? (
+          <div className="dash-card">
+            <div style={{fontWeight:800,fontSize:'1.1rem',color:'#0b1222',marginBottom:'0.5rem'}}>Talent pool invitation</div>
+            <div style={{fontSize:'0.92rem',color:'#475569',marginBottom:'1.25rem'}}>
+              <strong>{invite.employer_name}</strong> has invited you to join their talent pool.
+            </div>
+            <div style={{background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'1rem',fontSize:'0.85rem',color:'#0369a1',lineHeight:1.7,marginBottom:'1.5rem'}}>
+              {invite.invite_consent_copy}
+            </div>
+            {pageError && <div style={{color:'#b91c1c',fontSize:'0.85rem',marginBottom:'1rem'}}>{pageError}</div>}
+            <div style={{display:'flex',gap:'0.75rem'}}>
+              <button onClick={handleAccept} disabled={acting}
+                style={{flex:1,padding:'0.75rem',borderRadius:'8px',background:'#1a52a8',color:'#fff',border:'none',fontWeight:700,fontSize:'0.88rem',cursor:'pointer',fontFamily:'inherit',opacity:acting?0.7:1}}>
+                {acting ? 'Processing...' : 'Accept invitation'}
+              </button>
+              <button onClick={handleDecline} disabled={acting}
+                style={{flex:1,padding:'0.75rem',borderRadius:'8px',background:'#f8fafc',color:'#475569',border:'1px solid #e2e8f0',fontWeight:600,fontSize:'0.88rem',cursor:'pointer',fontFamily:'inherit'}}>
+                Decline
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }) {
   const { isLoaded, isSignedIn } = useUser();
+  const location = useLocation();
   if (!isLoaded) return null;
-  if (!isSignedIn) return <Navigate to="/sign-in" replace/>;
+  if (!isSignedIn) {
+    const intended = location.pathname + location.search;
+    return <Navigate to={`/sign-in?redirect=${encodeURIComponent(intended)}`} replace/>;
+  }
   return children;
 }
 
@@ -5510,6 +5841,7 @@ export default function App() {
           <Route path="/employer" element={<ProtectedRoute><EmployerDashboard/></ProtectedRoute>}/>
           <Route path="/jobs" element={<JobListingsPage/>}/>
           <Route path="/profile" element={<ProtectedRoute><div className="page" style={{background:'var(--off)'}}><Nav/><ProfileBuilder/></div></ProtectedRoute>}/>
+          <Route path="/invite/:token" element={<ProtectedRoute><InvitePage/></ProtectedRoute>}/>
           <Route path="*" element={<Navigate to="/dashboard" replace/>}/>
         </Routes>
       </BrowserRouter>

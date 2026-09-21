@@ -53,3 +53,31 @@ export async function getPoolEmployers() {
   if (!res.ok) return [];
   return res.json();
 }
+
+export function getShortlist(getToken, { licenceType, city } = {}) {
+  const params = new URLSearchParams();
+  if (licenceType) params.set('licence_type', licenceType);
+  if (city)        params.set('city', city);
+  const qs = params.toString();
+  return apiRequest(`/api/talent-pool/shortlist${qs ? '?' + qs : ''}`, 'GET', null, getToken);
+}
+
+export function sendInvite(getToken, candidateId) {
+  return apiRequest('/api/talent-pool/invites', 'POST', { candidate_id: candidateId }, getToken);
+}
+
+export function getCandidateInvites(getToken) {
+  return apiRequest('/api/candidates/me/invites', 'GET', null, getToken);
+}
+
+export function getInviteByToken(getToken, token) {
+  return apiRequest(`/api/candidates/me/invites/${token}`, 'GET', null, getToken);
+}
+
+export function acceptInvite(getToken, token, wordingVersion) {
+  return apiRequest(`/api/candidates/me/invites/${token}/accept`, 'POST', { wording_version: wordingVersion }, getToken);
+}
+
+export function declineInvite(getToken, token) {
+  return apiRequest(`/api/candidates/me/invites/${token}/decline`, 'POST', {}, getToken);
+}
