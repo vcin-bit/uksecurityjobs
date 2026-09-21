@@ -517,7 +517,11 @@ router.delete('/me', async (req, res) => {
 
 // ── Talent pool: discoverability ─────────────────────────────────────────────
 
-const { POOL_WORDING_VERSION, POOL_CONSENT_COPY, POOL_MODE_LABELS } = require('../lib/poolWording');
+const {
+  POOL_WORDING_VERSION, POOL_CONSENT_COPY, POOL_MODE_LABELS,
+  POOL_INVITE_WORDING_VERSION, POOL_INVITE_CONSENT_COPY,
+  POOL_ACCEPT_CONFIRMATION_TEMPLATE,
+} = require('../lib/poolWording');
 
 // Go-live gate for candidate-facing talent pool routes.
 //
@@ -723,6 +727,192 @@ router.put('/me/visibility-rules', async (req, res) => {
   } catch (err) {
     console.error('PUT /me/visibility-rules error:', err);
     res.status(500).json({ error: 'Failed to update visibility rules' });
+  }
+});
+
+// ── Talent pool: candidate invites ───────────────────────────────────────────
+
+// GET /me/invites — list all incoming talent pool invites for this candidate.
+router.get('/me/invites', async (req, res) => {
+  if (!checkTalentPoolGate(req, res)) return;
+  try {
+    const db = getClientForUser(req.token);
+    const { data: candidate } = await db
+      .from('candidates').select('id').eq('clerk_user_id', req.userId).single();
+    if (!candidate) return res.status(404).json({ error: 'Profile not found' });
+
+    const { data: invites, error: iErr } = await supabase
+      .from('talent_pool_invites')
+      .select('id, employer_id, status, invited_at, responded_at, token, token_expires')
+      .eq('candidate_id', candidate.id)
+      .order('invited_at', { ascending: false });
+
+    if (iErr) throw iErr;
+
+    let result = invites || [];
+    if (result.length > 0) {
+      const empIds = [...new Set(result.map(i => i.employer_id))];
+      const { data: employers } = await supabase
+        .from('employers').select('id, company_name').in('id', empIds);
+      const nameMap = Object.fromEntries((employers || []).map(e => [e.id, e.company_name]));
+      result = result.map(i => ({ ...i, employer_name: nameMap[i.employer_id] || null }));
+    }
+
+    res.json({ invites: result });
+  } catch (err) {
+    console.error('GET /me/invites error:', err);
+    res.status(500).json({ error: 'Failed to fetch invites' });
+  }
+});
+
+// GET /me/invites/:token — get a single invite by token (candidate-facing).
+router.get('/me/invites/:token', async (req, res) => {
+  if (!checkTalentPoolGate(req, res)) return;
+  try {
+    const { token } = req.params;
+    const { data: invite, error: iErr } = await supabase
+      .from('talent_pool_invites')
+      .select('id, employer_id, candidate_id, status, invited_at, token_expires')
+      .eq('token', token)
+      .maybeSingle();
+
+    if (iErr) throw iErr;
+    if (!invite) return res.status(404).json({ error: 'Invite not found' });
+
+    if (new Date(invite.token_expires) < new Date()) {
+      return res.status(410).json({ error: 'This invitation has expired', code: 'invite_expired' });
+    }
+
+    // Verify this invite belongs to the signed-in candidate.
+    const db = getClientForUser(req.token);
+    const { data: candidate } = await db
+      .from('candidates').select('id').eq('clerk_user_id', req.userId).single();
+    if (!candidate || candidate.id !== invite.candidate_id) {
+      return res.status(403).json({ error: 'Not authorised' });
+    }
+
+    const { data: employer } = await supabase
+      .from('employers').select('company_name').eq('id', invite.employer_id).single();
+
+    const employerName = employer?.company_name || 'the employer';
+    res.json({
+      id:                    invite.id,
+      status:                invite.status,
+      invited_at:            invite.invited_at,
+      token_expires:         invite.token_expires,
+      employer_name:         employerName,
+      invite_wording_version: POOL_INVITE_WORDING_VERSION,
+      invite_consent_copy:   POOL_INVITE_CONSENT_COPY,
+      accept_confirmation:   POOL_ACCEPT_CONFIRMATION_TEMPLATE.replace('{employer_name}', employerName),
+    });
+  } catch (err) {
+    console.error('GET /me/invites/:token error:', err);
+    res.status(500).json({ error: 'Failed to fetch invite' });
+  }
+});
+
+// POST /me/invites/:token/accept — candidate accepts a talent pool invite.
+// Validates wording_version before writing; stamps consent_at and
+// consent_wording_version. Does NOT create a talent_pool_members row (Phase 3).
+router.post('/me/invites/:token/accept', async (req, res) => {
+  if (!checkTalentPoolGate(req, res)) return;
+  try {
+    const { token } = req.params;
+    const { wording_version } = req.body;
+
+    const { data: invite, error: iErr } = await supabase
+      .from('talent_pool_invites')
+      .select('id, candidate_id, status, token_expires')
+      .eq('token', token)
+      .maybeSingle();
+
+    if (iErr) throw iErr;
+    if (!invite) return res.status(404).json({ error: 'Invite not found' });
+
+    if (new Date(invite.token_expires) < new Date()) {
+      return res.status(410).json({ error: 'This invitation has expired', code: 'invite_expired' });
+    }
+
+    const db = getClientForUser(req.token);
+    const { data: candidate } = await db
+      .from('candidates').select('id').eq('clerk_user_id', req.userId).single();
+    if (!candidate || candidate.id !== invite.candidate_id) {
+      return res.status(403).json({ error: 'Not authorised' });
+    }
+
+    if (invite.status !== 'invited') {
+      return res.status(409).json({ error: 'Invite is not in invited status', code: 'invalid_status' });
+    }
+
+    if (wording_version !== POOL_INVITE_WORDING_VERSION) {
+      return res.status(409).json({
+        error:           'Consent wording has been updated. Please reload and re-read before accepting.',
+        code:            'wording_version_mismatch',
+        current_version: POOL_INVITE_WORDING_VERSION,
+      });
+    }
+
+    const now = new Date().toISOString();
+    const { error: uErr } = await supabase
+      .from('talent_pool_invites')
+      .update({
+        status:                  'accepted',
+        responded_at:            now,
+        consent_at:              now,
+        consent_wording_version: POOL_INVITE_WORDING_VERSION,
+      })
+      .eq('id', invite.id);
+
+    if (uErr) throw uErr;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('POST /me/invites/:token/accept error:', err);
+    res.status(500).json({ error: 'Failed to accept invite' });
+  }
+});
+
+// POST /me/invites/:token/decline — candidate declines a talent pool invite.
+router.post('/me/invites/:token/decline', async (req, res) => {
+  if (!checkTalentPoolGate(req, res)) return;
+  try {
+    const { token } = req.params;
+
+    const { data: invite, error: iErr } = await supabase
+      .from('talent_pool_invites')
+      .select('id, candidate_id, status, token_expires')
+      .eq('token', token)
+      .maybeSingle();
+
+    if (iErr) throw iErr;
+    if (!invite) return res.status(404).json({ error: 'Invite not found' });
+
+    if (new Date(invite.token_expires) < new Date()) {
+      return res.status(410).json({ error: 'This invitation has expired', code: 'invite_expired' });
+    }
+
+    const db = getClientForUser(req.token);
+    const { data: candidate } = await db
+      .from('candidates').select('id').eq('clerk_user_id', req.userId).single();
+    if (!candidate || candidate.id !== invite.candidate_id) {
+      return res.status(403).json({ error: 'Not authorised' });
+    }
+
+    if (invite.status !== 'invited') {
+      return res.status(409).json({ error: 'Invite is not in invited status', code: 'invalid_status' });
+    }
+
+    const { error: uErr } = await supabase
+      .from('talent_pool_invites')
+      .update({ status: 'declined', responded_at: new Date().toISOString() })
+      .eq('id', invite.id);
+
+    if (uErr) throw uErr;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('POST /me/invites/:token/decline error:', err);
+    res.status(500).json({ error: 'Failed to decline invite' });
   }
 });
 
