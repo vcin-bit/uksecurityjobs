@@ -872,6 +872,82 @@ router.post('/me/invites/:token/accept', async (req, res) => {
   }
 });
 
+// GET /me/pool-memberships — list candidate's active pool memberships with employer names.
+router.get('/me/pool-memberships', async (req, res) => {
+  if (!checkTalentPoolGate(req, res)) return;
+  try {
+    const db = getClientForUser(req.token);
+    const { data: candidate } = await db
+      .from('candidates').select('id').eq('clerk_user_id', req.userId).single();
+    if (!candidate) return res.status(404).json({ error: 'Profile not found' });
+
+    const { data: members, error: mErr } = await supabase
+      .from('talent_pool_members')
+      .select('id, employer_id, joined_at, status')
+      .eq('candidate_id', candidate.id)
+      .eq('status', 'active');
+
+    if (mErr) throw mErr;
+    if (!members || members.length === 0) return res.json({ memberships: [] });
+
+    const empIds = members.map(m => m.employer_id);
+    const { data: employers } = await supabase
+      .from('employers').select('id, company_name').in('id', empIds);
+    const nameMap = Object.fromEntries((employers || []).map(e => [e.id, e.company_name]));
+
+    res.json({
+      memberships: members.map(m => ({
+        id:            m.id,
+        employer_id:   m.employer_id,
+        employer_name: nameMap[m.employer_id] || null,
+        joined_at:     m.joined_at,
+      }))
+    });
+  } catch (err) {
+    console.error('GET /me/pool-memberships error:', err);
+    res.status(500).json({ error: 'Failed to fetch memberships' });
+  }
+});
+
+// POST /me/pool-membership/:employer_id/leave — candidate leaves an employer's talent pool.
+// Sets status='left' and left_at. The member row remains so re-invite is blocked.
+router.post('/me/pool-membership/:employer_id/leave', async (req, res) => {
+  if (!checkTalentPoolGate(req, res)) return;
+  try {
+    const { employer_id } = req.params;
+
+    const db = getClientForUser(req.token);
+    const { data: candidate } = await db
+      .from('candidates').select('id').eq('clerk_user_id', req.userId).single();
+    if (!candidate) return res.status(404).json({ error: 'Profile not found' });
+
+    const { data, error: uErr } = await supabase
+      .from('talent_pool_members')
+      .update({ status: 'left', left_at: new Date().toISOString() })
+      .eq('candidate_id', candidate.id)
+      .eq('employer_id', employer_id)
+      .eq('status', 'active')
+      .select('id')
+      .maybeSingle();
+
+    if (uErr) throw uErr;
+    if (!data) return res.status(409).json({ error: 'No active membership found', code: 'not_member' });
+
+    await auditLog({
+      tableName:   'talent_pool_members',
+      recordId:    data.id,
+      action:      'UPDATE',
+      performedBy: req.userId,
+      ipAddress:   req.ip,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('POST /me/pool-membership/:employer_id/leave error:', err);
+    res.status(500).json({ error: 'Failed to leave pool' });
+  }
+});
+
 // POST /me/invites/:token/decline — candidate declines a talent pool invite.
 router.post('/me/invites/:token/decline', async (req, res) => {
   if (!checkTalentPoolGate(req, res)) return;

@@ -63,7 +63,7 @@ router.get('/shortlist', async (req, res) => {
     // Bulk-fetch invite status — keep the most-recent entry per candidate.
     const { data: invites } = await supabase
       .from('talent_pool_invites')
-      .select('candidate_id, status, id')
+      .select('candidate_id, status, id, outcome_at')
       .eq('employer_id', req.employerId)
       .in('candidate_id', visibleIds)
       .order('invited_at', { ascending: false });
@@ -71,7 +71,7 @@ router.get('/shortlist', async (req, res) => {
     const inviteMap = {};
     (invites || []).forEach(inv => {
       if (!inviteMap[inv.candidate_id]) {
-        inviteMap[inv.candidate_id] = { status: inv.status, id: inv.id };
+        inviteMap[inv.candidate_id] = { status: inv.status, id: inv.id, outcome_at: inv.outcome_at };
       }
     });
 
@@ -95,8 +95,9 @@ router.get('/shortlist', async (req, res) => {
       address_gap:         c.address_gap,
       employment_gap:      c.employment_gap,
       updated_at:          c.updated_at,
-      invite_status:       inviteMap[c.candidate_id]?.status || null,
-      invite_id:           inviteMap[c.candidate_id]?.id || null,
+      invite_status:       inviteMap[c.candidate_id]?.status     || null,
+      invite_id:           inviteMap[c.candidate_id]?.id         || null,
+      invite_outcome_at:   inviteMap[c.candidate_id]?.outcome_at || null,
       is_member:           memberSet.has(c.candidate_id),
     }));
 
@@ -232,6 +233,122 @@ router.post('/invites', async (req, res) => {
   } catch (err) {
     console.error('POST /talent-pool/invites error:', err);
     res.status(500).json({ error: 'Failed to create invite' });
+  }
+});
+
+// GET /api/talent-pool/accepted
+// Returns accepted invites for this employer with candidate contact details.
+// Phone is plain text — never logged.
+router.get('/accepted', async (req, res) => {
+  try {
+    const { data: invites, error: iErr } = await supabase
+      .from('talent_pool_invites')
+      .select('id, candidate_id, invited_at, responded_at')
+      .eq('employer_id', req.employerId)
+      .eq('status', 'accepted')
+      .order('responded_at', { ascending: false });
+
+    if (iErr) throw iErr;
+    if (!invites || invites.length === 0) return res.json({ accepted: [] });
+
+    const candidateIds = invites.map(i => i.candidate_id);
+
+    const [{ data: candidates }, { data: personalDetails }, { data: licences }] = await Promise.all([
+      supabase.from('candidates').select('id, email').in('id', candidateIds),
+      supabase.from('personal_details').select('candidate_id, first_name, last_name, phone, city').in('candidate_id', candidateIds),
+      supabase.from('sia_licences').select('candidate_id, licence_type').eq('verified', true).in('candidate_id', candidateIds),
+    ]);
+
+    const candidateMap  = Object.fromEntries((candidates     || []).map(c => [c.id, c]));
+    const personalMap   = Object.fromEntries((personalDetails|| []).map(p => [p.candidate_id, p]));
+    const licenceMap    = {};
+    (licences || []).forEach(l => {
+      if (!licenceMap[l.candidate_id]) licenceMap[l.candidate_id] = [];
+      if (!licenceMap[l.candidate_id].includes(l.licence_type)) licenceMap[l.candidate_id].push(l.licence_type);
+    });
+
+    const result = invites.map(inv => {
+      const cand = candidateMap[inv.candidate_id] || {};
+      const pd   = personalMap [inv.candidate_id] || {};
+      return {
+        invite_id:     inv.id,
+        candidate_id:  inv.candidate_id,
+        invited_at:    inv.invited_at,
+        responded_at:  inv.responded_at,
+        first_name:    pd.first_name    || null,
+        last_name:     pd.last_name     || null,
+        city:          pd.city          || null,
+        email:         cand.email       || null,
+        phone:         pd.phone         || null,  // plain text — do not log
+        licence_types: licenceMap[inv.candidate_id] || [],
+      };
+    });
+
+    res.json({ accepted: result });
+  } catch (err) {
+    console.error('GET /talent-pool/accepted error:', err);
+    res.status(500).json({ error: 'Failed to fetch accepted invites' });
+  }
+});
+
+// POST /api/talent-pool/invites/:id/outcome
+// outcome: 'passed' (atomic via RPC) or 'not_for_us' (direct update).
+// Filters by id AND employer_id AND status='accepted' — never touches another employer's invite.
+router.post('/invites/:id/outcome', async (req, res) => {
+  try {
+    const { outcome, outcome_notes } = req.body;
+    if (!['passed', 'not_for_us'].includes(outcome)) {
+      return res.status(400).json({ error: 'outcome must be passed or not_for_us' });
+    }
+
+    const inviteId = req.params.id;
+
+    if (outcome === 'passed') {
+      const { error: rpcErr } = await supabase.rpc('record_pool_pass', {
+        p_invite_id:     inviteId,
+        p_employer_id:   req.employerId,
+        p_performed_by:  req.userId,
+        p_ip:            req.ip,
+        p_outcome_notes: outcome_notes || null,
+      });
+
+      if (rpcErr) {
+        if (rpcErr.message.includes('invite_not_found'))      return res.status(404).json({ error: 'Invite not found',                  code: 'invite_not_found' });
+        if (rpcErr.message.includes('invite_wrong_employer')) return res.status(403).json({ error: 'Not authorised',                     code: 'invite_wrong_employer' });
+        if (rpcErr.message.includes('invite_wrong_status'))   return res.status(409).json({ error: 'Invite is not in accepted status',   code: 'invite_wrong_status' });
+        throw rpcErr;
+      }
+    } else {
+      // not_for_us: filter by id AND employer_id AND status='accepted' to prevent touching other employers' invites.
+      const { data, error: uErr } = await supabase
+        .from('talent_pool_invites')
+        .update({
+          status:        'not_for_us',
+          outcome_at:    new Date().toISOString(),
+          outcome_notes: outcome_notes || null,
+        })
+        .eq('id', inviteId)
+        .eq('employer_id', req.employerId)
+        .eq('status', 'accepted')
+        .select('id')
+        .maybeSingle();
+
+      if (uErr) throw uErr;
+      if (!data) return res.status(409).json({ error: 'Invite not found or not in accepted status', code: 'not_updated' });
+
+      await auditLog({
+        tableName:   'talent_pool_invites',
+        recordId:    inviteId,
+        action:      'UPDATE',
+        performedBy: req.userId,
+        ipAddress:   req.ip,
+      });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('POST /talent-pool/invites/:id/outcome error:', err);
+    res.status(500).json({ error: 'Failed to record outcome' });
   }
 });
 
