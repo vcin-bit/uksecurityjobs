@@ -19,8 +19,11 @@ export async function apiRequest(path, method = 'GET', body = null, getToken) {
     throw new Error('Your session has expired. Please sign in again.');
   }
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(err.error || `Request failed (${res.status})`);
+    const errBody = await res.json().catch(() => ({ error: 'Request failed' }));
+    const err = new Error(errBody.error || `Request failed (${res.status})`);
+    err.code   = errBody.code;
+    err.status = res.status;
+    throw err;
   }
   return res.json();
 }
@@ -31,4 +34,22 @@ export function startApiKeepAlive() {
   setInterval(() => {
     fetch(`${API_URL}/health`).catch(() => {});
   }, 10 * 60 * 1000);
+}
+
+export function getDiscoverability(getToken) {
+  return apiRequest('/api/candidates/me/discoverability', 'GET', null, getToken);
+}
+
+export function updateDiscoverability(getToken, body) {
+  return apiRequest('/api/candidates/me/discoverability', 'PUT', body, getToken);
+}
+
+export function updateVisibilityRules(getToken, rules) {
+  return apiRequest('/api/candidates/me/visibility-rules', 'PUT', { rules }, getToken);
+}
+
+export async function getPoolEmployers() {
+  const res = await fetch(`${API_URL}/api/pool/employers/public`);
+  if (!res.ok) return [];
+  return res.json();
 }

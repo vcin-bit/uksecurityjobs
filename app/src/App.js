@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut, useUser, useClerk, useAuth, useSignUp, useSignIn } from '@clerk/clerk-react';
-import { apiRequest, startApiKeepAlive } from './api';
+import { apiRequest, startApiKeepAlive, getDiscoverability, updateDiscoverability, updateVisibilityRules, getPoolEmployers } from './api';
 import './styles.css';
 
 startApiKeepAlive();
@@ -2972,6 +2972,248 @@ function AvailabilityWidget({ getToken }) {
   );
 }
 
+// ── TALENT POOL DISCOVERABILITY ──
+function DiscoverabilityWidget({ getToken }) {
+  const [loading, setLoading]           = useState(true);
+  const [saving, setSaving]             = useState(false);
+  const [saved, setSaved]               = useState(false);
+  const [error, setError]               = useState('');
+  const [data, setData]                 = useState(null);
+  const [poolEmployers, setPoolEmployers] = useState([]);
+  const [pendingMode, setPendingMode]   = useState(null);
+  const [pendingRules, setPendingRules] = useState(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [disc, employers] = await Promise.all([
+          getDiscoverability(getToken),
+          getPoolEmployers(),
+        ]);
+        // enabled:false or a 404 (gate closed) → hide the widget entirely.
+        if (!disc || disc.enabled !== true) { setLoading(false); return; }
+        setData(disc);
+        setPendingMode(disc.discoverable_mode);
+        setPendingRules((disc.rules || []).map(r => ({ employer_id: r.employer_id, rule: r.rule })));
+        setPoolEmployers(employers || []);
+      } catch (e) {
+        // 404 from the go-live gate — silently hide the widget.
+        if (e.status !== 404) console.error('DiscoverabilityWidget load error:', e);
+      }
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  async function handleToggle() {
+    if (!data) return;
+    setError('');
+    setSaving(true);
+    try {
+      const newValue = !data.discoverable;
+      await updateDiscoverability(getToken, {
+        discoverable:    newValue,
+        wording_version: data.wording_version,
+      });
+      setData(d => ({ ...d, discoverable: newValue, ...(newValue ? { discoverable_at: new Date().toISOString() } : {}) }));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      if (e.code === 'badge_missing') {
+        setError('Your profile must be complete (BS7858 badge) before you can join the talent pool.');
+      } else if (e.code === 'wording_version_mismatch') {
+        setError('Consent wording has changed. Please reload the page and re-read before opting in.');
+      } else {
+        setError(e.message || 'Failed to update. Please try again.');
+      }
+    }
+    setSaving(false);
+  }
+
+  async function handleModeChange(newMode) {
+    if (!data) return;
+    const prevMode = pendingMode;
+    setPendingMode(newMode);
+    setError('');
+    setSaving(true);
+    try {
+      await updateDiscoverability(getToken, { discoverable_mode: newMode });
+      setData(d => ({ ...d, discoverable_mode: newMode }));
+    } catch (e) {
+      setError(e.message || 'Failed to update mode.');
+      setPendingMode(prevMode);
+    }
+    setSaving(false);
+  }
+
+  async function handleSaveRules() {
+    if (!pendingRules) return;
+    setError('');
+    setSaving(true);
+    try {
+      await updateVisibilityRules(getToken, pendingRules);
+      setData(d => ({
+        ...d,
+        rules: pendingRules.map(r => {
+          const emp = poolEmployers.find(e => e.id === r.employer_id);
+          return { ...r, company_name: emp ? emp.company_name : null };
+        }),
+      }));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      setError(e.message || 'Failed to save preferences. Please try again.');
+    }
+    setSaving(false);
+  }
+
+  function toggleEmployerRule(employerId, ruleType) {
+    setPendingRules(prev => {
+      const existing = (prev || []).find(r => r.employer_id === employerId);
+      if (existing) {
+        if (existing.rule === ruleType) {
+          return (prev || []).filter(r => r.employer_id !== employerId);
+        }
+        return (prev || []).map(r => r.employer_id === employerId ? { ...r, rule: ruleType } : r);
+      }
+      return [...(prev || []), { employer_id: employerId, rule: ruleType }];
+    });
+  }
+
+  if (loading) return null;
+  if (!data)   return null;
+
+  const mode  = pendingMode !== null ? pendingMode : data.discoverable_mode;
+  const rules = pendingRules !== null ? pendingRules : (data.rules || []).map(r => ({ employer_id: r.employer_id, rule: r.rule }));
+
+  // ── State 1: profile incomplete — locked card, no opt-in ─────────────────
+  if (!data.profile_complete) {
+    return (
+      <div className="dash-card" style={{marginBottom:'1.5rem',opacity:0.85}}>
+        <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222',marginBottom:'0.5rem'}}>Talent Pool</div>
+        <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'8px',padding:'1rem',display:'flex',flexDirection:'column',gap:'0.6rem'}}>
+          <div style={{fontSize:'0.82rem',color:'#64748b',lineHeight:1.6}}>
+            Complete your BS7858 profile to join the talent pool and be discoverable by verified security employers.
+          </div>
+          <a href="/profile"
+            style={{display:'inline-block',fontSize:'0.82rem',fontWeight:700,color:'#1a52a8',textDecoration:'none'}}>
+            Complete your profile →
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // ── State 2: profile complete, not opted in ───────────────────────────────
+  if (!data.discoverable) {
+    return (
+      <div className="dash-card" style={{marginBottom:'1.5rem'}}>
+        <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222',marginBottom:'0.75rem'}}>Talent Pool</div>
+        <p style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1rem',lineHeight:1.6}}>
+          {data.consent_copy}
+        </p>
+
+        {poolEmployers.length > 0 && (
+          <div style={{marginBottom:'1rem'}}>
+            <div style={{fontSize:'0.8rem',fontWeight:600,color:'#334155',marginBottom:'0.4rem'}}>
+              Employers currently using the talent pool:
+            </div>
+            <ul style={{margin:0,paddingLeft:'1.1rem',listStyle:'disc'}}>
+              {poolEmployers.map(emp => (
+                <li key={emp.id} style={{fontSize:'0.82rem',color:'#0b1222',lineHeight:1.8}}>{emp.company_name}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {error && (
+          <div style={{fontSize:'0.82rem',color:'#b91c1c',background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'0.6rem 0.875rem',marginBottom:'1rem'}}>
+            {error}
+          </div>
+        )}
+
+        <div style={{display:'flex',alignItems:'center',gap:'1rem'}}>
+          <button onClick={handleToggle} disabled={saving}
+            style={{padding:'0.5rem 1.5rem',borderRadius:'8px',fontFamily:'inherit',fontWeight:700,fontSize:'0.85rem',cursor:saving?'not-allowed':'pointer',border:'none',background:'#1a52a8',color:'#fff'}}>
+            {saving ? 'Saving...' : 'Opt in to talent pool'}
+          </button>
+          {saved && <span style={{fontSize:'0.82rem',color:'#15803d',fontWeight:600}}>Saved</span>}
+        </div>
+      </div>
+    );
+  }
+
+  // ── State 3: opted in ─────────────────────────────────────────────────────
+  return (
+    <div className="dash-card" style={{marginBottom:'1.5rem'}}>
+      <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222',marginBottom:'0.5rem'}}>Talent Pool</div>
+
+      {error && (
+        <div style={{fontSize:'0.82rem',color:'#b91c1c',background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'0.6rem 0.875rem',marginBottom:'1rem'}}>
+          {error}
+        </div>
+      )}
+
+      {/* Opt-out button */}
+      <div style={{display:'flex',alignItems:'center',gap:'1rem',marginBottom:'1rem'}}>
+        <button onClick={handleToggle} disabled={saving}
+          style={{padding:'0.5rem 1.5rem',borderRadius:'8px',fontFamily:'inherit',fontWeight:700,fontSize:'0.85rem',cursor:saving?'not-allowed':'pointer',border:'none',background:'#15803d',color:'#fff'}}>
+          {saving ? 'Saving...' : 'Opted in — click to opt out'}
+        </button>
+        {saved && <span style={{fontSize:'0.82rem',color:'#15803d',fontWeight:600}}>Saved</span>}
+      </div>
+
+      {/* Mode selector */}
+      <div style={{marginBottom:'1rem'}}>
+        <div style={{fontSize:'0.82rem',fontWeight:600,color:'#334155',marginBottom:'0.5rem'}}>Who can see your profile?</div>
+        <div style={{display:'flex',flexWrap:'wrap',gap:'0.5rem'}}>
+          {Object.entries(data.mode_labels).map(([key, label]) => (
+            <button key={key} onClick={() => handleModeChange(key)} disabled={saving}
+              style={{padding:'0.45rem 1rem',borderRadius:'999px',fontFamily:'inherit',fontWeight:600,fontSize:'0.82rem',cursor:saving?'not-allowed':'pointer',border:`1px solid ${mode===key?'#1a52a8':'#e2e8f0'}`,background:mode===key?'#eff6ff':'#f8fafc',color:mode===key?'#1a52a8':'#64748b'}}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Employer rule picker */}
+      {poolEmployers.length > 0 && (
+        <div style={{marginBottom:'1rem'}}>
+          <div style={{fontSize:'0.82rem',fontWeight:600,color:'#334155',marginBottom:'0.5rem'}}>
+            {mode === 'all' ? 'Block specific employers:' : 'Choose which employers can see you:'}
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:'0.4rem'}}>
+            {poolEmployers.map(emp => {
+              const ruleType   = mode === 'all' ? 'block' : 'allow';
+              const isSelected = rules.some(r => r.employer_id === emp.id && r.rule === ruleType);
+              return (
+                <label key={emp.id} style={{display:'flex',alignItems:'center',gap:'0.6rem',fontSize:'0.85rem',cursor:'pointer'}}>
+                  <input type="checkbox" checked={isSelected} onChange={() => toggleEmployerRule(emp.id, ruleType)}
+                    style={{width:'16px',height:'16px',cursor:'pointer'}}/>
+                  <span style={{color:'#0b1222'}}>{emp.company_name}</span>
+                </label>
+              );
+            })}
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:'1rem',marginTop:'0.75rem'}}>
+            <button className="btn-next" onClick={handleSaveRules} disabled={saving}
+              style={{padding:'0.5rem 1.25rem',fontSize:'0.85rem'}}>
+              {saving ? 'Saving...' : 'Save preferences'}
+            </button>
+            {saved && <span style={{fontSize:'0.82rem',color:'#15803d',fontWeight:600}}>Saved</span>}
+          </div>
+        </div>
+      )}
+
+      {data.discoverable_at && (
+        <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.5rem'}}>
+          Opted in: {new Date(data.discoverable_at).toLocaleDateString('en-GB')}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── ACCOUNT DELETION ──
 function AccountDeletion({ getToken }) {
   const [open, setOpen] = useState(false);
@@ -3242,6 +3484,9 @@ function Dashboard() {
 
         {/* AVAILABILITY STATUS */}
         <AvailabilityWidget getToken={getToken}/>
+
+        {/* TALENT POOL */}
+        <DiscoverabilityWidget getToken={getToken}/>
 
         {/* ACCOUNT DELETION */}
         <AccountDeletion getToken={getToken}/>
