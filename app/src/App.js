@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut, useUser, useClerk, useAuth, useSignUp, useSignIn } from '@clerk/clerk-react';
-import { apiRequest, startApiKeepAlive, getDiscoverability, updateDiscoverability, updateVisibilityRules, getPoolEmployers, getShortlist, sendInvite, getCandidateInvites, getInviteByToken, acceptInvite, declineInvite } from './api';
+import { apiRequest, startApiKeepAlive, getDiscoverability, updateDiscoverability, updateVisibilityRules, getPoolEmployers, getShortlist, sendInvite, getCandidateInvites, getInviteByToken, acceptInvite, declineInvite, getAcceptedInvites, recordOutcome, getPoolMemberships, leavePool } from './api';
 import './styles.css';
 
 startApiKeepAlive();
@@ -3330,6 +3330,77 @@ function CandidateInvitations({ getToken }) {
   );
 }
 
+function PoolMemberCard({ getToken }) {
+  const [memberships, setMemberships] = React.useState([]);
+  const [loaded, setLoaded] = React.useState(false);
+  const [leaving, setLeaving] = React.useState(null);
+  const [confirmLeave, setConfirmLeave] = React.useState(null);
+
+  React.useEffect(() => {
+    async function load() {
+      try {
+        const data = await getPoolMemberships(getToken);
+        setMemberships(data.memberships || []);
+      } catch(e) {
+        if (e.status !== 404) console.error('PoolMemberCard load error:', e);
+      }
+      setLoaded(true);
+    }
+    load();
+  }, []);
+
+  if (!loaded || memberships.length === 0) return null;
+
+  const handleLeave = async (employerId) => {
+    setLeaving(employerId);
+    try {
+      await leavePool(getToken, employerId);
+      setMemberships(prev => prev.filter(m => m.employer_id !== employerId));
+    } catch(e) {
+      alert(e.message || 'Failed to leave pool');
+    }
+    setLeaving(null);
+    setConfirmLeave(null);
+  };
+
+  return (
+    <>
+      {memberships.map(m => (
+        <div key={m.id} className="dash-card" style={{borderLeft:'3px solid #15803d'}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
+            <div>
+              <div style={{fontWeight:700,fontSize:'0.95rem',color:'#0b1222'}}>
+                You're in {m.employer_name || 'an employer'}'s talent pool
+              </div>
+              <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.1rem'}}>
+                Joined {new Date(m.joined_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}
+              </div>
+            </div>
+            {confirmLeave === m.employer_id ? (
+              <div style={{display:'flex',gap:'0.5rem',alignItems:'center',flexWrap:'wrap'}}>
+                <span style={{fontSize:'0.78rem',color:'#64748b'}}>Are you sure? You won't be re-invited.</span>
+                <button onClick={() => handleLeave(m.employer_id)} disabled={leaving === m.employer_id}
+                  style={{padding:'0.35rem 0.85rem',borderRadius:'8px',background:'#dc2626',color:'#fff',border:'none',fontSize:'0.78rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',opacity:leaving===m.employer_id?0.7:1}}>
+                  {leaving === m.employer_id ? 'Leaving...' : 'Yes, leave'}
+                </button>
+                <button onClick={() => setConfirmLeave(null)}
+                  style={{padding:'0.35rem 0.85rem',borderRadius:'8px',background:'#f1f5f9',color:'#475569',border:'none',fontSize:'0.78rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmLeave(m.employer_id)}
+                style={{padding:'0.35rem 0.85rem',borderRadius:'8px',background:'#f1f5f9',color:'#475569',border:'1px solid #e2e8f0',fontSize:'0.78rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+                Leave pool
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
 function Dashboard() {
   const { user } = useUser();
   const { getToken } = useAuth();
@@ -3534,6 +3605,7 @@ function Dashboard() {
         {/* TALENT POOL */}
         <DiscoverabilityWidget getToken={getToken}/>
         <CandidateInvitations getToken={getToken}/>
+        <PoolMemberCard getToken={getToken}/>
 
         {/* ACCOUNT DELETION */}
         <AccountDeletion getToken={getToken}/>
@@ -4561,6 +4633,9 @@ function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken,
 // Filtering is server-side. Both licence_type and city are sent as query params.
 // City uses a 300ms debounce; licence change triggers an immediate re-fetch.
 function TalentPoolTab({ getToken }) {
+  const [poolView, setPoolView] = React.useState('shortlist');
+
+  // ── Shortlist state ──
   const [candidates, setCandidates] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [licenceFilter, setLicenceFilter] = React.useState('');
@@ -4568,7 +4643,17 @@ function TalentPoolTab({ getToken }) {
   const [inviting, setInviting] = React.useState(null);
   const [inviteStatusMap, setInviteStatusMap] = React.useState({});
 
+  // ── Accepted state ──
+  const [accepted, setAccepted] = React.useState([]);
+  const [acceptedLoading, setAcceptedLoading] = React.useState(false);
+  const [outcomeSaving, setOutcomeSaving] = React.useState(null);
+  const [confirmOutcome, setConfirmOutcome] = React.useState(null); // { inviteId, outcome }
+  const [noteFor, setNoteFor] = React.useState(null);
+  const [outcomeNote, setOutcomeNote] = React.useState('');
+
+  // Shortlist: debounced re-fetch on filter change
   React.useEffect(() => {
+    if (poolView !== 'shortlist') return;
     let cancelled = false;
     const timer = setTimeout(async () => {
       setLoading(true);
@@ -4580,11 +4665,23 @@ function TalentPoolTab({ getToken }) {
         const m = {};
         list.forEach(c => { if (c.invite_status) m[c.candidate_id] = c.invite_status; });
         setInviteStatusMap(m);
-      } catch(e) { if (!cancelled) console.error('TalentPoolTab load:', e); }
+      } catch(e) { if (!cancelled) console.error('TalentPoolTab shortlist load:', e); }
       if (!cancelled) setLoading(false);
     }, 300);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [licenceFilter, cityFilter]);
+  }, [licenceFilter, cityFilter, poolView]);
+
+  // Accepted: load when switching to that view
+  React.useEffect(() => {
+    if (poolView !== 'accepted') return;
+    let cancelled = false;
+    setAcceptedLoading(true);
+    getAcceptedInvites(getToken)
+      .then(data => { if (!cancelled) setAccepted(data.accepted || []); })
+      .catch(e => console.error('TalentPoolTab accepted load:', e))
+      .finally(() => { if (!cancelled) setAcceptedLoading(false); });
+    return () => { cancelled = true; };
+  }, [poolView]);
 
   const handleInvite = async (candidateId) => {
     setInviting(candidateId);
@@ -4601,82 +4698,192 @@ function TalentPoolTab({ getToken }) {
     setInviting(null);
   };
 
-  const OPEN = ['invited', 'accepted', 'call_booked'];
+  const handleOutcome = async (inviteId, outcome) => {
+    setOutcomeSaving(inviteId);
+    try {
+      const notes = noteFor === inviteId ? outcomeNote.trim() : '';
+      await recordOutcome(getToken, inviteId, outcome, notes || null);
+      setAccepted(prev => prev.filter(a => a.invite_id !== inviteId));
+      setNoteFor(null);
+      setOutcomeNote('');
+    } catch(e) {
+      alert(e.message || 'Failed to record outcome');
+    }
+    setOutcomeSaving(null);
+    setConfirmOutcome(null);
+  };
+
+  const OPEN  = ['invited', 'accepted', 'call_booked'];
   const AVAIL = { available: 'Available', available_from: 'Available soon', not_available: 'Not available' };
+
+  const tabBtn = (view, label) => (
+    <button onClick={() => setPoolView(view)}
+      style={{padding:'0.4rem 1rem',borderRadius:'8px',border:'none',fontFamily:'inherit',fontSize:'0.82rem',fontWeight:700,cursor:'pointer',
+        background: poolView === view ? '#0b1222' : '#f1f5f9',
+        color:      poolView === view ? '#fff'     : '#475569'}}>
+      {label}
+    </button>
+  );
 
   return (
     <div className="dash-card">
-      <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.25rem'}}>Talent Pool</div>
-      <div style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1.25rem'}}>
-        Discoverable candidates with verified SIA licences and complete profiles.
-      </div>
-      <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap',marginBottom:'1.25rem'}}>
-        <select value={licenceFilter} onChange={e=>setLicenceFilter(e.target.value)}
-          style={{padding:'0.5rem 0.875rem',borderRadius:'8px',border:'1px solid #e2e8f0',fontSize:'0.85rem',background:'#fff',fontFamily:'inherit',minWidth:'180px'}}>
-          <option value="">All licence types</option>
-          <option>Door Supervisor</option>
-          <option>Security Guard</option>
-          <option>CCTV Operator</option>
-          <option>Close Protection</option>
-          <option>Cash &amp; Valuables in Transit</option>
-          <option>Key Holding</option>
-        </select>
-        <input value={cityFilter} onChange={e=>setCityFilter(e.target.value)}
-          placeholder="Town or city"
-          style={{padding:'0.5rem 0.875rem',borderRadius:'8px',border:'1px solid #e2e8f0',fontSize:'0.85rem',fontFamily:'inherit',minWidth:'150px',flex:1}}/>
-      </div>
-      {loading ? (
-        <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>Loading...</div>
-      ) : candidates.length === 0 ? (
-        <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>
-          {licenceFilter || cityFilter ? 'No candidates match these filters.' : 'No discoverable candidates yet. Check back soon.'}
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.25rem',flexWrap:'wrap',gap:'0.75rem'}}>
+        <div>
+          <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.15rem'}}>Talent Pool</div>
+          <div style={{fontSize:'0.82rem',color:'#64748b'}}>Discoverable candidates with verified SIA licences.</div>
         </div>
-      ) : (
-        <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
-          {candidates.map(c => {
-            const status = inviteStatusMap[c.candidate_id];
-            const isOpen = OPEN.includes(status);
-            return (
-              <div key={c.candidate_id} style={{background:'#f8fafc',borderRadius:'10px',border:'1px solid #e2e8f0',padding:'1rem 1.25rem',display:'flex',alignItems:'center',gap:'1rem',flexWrap:'wrap'}}>
-                <div style={{flex:1,minWidth:'180px'}}>
-                  <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222'}}>
-                    {c.first_name} {c.last_name ? c.last_name[0] + '.' : ''}
+        <div style={{display:'flex',gap:'0.4rem'}}>
+          {tabBtn('shortlist','Shortlist')}
+          {tabBtn('accepted', 'Accepted')}
+        </div>
+      </div>
+
+      {poolView === 'shortlist' && (<>
+        <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap',marginBottom:'1.25rem'}}>
+          <select value={licenceFilter} onChange={e=>setLicenceFilter(e.target.value)}
+            style={{padding:'0.5rem 0.875rem',borderRadius:'8px',border:'1px solid #e2e8f0',fontSize:'0.85rem',background:'#fff',fontFamily:'inherit',minWidth:'180px'}}>
+            <option value="">All licence types</option>
+            <option>Door Supervisor</option>
+            <option>Security Guard</option>
+            <option>CCTV Operator</option>
+            <option>Close Protection</option>
+            <option>Cash &amp; Valuables in Transit</option>
+            <option>Key Holding</option>
+          </select>
+          <input value={cityFilter} onChange={e=>setCityFilter(e.target.value)}
+            placeholder="Town or city"
+            style={{padding:'0.5rem 0.875rem',borderRadius:'8px',border:'1px solid #e2e8f0',fontSize:'0.85rem',fontFamily:'inherit',minWidth:'150px',flex:1}}/>
+        </div>
+        {loading ? (
+          <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>Loading...</div>
+        ) : candidates.length === 0 ? (
+          <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>
+            {licenceFilter || cityFilter ? 'No candidates match these filters.' : 'No discoverable candidates yet. Check back soon.'}
+          </div>
+        ) : (
+          <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
+            {candidates.map(c => {
+              const status = inviteStatusMap[c.candidate_id] || c.invite_status;
+              const isOpen = OPEN.includes(status);
+              return (
+                <div key={c.candidate_id} style={{background:'#f8fafc',borderRadius:'10px',border:'1px solid #e2e8f0',padding:'1rem 1.25rem',display:'flex',alignItems:'center',gap:'1rem',flexWrap:'wrap'}}>
+                  <div style={{flex:1,minWidth:'180px'}}>
+                    <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222'}}>
+                      {c.first_name} {c.last_name ? c.last_name[0] + '.' : ''}
+                    </div>
+                    <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.15rem'}}>
+                      {c.city || 'Location not specified'}
+                      {c.availability_status && ` · ${AVAIL[c.availability_status] || c.availability_status}`}
+                    </div>
+                    <div style={{marginTop:'0.4rem',display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
+                      {(c.licence_types || []).map(l => (
+                        <span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8'}}>{l}</span>
+                      ))}
+                      {c.address_gap && (
+                        <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#fffbeb',color:'#b45309'}}>Address history &lt;5yr</span>
+                      )}
+                      {c.employment_gap && (
+                        <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#fffbeb',color:'#b45309'}}>Employment history &lt;5yr</span>
+                      )}
+                    </div>
                   </div>
-                  <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.15rem'}}>
-                    {c.city || 'Location not specified'}
-                    {c.availability_status && ` · ${AVAIL[c.availability_status] || c.availability_status}`}
-                  </div>
-                  <div style={{marginTop:'0.4rem',display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
-                    {(c.licence_types || []).map(l => (
-                      <span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8'}}>{l}</span>
-                    ))}
-                    {c.address_gap && (
-                      <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#fffbeb',color:'#b45309'}}>Address history &lt;5yr</span>
-                    )}
-                    {c.employment_gap && (
-                      <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#fffbeb',color:'#b45309'}}>Employment history &lt;5yr</span>
+                  <div style={{flexShrink:0}}>
+                    {c.is_member ? (
+                      <span style={{fontSize:'0.78rem',fontWeight:700,color:'#15803d',background:'#dcfce7',padding:'0.3rem 0.75rem',borderRadius:'999px'}}>Pool member</span>
+                    ) : status === 'not_for_us' ? (
+                      <span style={{fontSize:'0.78rem',fontWeight:700,color:'#64748b',background:'#f1f5f9',padding:'0.3rem 0.75rem',borderRadius:'999px'}}>
+                        Not for us{c.invite_outcome_at ? ` – ${new Date(c.invite_outcome_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}` : ''}
+                      </span>
+                    ) : isOpen ? (
+                      <span style={{fontSize:'0.78rem',fontWeight:700,color:'#1d4ed8',background:'#eff6ff',padding:'0.3rem 0.75rem',borderRadius:'999px'}}>
+                        {status === 'invited' ? 'Invited' : status === 'accepted' ? 'Accepted' : 'Call booked'}
+                      </span>
+                    ) : (
+                      <button onClick={()=>handleInvite(c.candidate_id)} disabled={inviting===c.candidate_id}
+                        style={{padding:'0.4rem 1rem',borderRadius:'8px',background:'#1a52a8',color:'#fff',border:'none',fontSize:'0.78rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',opacity:inviting===c.candidate_id?0.7:1}}>
+                        {inviting===c.candidate_id ? 'Sending...' : 'Invite to pool'}
+                      </button>
                     )}
                   </div>
                 </div>
-                <div style={{flexShrink:0}}>
-                  {c.is_member ? (
-                    <span style={{fontSize:'0.78rem',fontWeight:700,color:'#15803d',background:'#dcfce7',padding:'0.3rem 0.75rem',borderRadius:'999px'}}>Pool member</span>
-                  ) : isOpen ? (
-                    <span style={{fontSize:'0.78rem',fontWeight:700,color:'#1d4ed8',background:'#eff6ff',padding:'0.3rem 0.75rem',borderRadius:'999px'}}>
-                      {status === 'invited' ? 'Invited' : status === 'accepted' ? 'Accepted' : 'Call booked'}
+              );
+            })}
+          </div>
+        )}
+      </>)}
+
+      {poolView === 'accepted' && (<>
+        {acceptedLoading ? (
+          <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>Loading...</div>
+        ) : accepted.length === 0 ? (
+          <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>No accepted invites yet.</div>
+        ) : (
+          <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
+            {accepted.map(a => (
+              <div key={a.invite_id} style={{background:'#f8fafc',borderRadius:'10px',border:'1px solid #e2e8f0',padding:'1rem 1.25rem',display:'flex',flexDirection:'column',gap:'0.75rem'}}>
+                <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222'}}>{a.first_name} {a.last_name}</div>
+                    <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.1rem'}}>{a.city || 'Location not set'}</div>
+                    <div style={{marginTop:'0.3rem',fontSize:'0.8rem',color:'#334155'}}>
+                      <a href={`mailto:${a.email}`} style={{color:'#1a52a8',textDecoration:'none'}}>{a.email}</a>
+                      {a.phone && <span style={{color:'#475569'}}> · {a.phone}</span>}
+                    </div>
+                    <div style={{marginTop:'0.4rem',display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
+                      {(a.licence_types || []).map(l => (
+                        <span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8'}}>{l}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{fontSize:'0.75rem',color:'#94a3b8',flexShrink:0,textAlign:'right'}}>
+                    Accepted {new Date(a.responded_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
+                  </div>
+                </div>
+                {noteFor === a.invite_id && (
+                  <textarea value={outcomeNote} onChange={e=>setOutcomeNote(e.target.value)}
+                    placeholder="Internal note (optional, not shown to candidate)"
+                    rows={2}
+                    style={{width:'100%',boxSizing:'border-box',borderRadius:'8px',border:'1px solid #e2e8f0',padding:'0.5rem 0.75rem',fontSize:'0.82rem',fontFamily:'inherit',resize:'vertical'}}/>
+                )}
+                {confirmOutcome?.inviteId === a.invite_id ? (
+                  <div style={{display:'flex',gap:'0.5rem',alignItems:'center',flexWrap:'wrap'}}>
+                    <span style={{fontSize:'0.78rem',color:'#64748b'}}>
+                      {confirmOutcome.outcome === 'passed'
+                        ? `Pass ${a.first_name}? This adds them to your pool.`
+                        : `Mark ${a.first_name} as not for us?`}
                     </span>
-                  ) : (
-                    <button onClick={()=>handleInvite(c.candidate_id)} disabled={inviting===c.candidate_id}
-                      style={{padding:'0.4rem 1rem',borderRadius:'8px',background:'#1a52a8',color:'#fff',border:'none',fontSize:'0.78rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',opacity:inviting===c.candidate_id?0.7:1}}>
-                      {inviting===c.candidate_id ? 'Sending...' : 'Invite to pool'}
+                    <button onClick={()=>handleOutcome(a.invite_id, confirmOutcome.outcome)} disabled={outcomeSaving===a.invite_id}
+                      style={{padding:'0.35rem 0.85rem',borderRadius:'8px',border:'none',fontSize:'0.78rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',
+                        background: confirmOutcome.outcome==='passed' ? '#15803d' : '#475569', color:'#fff',
+                        opacity: outcomeSaving===a.invite_id ? 0.7 : 1}}>
+                      {outcomeSaving===a.invite_id ? 'Saving...' : confirmOutcome.outcome==='passed' ? 'Yes, pass' : 'Yes'}
                     </button>
-                  )}
-                </div>
+                    <button onClick={()=>setConfirmOutcome(null)}
+                      style={{padding:'0.35rem 0.85rem',borderRadius:'8px',background:'#f1f5f9',color:'#475569',border:'none',fontSize:'0.78rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap',alignItems:'center'}}>
+                    <button onClick={()=>setConfirmOutcome({inviteId:a.invite_id,outcome:'passed'})} disabled={outcomeSaving===a.invite_id}
+                      style={{padding:'0.4rem 1rem',borderRadius:'8px',background:'#15803d',color:'#fff',border:'none',fontSize:'0.78rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',opacity:outcomeSaving===a.invite_id?0.7:1}}>
+                      Pass
+                    </button>
+                    <button onClick={()=>setConfirmOutcome({inviteId:a.invite_id,outcome:'not_for_us'})} disabled={outcomeSaving===a.invite_id}
+                      style={{padding:'0.4rem 1rem',borderRadius:'8px',background:'#f1f5f9',color:'#475569',border:'1px solid #e2e8f0',fontSize:'0.78rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',opacity:outcomeSaving===a.invite_id?0.7:1}}>
+                      Not for us
+                    </button>
+                    <button onClick={()=>{ setNoteFor(noteFor===a.invite_id ? null : a.invite_id); setOutcomeNote(''); }}
+                      style={{padding:'0.4rem 0.75rem',borderRadius:'8px',background:'transparent',color:'#94a3b8',border:'none',fontSize:'0.78rem',cursor:'pointer',fontFamily:'inherit'}}>
+                      {noteFor===a.invite_id ? '− note' : '+ note'}
+                    </button>
+                  </div>
+                )}
               </div>
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </>)}
     </div>
   );
 }

@@ -81,3 +81,19 @@ export function acceptInvite(getToken, token, wordingVersion) {
 export function declineInvite(getToken, token) {
   return apiRequest(`/api/candidates/me/invites/${token}/decline`, 'POST', {}, getToken);
 }
+
+export function getAcceptedInvites(getToken) {
+  return apiRequest('/api/talent-pool/accepted', 'GET', null, getToken);
+}
+
+export function recordOutcome(getToken, inviteId, outcome, outcomeNotes) {
+  return apiRequest(`/api/talent-pool/invites/${inviteId}/outcome`, 'POST', { outcome, outcome_notes: outcomeNotes || null }, getToken);
+}
+
+export function getPoolMemberships(getToken) {
+  return apiRequest('/api/candidates/me/pool-memberships', 'GET', null, getToken);
+}
+
+export function leavePool(getToken, employerId) {
+  return apiRequest(`/api/candidates/me/pool-membership/${employerId}/leave`, 'POST', {}, getToken);
+}
