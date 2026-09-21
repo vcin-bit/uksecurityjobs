@@ -515,6 +515,217 @@ router.delete('/me', async (req, res) => {
   }
 });
 
+// ── Talent pool: discoverability ─────────────────────────────────────────────
+
+const { POOL_WORDING_VERSION, POOL_CONSENT_COPY, POOL_MODE_LABELS } = require('../lib/poolWording');
+
+// Go-live gate for candidate-facing talent pool routes.
+//
+// TALENT_POOL_CANDIDATE_LIVE=true  → open to all authenticated candidates.
+// TALENT_POOL_CANDIDATE_LIVE=false (default) → 404 for everyone except
+//   clerk_user_ids listed in TALENT_POOL_CANDIDATE_ALLOWLIST (comma-separated).
+//
+// Returns { enabled: true } when access is permitted; responds 404 and
+// returns false when it is not. The caller must return immediately on false.
+//
+// Env vars are read per-request so toggling on Render takes effect
+// on the next request without a server restart.
+function checkTalentPoolGate(req, res) {
+  if (process.env.TALENT_POOL_CANDIDATE_LIVE === 'true') return true;
+  const allowlist = (process.env.TALENT_POOL_CANDIDATE_ALLOWLIST || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+  if (allowlist.includes(req.userId)) return true;
+  res.status(404).json({ error: 'Not found' });
+  return false;
+}
+
+// GET /me/discoverability — returns candidate opt-in state, visibility rules
+// with employer names, current consent copy/wording version, and enabled flag.
+router.get('/me/discoverability', async (req, res) => {
+  if (!checkTalentPoolGate(req, res)) return;
+  try {
+    const db = getClientForUser(req.token);
+
+    const { data: candidate, error: cErr } = await db
+      .from('candidates')
+      .select('id, discoverable, discoverable_mode, discoverable_at, discoverable_wording_version, profile_complete')
+      .eq('clerk_user_id', req.userId)
+      .single();
+
+    if (cErr) throw cErr;
+    if (!candidate) return res.status(404).json({ error: 'Profile not found' });
+
+    // Rules readable by the candidate via RLS.
+    const { data: rules, error: rErr } = await db
+      .from('candidate_employer_visibility')
+      .select('employer_id, rule')
+      .eq('candidate_id', candidate.id);
+
+    if (rErr) throw rErr;
+
+    // Employer names require service key (candidates cannot read the employers table).
+    let enrichedRules = [];
+    if (rules && rules.length > 0) {
+      const employerIds = rules.map(r => r.employer_id);
+      const { data: employers } = await supabase
+        .from('employers')
+        .select('id, company_name')
+        .in('id', employerIds);
+
+      const nameMap = {};
+      (employers || []).forEach(e => { nameMap[e.id] = e.company_name; });
+      enrichedRules = rules.map(r => ({
+        employer_id:  r.employer_id,
+        company_name: nameMap[r.employer_id] || null,
+        rule:         r.rule,
+      }));
+    }
+
+    res.json({
+      enabled:                         true,
+      discoverable:                    candidate.discoverable,
+      discoverable_mode:               candidate.discoverable_mode,
+      discoverable_at:                 candidate.discoverable_at,
+      discoverable_wording_version:    candidate.discoverable_wording_version,
+      profile_complete:                candidate.profile_complete,
+      rules:                           enrichedRules,
+      consent_copy:                    POOL_CONSENT_COPY,
+      mode_labels:                     POOL_MODE_LABELS,
+      wording_version:                 POOL_WORDING_VERSION,
+    });
+  } catch (err) {
+    console.error('GET /me/discoverability error:', err);
+    res.status(500).json({ error: 'Failed to fetch discoverability settings' });
+  }
+});
+
+// PUT /me/discoverability — update opt-in state and/or mode.
+// false→true: validates profile_complete and wording_version first.
+// Stamps discoverable_at + discoverable_wording_version on false→true only.
+router.put('/me/discoverability', async (req, res) => {
+  if (!checkTalentPoolGate(req, res)) return;
+  try {
+    const { discoverable, discoverable_mode, wording_version } = req.body;
+    const db = getClientForUser(req.token);
+
+    const { data: candidate, error: cErr } = await db
+      .from('candidates')
+      .select('id, discoverable, profile_complete')
+      .eq('clerk_user_id', req.userId)
+      .single();
+
+    if (cErr) throw cErr;
+    if (!candidate) return res.status(404).json({ error: 'Profile not found' });
+
+    // Gate checks on false→true transition only.
+    if (candidate.discoverable === false && discoverable === true) {
+      if (!candidate.profile_complete) {
+        return res.status(400).json({
+          error: 'Profile must be complete before opting in to the talent pool.',
+          code:  'badge_missing',
+        });
+      }
+      if (wording_version !== POOL_WORDING_VERSION) {
+        return res.status(409).json({
+          error:           'Consent wording has been updated. Please reload and re-read before opting in.',
+          code:            'wording_version_mismatch',
+          current_version: POOL_WORDING_VERSION,
+        });
+      }
+    }
+
+    const updates = {};
+
+    if (discoverable !== undefined) {
+      updates.discoverable = discoverable;
+      // Stamp only on the false→true transition. Never re-stamp if already opted in.
+      if (candidate.discoverable === false && discoverable === true) {
+        updates.discoverable_at              = new Date().toISOString();
+        updates.discoverable_wording_version = wording_version;
+      }
+    }
+
+    if (discoverable_mode !== undefined) {
+      if (!['all', 'selected'].includes(discoverable_mode)) {
+        return res.status(400).json({ error: 'Invalid discoverable_mode. Must be all or selected.' });
+      }
+      updates.discoverable_mode = discoverable_mode;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'Nothing to update.' });
+    }
+
+    const { error: uErr } = await db
+      .from('candidates')
+      .update(updates)
+      .eq('id', candidate.id);
+
+    if (uErr) {
+      // Guard trigger exception — surface as 400 badge_missing.
+      if (uErr.message && uErr.message.includes('profile_complete is not true')) {
+        return res.status(400).json({
+          error: 'Profile must be complete before opting in to the talent pool.',
+          code:  'badge_missing',
+        });
+      }
+      throw uErr;
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PUT /me/discoverability error:', err);
+    res.status(500).json({ error: 'Failed to update discoverability settings' });
+  }
+});
+
+// PUT /me/visibility-rules — atomic replace of candidate_employer_visibility rows.
+// Uses SECURITY DEFINER RPC to validate talent_pool_enabled on all employer_ids.
+router.put('/me/visibility-rules', async (req, res) => {
+  if (!checkTalentPoolGate(req, res)) return;
+  try {
+    const { rules } = req.body;
+
+    if (!Array.isArray(rules)) {
+      return res.status(400).json({ error: 'rules must be an array' });
+    }
+
+    // Resolve candidate id via user-scoped client (enforces candidate is real).
+    const db = getClientForUser(req.token);
+    const { data: candidate, error: cErr } = await db
+      .from('candidates')
+      .select('id')
+      .eq('clerk_user_id', req.userId)
+      .single();
+
+    if (cErr) throw cErr;
+    if (!candidate) return res.status(404).json({ error: 'Profile not found' });
+
+    // RPC runs as service role — validates employers + replaces atomically.
+    const { error: rpcErr } = await supabase.rpc('replace_candidate_visibility_rules', {
+      p_candidate_id: candidate.id,
+      p_rules:        rules,
+    });
+
+    if (rpcErr) {
+      if (rpcErr.message && rpcErr.message.includes('not a talent pool employer')) {
+        return res.status(400).json({ error: rpcErr.message, code: 'invalid_employer' });
+      }
+      if (rpcErr.message && rpcErr.message.includes('Invalid rule value')) {
+        return res.status(400).json({ error: rpcErr.message, code: 'invalid_rule' });
+      }
+      throw rpcErr;
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PUT /me/visibility-rules error:', err);
+    res.status(500).json({ error: 'Failed to update visibility rules' });
+  }
+});
+
 module.exports = router;
 module.exports.canApply = canApply;
 module.exports.isBS7858Ready = isBS7858Ready;

@@ -225,6 +225,31 @@ app.get('/api/stats/public', async (req, res) => {
   }
 });
 
+// Public pool employers — no auth, 5-min cache (shares STATS_TTL_MS).
+// Returns [{id, company_name}] for talent_pool_enabled employers only.
+let _poolEmployersCache = null;
+let _poolEmployersCacheAt = 0;
+
+app.get('/api/pool/employers/public', async (req, res) => {
+  try {
+    if (_poolEmployersCache && Date.now() - _poolEmployersCacheAt < STATS_TTL_MS) {
+      return res.json(_poolEmployersCache);
+    }
+    const { data, error } = await supabase
+      .from('employers')
+      .select('id, company_name')
+      .eq('talent_pool_enabled', true)
+      .order('company_name', { ascending: true });
+    if (error) throw error;
+    _poolEmployersCache = data || [];
+    _poolEmployersCacheAt = Date.now();
+    res.json(_poolEmployersCache);
+  } catch (err) {
+    console.error('Pool employers error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch employers' });
+  }
+});
+
 // Token-gated interview routes — no Clerk auth, validated by interview_token
 const interviewPublicRoutes = require('./routes/interview-public');
 app.use('/api/employers', interviewPublicRoutes);
