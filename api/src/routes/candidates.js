@@ -802,7 +802,7 @@ router.get('/me/invites/:token', async (req, res) => {
       token_expires:         invite.token_expires,
       employer_name:         employerName,
       invite_wording_version: POOL_INVITE_WORDING_VERSION,
-      invite_consent_copy:   POOL_INVITE_CONSENT_COPY,
+      invite_consent_copy:   POOL_INVITE_CONSENT_COPY.replace('{Employer}', employerName),
       accept_confirmation:   POOL_ACCEPT_CONFIRMATION_TEMPLATE.replace('{employer_name}', employerName),
     });
   } catch (err) {

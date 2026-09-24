@@ -3124,7 +3124,7 @@ function DiscoverabilityWidget({ getToken }) {
     return (
       <div className="dash-card" style={{marginBottom:'1.5rem'}}>
         <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222',marginBottom:'0.75rem'}}>Talent Pool</div>
-        <p style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1rem',lineHeight:1.6}}>
+        <p style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1rem',lineHeight:1.6,whiteSpace:'pre-line'}}>
           {data.consent_copy}
         </p>
 
@@ -3162,6 +3162,10 @@ function DiscoverabilityWidget({ getToken }) {
   return (
     <div className="dash-card" style={{marginBottom:'1.5rem'}}>
       <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222',marginBottom:'0.5rem'}}>Talent Pool</div>
+
+      <p style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1rem',lineHeight:1.6,whiteSpace:'pre-line'}}>
+        {data.consent_copy}
+      </p>
 
       {error && (
         <div style={{fontSize:'0.82rem',color:'#b91c1c',background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'0.6rem 0.875rem',marginBottom:'1rem'}}>
@@ -3263,7 +3267,7 @@ function AccountDeletion({ getToken }) {
   }
 
   return (
-    <div className="dash-card" style={{marginBottom:'1.5rem',borderColor:'#fecaca'}}>
+    <div className="dash-card" style={{marginTop:'2rem',marginBottom:'1.5rem',borderColor:'#fecaca'}}>
       <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222',marginBottom:'0.5rem'}}>Delete Account</div>
       <p style={{fontSize:'0.82rem',color:'#64748b',marginBottom:'1rem',lineHeight:1.6}}>
         Permanently delete your account and all associated data. This cannot be undone and complies with your right to erasure under UK GDPR.
@@ -3391,8 +3395,11 @@ function PoolMemberCard({ getToken }) {
                 Joined {new Date(m.joined_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}
               </div>
               {m.status === 'paused' && m.paused_reason === 'licence_expired' && (
-                <div style={{fontSize:'0.78rem',color:'#92400e',background:'#fef9c3',borderRadius:'6px',padding:'0.35rem 0.6rem',marginTop:'0.4rem',fontWeight:600}}>
-                  Paused — your SIA licence has expired. Renew and verify it to become active again.
+                <div style={{fontSize:'0.78rem',color:'#92400e',background:'#fef9c3',borderRadius:'6px',padding:'0.35rem 0.6rem',marginTop:'0.4rem'}}>
+                  <div style={{fontWeight:700}}>Paused — your SIA licence has expired</div>
+                  <div style={{marginTop:'0.2rem'}}>
+                    You won't receive shift callouts until it's renewed. Add your new licence to your profile and we'll verify it, then your membership reactivates automatically.
+                  </div>
                 </div>
               )}
             </div>
@@ -5064,9 +5071,13 @@ function TalentPoolTab({ getToken }) {
               <input value={calloutForm.site_town} onChange={e=>setCalloutForm(f=>({...f,site_town:e.target.value}))}
                 placeholder="Site town / city *"
                 style={{padding:'0.45rem 0.6rem',borderRadius:'6px',border:'1px solid #e2e8f0',fontSize:'0.82rem',fontFamily:'inherit'}}/>
-              <input value={calloutForm.rate} onChange={e=>setCalloutForm(f=>({...f,rate:e.target.value}))}
-                placeholder="Rate (e.g. £14/hr)"
-                style={{padding:'0.45rem 0.6rem',borderRadius:'6px',border:'1px solid #e2e8f0',fontSize:'0.82rem',fontFamily:'inherit'}}/>
+              <div style={{display:'flex',alignItems:'center',border:'1px solid #e2e8f0',borderRadius:'6px',overflow:'hidden',background:'#fff'}}>
+                <span style={{padding:'0.45rem 0.4rem 0.45rem 0.6rem',fontSize:'0.82rem',color:'#64748b',userSelect:'none'}}>£</span>
+                <input value={calloutForm.rate} onChange={e=>setCalloutForm(f=>({...f,rate:e.target.value}))}
+                  placeholder="14"
+                  style={{flex:1,padding:'0.45rem 0.2rem',border:'none',outline:'none',fontSize:'0.82rem',fontFamily:'inherit',minWidth:0}}/>
+                <span style={{padding:'0.45rem 0.6rem 0.45rem 0.2rem',fontSize:'0.82rem',color:'#64748b',userSelect:'none'}}>/hr</span>
+              </div>
             </div>
 
             {/* Member filter controls */}
@@ -6451,7 +6462,7 @@ function InvitePage() {
             <div style={{fontSize:'0.92rem',color:'#475569',marginBottom:'1.25rem'}}>
               <strong>{invite.employer_name}</strong> has invited you to join their talent pool.
             </div>
-            <div style={{background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'1rem',fontSize:'0.85rem',color:'#0369a1',lineHeight:1.7,marginBottom:'1.5rem'}}>
+            <div style={{background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',padding:'1rem',fontSize:'0.85rem',color:'#0369a1',lineHeight:1.7,marginBottom:'1.5rem',whiteSpace:'pre-line'}}>
               {invite.invite_consent_copy}
             </div>
             {pageError && <div style={{color:'#b91c1c',fontSize:'0.85rem',marginBottom:'1rem'}}>{pageError}</div>}
