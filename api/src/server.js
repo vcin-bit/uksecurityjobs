@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
 const { runNudges } = require('./lib/nudges');
 const { runIngestion } = require('./lib/jobIngestion');
-const { runLicenceCheck } = require('./lib/poolLicenceCheck');
+const { runLicenceCheck, runInvitePurge } = require('./lib/poolLicenceCheck');
 
 const candidateRoutes = require('./routes/candidates');
 const siaRoutes = require('./routes/sia');
@@ -292,11 +292,10 @@ if (process.env.REED_INGESTION_ENABLED === 'true') {
 }
 
 // ── 02:00 UTC — nightly pool licence expiry check ────────────────────────────
-// Pauses active pool members whose verified SIA licences have expired;
-// un-pauses members whose licences have been renewed and re-verified.
-// Updates nearest_licence_expiry on all active members.
-cron.schedule('0 2 * * *', () => {
-  runLicenceCheck().catch(err => console.error('[licenceCheck] Cron error:', err.message));
+// 02:00 UTC — licence expiry check, then stale-invite purge (sequential).
+cron.schedule('0 2 * * *', async () => {
+  try { await runLicenceCheck(); } catch (e) { console.error('[licenceCheck] Cron error:', e.message); }
+  try { await runInvitePurge(); } catch (e) { console.error('[invitePurge] Cron error:', e.message); }
 }, { timezone: 'UTC' });
 
 // ── 09:00 UTC — incomplete profile nudge emails ──────────────────────────────

@@ -147,4 +147,76 @@ async function runLicenceCheck() {
   return { paused, unpaused, flagged };
 }
 
-module.exports = { runLicenceCheck };
+// ── Nightly stale-invite purge ───────────────────────────────────────────────
+// Called by the 02:00 UTC cron in server.js, sequentially after runLicenceCheck.
+//
+// Deletes talent_pool_invites rows where:
+//   status IN ('declined', 'not_for_us', 'expired')
+//   AND COALESCE(outcome_at, responded_at) < NOW() - INTERVAL '12 months'
+//
+// Rows with no outcome date (both columns NULL) are never touched.
+// Rows with status 'invited', 'accepted', or 'passed' are never touched.
+// The FK talent_pool_members.invite_id is ON DELETE SET NULL, so membership
+// rows are left intact with invite_id nulled — confirmed delete_rule = SET NULL.
+//
+// Audit log written for every deleted row. Returns { purged: count }.
+
+async function runInvitePurge() {
+  console.log(`[invitePurge] Run started at ${new Date().toISOString()}`);
+
+  const cutoff = new Date();
+  cutoff.setFullYear(cutoff.getFullYear() - 1);
+  const cutoffIso = cutoff.toISOString();
+
+  // Supabase JS does not support COALESCE in filters, so use raw RPC / raw SQL
+  // via the postgrest .rpc approach — or fetch eligible IDs first then delete.
+  // We use a two-step approach: SELECT ids, then DELETE by id list, to stay
+  // within the Supabase client's supported filter surface.
+
+  // Step 1: find eligible rows.
+  const { data: rows, error: sErr } = await supabase
+    .from('talent_pool_invites')
+    .select('id, employer_id, candidate_id, status, outcome_at, responded_at')
+    .in('status', ['declined', 'not_for_us', 'expired']);
+
+  if (sErr) throw sErr;
+
+  // Apply the COALESCE(outcome_at, responded_at) < cutoff filter in JS.
+  const eligible = (rows || []).filter(r => {
+    const outcomeDate = r.outcome_at || r.responded_at;
+    return outcomeDate && outcomeDate < cutoffIso;
+  });
+
+  if (eligible.length === 0) {
+    console.log('[invitePurge] No stale invites to purge.');
+    console.log(`[invitePurge] Run complete at ${new Date().toISOString()}`);
+    return { purged: 0 };
+  }
+
+  const ids = eligible.map(r => r.id);
+
+  // Step 2: delete by id list.
+  const { error: dErr } = await supabase
+    .from('talent_pool_invites')
+    .delete()
+    .in('id', ids);
+
+  if (dErr) throw dErr;
+
+  // Step 3: audit log each deletion (silent on individual failures).
+  for (const row of eligible) {
+    await auditLog({
+      tableName:   'talent_pool_invites',
+      recordId:    row.id,
+      action:      'DELETE',
+      performedBy: 'system:invite_purge',
+      changes:     { status: row.status, purge_reason: 'stale_>12m' },
+    });
+  }
+
+  console.log(`[invitePurge] Purged ${eligible.length} stale invite(s).`);
+  console.log(`[invitePurge] Run complete at ${new Date().toISOString()}`);
+  return { purged: eligible.length };
+}
+
+module.exports = { runLicenceCheck, runInvitePurge };
