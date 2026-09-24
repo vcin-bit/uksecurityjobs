@@ -97,3 +97,49 @@ export function getPoolMemberships(getToken) {
 export function leavePool(getToken, employerId) {
   return apiRequest(`/api/candidates/me/pool-membership/${employerId}/leave`, 'POST', {}, getToken);
 }
+
+export function getPoolMembers(getToken) {
+  return apiRequest('/api/talent-pool/members', 'GET', null, getToken);
+}
+
+export function sendCallout(getToken, body) {
+  return apiRequest('/api/talent-pool/callouts', 'POST', body, getToken);
+}
+
+export function getCallouts(getToken) {
+  return apiRequest('/api/talent-pool/callouts', 'GET', null, getToken);
+}
+
+export function getCalloutDetail(getToken, calloutId) {
+  return apiRequest(`/api/talent-pool/callouts/${calloutId}`, 'GET', null, getToken);
+}
+
+export function closeCallout(getToken, calloutId) {
+  return apiRequest(`/api/talent-pool/callouts/${calloutId}/close`, 'POST', {}, getToken);
+}
+
+export async function getCalloutPublic(token) {
+  const res = await fetch(`${API_URL}/api/callout/${token}`);
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ error: 'Request failed' }));
+    const err = new Error(errBody.error || `Request failed (${res.status})`);
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}
+
+export async function respondToCallout(token, response) {
+  const res = await fetch(`${API_URL}/api/callout/${token}/respond`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ response }),
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ error: 'Request failed' }));
+    const err = new Error(errBody.error || `Request failed (${res.status})`);
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}

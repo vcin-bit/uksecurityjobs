@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut, useUser, useClerk, useAuth, useSignUp, useSignIn } from '@clerk/clerk-react';
-import { apiRequest, startApiKeepAlive, getDiscoverability, updateDiscoverability, updateVisibilityRules, getPoolEmployers, getShortlist, sendInvite, getCandidateInvites, getInviteByToken, acceptInvite, declineInvite, getAcceptedInvites, recordOutcome, getPoolMemberships, leavePool } from './api';
+import { apiRequest, startApiKeepAlive, getDiscoverability, updateDiscoverability, updateVisibilityRules, getPoolEmployers, getShortlist, sendInvite, getCandidateInvites, getInviteByToken, acceptInvite, declineInvite, getAcceptedInvites, recordOutcome, getPoolMemberships, leavePool, getPoolMembers, sendCallout, getCallouts, getCalloutDetail, closeCallout, getCalloutPublic, respondToCallout } from './api';
 import './styles.css';
 
 startApiKeepAlive();
@@ -4651,6 +4651,18 @@ function TalentPoolTab({ getToken }) {
   const [noteFor, setNoteFor] = React.useState(null);
   const [outcomeNote, setOutcomeNote] = React.useState('');
 
+  // ── Members state ──
+  const [members, setMembers] = React.useState([]);
+  const [membersLoading, setMembersLoading] = React.useState(false);
+
+  // ── Callouts state ──
+  const [callouts, setCallouts] = React.useState([]);
+  const [calloutsLoading, setCalloutsLoading] = React.useState(false);
+  const [showCalloutForm, setShowCalloutForm] = React.useState(false);
+  const [calloutForm, setCalloutForm] = React.useState({ shift_start: '', shift_end: '', job_summary: '', site_town: '', selected_ids: [] });
+  const [calloutConfirm, setCalloutConfirm] = React.useState(false);
+  const [calloutSending, setCalloutSending] = React.useState(false);
+
   // Shortlist: debounced re-fetch on filter change
   React.useEffect(() => {
     if (poolView !== 'shortlist') return;
@@ -4713,6 +4725,67 @@ function TalentPoolTab({ getToken }) {
     setConfirmOutcome(null);
   };
 
+  // Members: load when switching to that view
+  React.useEffect(() => {
+    if (poolView !== 'members') return;
+    let cancelled = false;
+    setMembersLoading(true);
+    getPoolMembers(getToken)
+      .then(data => { if (!cancelled) setMembers(data.members || []); })
+      .catch(e => console.error('TalentPoolTab members load:', e))
+      .finally(() => { if (!cancelled) setMembersLoading(false); });
+    return () => { cancelled = true; };
+  }, [poolView]);
+
+  // Callouts: load when switching to that view
+  React.useEffect(() => {
+    if (poolView !== 'callouts') return;
+    let cancelled = false;
+    setCalloutsLoading(true);
+    getCallouts(getToken)
+      .then(data => { if (!cancelled) setCallouts(data.callouts || []); })
+      .catch(e => console.error('TalentPoolTab callouts load:', e))
+      .finally(() => { if (!cancelled) setCalloutsLoading(false); });
+    return () => { cancelled = true; };
+  }, [poolView]);
+
+  const handleSendCallout = async () => {
+    setCalloutSending(true);
+    try {
+      await sendCallout(getToken, {
+        shift_start:   calloutForm.shift_start,
+        shift_end:     calloutForm.shift_end,
+        job_summary:   calloutForm.job_summary,
+        site_town:     calloutForm.site_town,
+        candidate_ids: calloutForm.selected_ids,
+      });
+      setShowCalloutForm(false);
+      setCalloutConfirm(false);
+      setCalloutForm({ shift_start: '', shift_end: '', job_summary: '', site_town: '', selected_ids: [] });
+      // Reload callouts list
+      getCallouts(getToken).then(data => setCallouts(data.callouts || [])).catch(() => {});
+    } catch(e) {
+      alert(e.message || 'Failed to send callout');
+    }
+    setCalloutSending(false);
+  };
+
+  const handleCloseCallout = async (calloutId) => {
+    try {
+      await closeCallout(getToken, calloutId);
+      setCallouts(prev => prev.map(c => c.id === calloutId ? { ...c, status: 'closed', closed_at: new Date().toISOString() } : c));
+    } catch(e) {
+      alert(e.message || 'Failed to close callout');
+    }
+  };
+
+  function fmtShiftUk(utcStr) {
+    return new Date(utcStr).toLocaleString('en-GB', {
+      timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+  }
+
   const OPEN  = ['invited', 'accepted', 'call_booked'];
   const AVAIL = { available: 'Available', available_from: 'Available soon', not_available: 'Not available' };
 
@@ -4732,9 +4805,11 @@ function TalentPoolTab({ getToken }) {
           <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.15rem'}}>Talent Pool</div>
           <div style={{fontSize:'0.82rem',color:'#64748b'}}>Discoverable candidates with verified SIA licences.</div>
         </div>
-        <div style={{display:'flex',gap:'0.4rem'}}>
+        <div style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
           {tabBtn('shortlist','Shortlist')}
           {tabBtn('accepted', 'Accepted')}
+          {tabBtn('members',  'Members')}
+          {tabBtn('callouts', 'Callouts')}
         </div>
       </div>
 
@@ -4808,6 +4883,150 @@ function TalentPoolTab({ getToken }) {
                 </div>
               );
             })}
+          </div>
+        )}
+      </>)}
+
+      {poolView === 'members' && (<>
+        {membersLoading ? (
+          <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>Loading…</div>
+        ) : members.length === 0 ? (
+          <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>No active pool members yet. Pass accepted candidates to add them.</div>
+        ) : (
+          <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
+            {members.map(m => (
+              <div key={m.member_id} style={{background:'#f8fafc',borderRadius:'10px',border:'1px solid #e2e8f0',padding:'1rem 1.25rem',display:'flex',alignItems:'center',gap:'1rem',flexWrap:'wrap'}}>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222'}}>{m.first_name} {m.last_name}</div>
+                  <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.1rem'}}>{m.city || 'Location not set'}</div>
+                  <div style={{marginTop:'0.35rem',display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
+                    {(m.licence_types || []).map(l => (
+                      <span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8'}}>{l}</span>
+                    ))}
+                  </div>
+                </div>
+                <div style={{fontSize:'0.75rem',color:'#94a3b8',flexShrink:0}}>
+                  Joined {new Date(m.joined_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </>)}
+
+      {poolView === 'callouts' && (<>
+        <div style={{display:'flex',justifyContent:'flex-end',marginBottom:'1rem'}}>
+          <button onClick={()=>{ setShowCalloutForm(true); setCalloutConfirm(false); }}
+            style={{padding:'0.45rem 1.1rem',borderRadius:'8px',background:'#1a52a8',color:'#fff',border:'none',fontSize:'0.82rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+            + Send callout
+          </button>
+        </div>
+
+        {showCalloutForm && (
+          <div style={{background:'#f8fafc',borderRadius:'10px',border:'1px solid #e2e8f0',padding:'1.25rem',marginBottom:'1.25rem'}}>
+            <div style={{fontWeight:700,fontSize:'0.88rem',color:'#0b1222',marginBottom:'0.75rem'}}>New shift callout</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.5rem',marginBottom:'0.5rem'}}>
+              <label style={{fontSize:'0.78rem',color:'#475569',fontWeight:600}}>
+                Shift start (UK time)
+                <input type="datetime-local" value={calloutForm.shift_start}
+                  onChange={e=>setCalloutForm(f=>({...f,shift_start:e.target.value}))}
+                  style={{display:'block',width:'100%',marginTop:'0.25rem',padding:'0.45rem 0.6rem',borderRadius:'6px',border:'1px solid #e2e8f0',fontSize:'0.82rem',fontFamily:'inherit'}}/>
+              </label>
+              <label style={{fontSize:'0.78rem',color:'#475569',fontWeight:600}}>
+                Shift end (UK time)
+                <input type="datetime-local" value={calloutForm.shift_end}
+                  onChange={e=>setCalloutForm(f=>({...f,shift_end:e.target.value}))}
+                  style={{display:'block',width:'100%',marginTop:'0.25rem',padding:'0.45rem 0.6rem',borderRadius:'6px',border:'1px solid #e2e8f0',fontSize:'0.82rem',fontFamily:'inherit'}}/>
+              </label>
+            </div>
+            <input value={calloutForm.job_summary} onChange={e=>setCalloutForm(f=>({...f,job_summary:e.target.value}))}
+              placeholder="Role / job summary"
+              style={{display:'block',width:'100%',boxSizing:'border-box',marginBottom:'0.5rem',padding:'0.45rem 0.6rem',borderRadius:'6px',border:'1px solid #e2e8f0',fontSize:'0.82rem',fontFamily:'inherit'}}/>
+            <input value={calloutForm.site_town} onChange={e=>setCalloutForm(f=>({...f,site_town:e.target.value}))}
+              placeholder="Site town / city"
+              style={{display:'block',width:'100%',boxSizing:'border-box',marginBottom:'0.75rem',padding:'0.45rem 0.6rem',borderRadius:'6px',border:'1px solid #e2e8f0',fontSize:'0.82rem',fontFamily:'inherit'}}/>
+            <div style={{fontSize:'0.78rem',color:'#475569',fontWeight:600,marginBottom:'0.4rem'}}>Send to members:</div>
+            {members.length === 0 ? (
+              <div style={{fontSize:'0.82rem',color:'#94a3b8',marginBottom:'0.75rem'}}>No active members. Pass candidates first.</div>
+            ) : (
+              <div style={{display:'flex',flexDirection:'column',gap:'0.35rem',marginBottom:'0.75rem',maxHeight:'180px',overflowY:'auto'}}>
+                {members.map(m => (
+                  <label key={m.member_id} style={{display:'flex',alignItems:'center',gap:'0.5rem',fontSize:'0.82rem',cursor:'pointer'}}>
+                    <input type="checkbox" checked={calloutForm.selected_ids.includes(m.candidate_id)}
+                      onChange={e=>setCalloutForm(f=>({
+                        ...f,
+                        selected_ids: e.target.checked
+                          ? [...f.selected_ids, m.candidate_id]
+                          : f.selected_ids.filter(id=>id!==m.candidate_id)
+                      }))}/>
+                    {m.first_name} {m.last_name}{m.city ? ` · ${m.city}` : ''}
+                  </label>
+                ))}
+              </div>
+            )}
+            {calloutConfirm ? (
+              <div style={{display:'flex',gap:'0.5rem',alignItems:'center',flexWrap:'wrap'}}>
+                <span style={{fontSize:'0.82rem',color:'#475569'}}>
+                  Send callout to {calloutForm.selected_ids.length} member{calloutForm.selected_ids.length !== 1 ? 's' : ''}?
+                </span>
+                <button onClick={handleSendCallout} disabled={calloutSending}
+                  style={{padding:'0.4rem 1rem',borderRadius:'8px',background:'#1a52a8',color:'#fff',border:'none',fontSize:'0.78rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',opacity:calloutSending?0.7:1}}>
+                  {calloutSending ? 'Sending…' : 'Yes, send'}
+                </button>
+                <button onClick={()=>setCalloutConfirm(false)}
+                  style={{padding:'0.4rem 0.9rem',borderRadius:'8px',background:'#f1f5f9',color:'#475569',border:'none',fontSize:'0.78rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div style={{display:'flex',gap:'0.5rem'}}>
+                <button
+                  onClick={()=>setCalloutConfirm(true)}
+                  disabled={!calloutForm.shift_start||!calloutForm.shift_end||!calloutForm.job_summary||!calloutForm.site_town||calloutForm.selected_ids.length===0}
+                  style={{padding:'0.45rem 1.1rem',borderRadius:'8px',background:'#1a52a8',color:'#fff',border:'none',fontSize:'0.82rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',
+                    opacity:(!calloutForm.shift_start||!calloutForm.shift_end||!calloutForm.job_summary||!calloutForm.site_town||calloutForm.selected_ids.length===0)?0.5:1}}>
+                  Send callout
+                </button>
+                <button onClick={()=>{ setShowCalloutForm(false); setCalloutConfirm(false); }}
+                  style={{padding:'0.45rem 0.9rem',borderRadius:'8px',background:'#f1f5f9',color:'#475569',border:'none',fontSize:'0.82rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {calloutsLoading ? (
+          <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>Loading…</div>
+        ) : callouts.length === 0 ? (
+          <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>No callouts sent yet.</div>
+        ) : (
+          <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
+            {callouts.map(c => (
+              <div key={c.id} style={{background:'#f8fafc',borderRadius:'10px',border:'1px solid #e2e8f0',padding:'1rem 1.25rem'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:'0.5rem'}}>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:'0.88rem',color:'#0b1222'}}>
+                      {fmtShiftUk(c.shift_start)}–{new Date(c.shift_end).toLocaleString('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit',hour12:false})}
+                    </div>
+                    <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.1rem'}}>{c.job_summary} · {c.site_town}</div>
+                    <div style={{fontSize:'0.72rem',color:'#94a3b8',marginTop:'0.25rem'}}>
+                      {c.recipients.yes} yes · {c.recipients.no} no · {c.recipients.total - c.recipients.yes - c.recipients.no} no response
+                    </div>
+                  </div>
+                  <div style={{display:'flex',alignItems:'center',gap:'0.5rem',flexShrink:0}}>
+                    {c.status === 'closed' ? (
+                      <span style={{fontSize:'0.72rem',fontWeight:700,color:'#94a3b8',background:'#f1f5f9',padding:'0.2rem 0.6rem',borderRadius:'999px'}}>Closed</span>
+                    ) : (
+                      <button onClick={()=>handleCloseCallout(c.id)}
+                        style={{padding:'0.3rem 0.75rem',borderRadius:'8px',background:'#f1f5f9',color:'#475569',border:'none',fontSize:'0.72rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+                        Close
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </>)}
@@ -6023,6 +6242,143 @@ function InvitePage() {
   );
 }
 
+// ── CALLOUT RESPONSE PAGE (/callout/:token) ──
+// Public — no auth required. Candidate responds to a shift callout from this page.
+function CalloutResponsePage() {
+  const { token } = useParams();
+  const [data, setData] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [pageError, setPageError] = React.useState(null);
+  const [saving, setSaving] = React.useState(false);
+  const [currentResponse, setCurrentResponse] = React.useState(null);
+
+  // Format UTC timestamp as "Sat 26 Sep, 19:00" in Europe/London
+  function fmtShift(utcStr) {
+    return new Date(utcStr).toLocaleString('en-GB', {
+      timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+  }
+
+  React.useEffect(() => {
+    getCalloutPublic(token)
+      .then(d => { setData(d); setCurrentResponse(d.response !== 'none' ? d.response : null); })
+      .catch(e => setPageError(e.message || 'Failed to load callout'))
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  const handleRespond = async (response) => {
+    setSaving(true);
+    try {
+      await respondToCallout(token, response);
+      setCurrentResponse(response);
+    } catch(e) {
+      alert(e.message || 'Failed to record response');
+    }
+    setSaving(false);
+  };
+
+  const navStyle = { background: '#0b1222', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center' };
+  const logoStyle = { fontWeight: 800, fontSize: '1.1rem', textDecoration: 'none' };
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
+      <nav style={navStyle}>
+        <a href="https://www.uksecurityjobs.co.uk" style={logoStyle}>
+          <span style={{ color: '#3b82f6' }}>UK</span><span style={{ color: '#fff' }}>Security</span><span style={{ color: '#3b82f6' }}>Jobs</span>
+        </a>
+      </nav>
+      <div style={{ maxWidth: 520, margin: '3rem auto', padding: '0 1rem' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', color: '#94a3b8', padding: '3rem' }}>Loading…</div>
+        ) : pageError ? (
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '2rem', textAlign: 'center', color: '#64748b' }}>
+            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>⚠</div>
+            <div>{pageError}</div>
+          </div>
+        ) : data?.expired ? (
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '2rem', textAlign: 'center', color: '#64748b' }}>
+            <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.5rem', color: '#0b1222' }}>Callout expired</div>
+            <div style={{ fontSize: '0.88rem' }}>This callout link expired at shift start. No action needed.</div>
+          </div>
+        ) : data?.closed ? (
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '2rem', textAlign: 'center', color: '#64748b' }}>
+            <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.5rem', color: '#0b1222' }}>Callout closed</div>
+            <div style={{ fontSize: '0.88rem' }}>This callout has been closed by the employer.</div>
+          </div>
+        ) : (
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '2rem' }}>
+            <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0b1222', marginBottom: '0.25rem' }}>
+              Shift callout from {data.employer_name}
+            </div>
+            <div style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '1.5rem' }}>
+              Are you available for this shift?
+            </div>
+            <div style={{ background: '#f8fafc', borderRadius: 8, padding: '1rem', marginBottom: '1.5rem', fontSize: '0.88rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid #f1f5f9' }}>
+                <span style={{ color: '#94a3b8', fontWeight: 600 }}>Shift</span>
+                <span style={{ fontWeight: 500, color: '#0b1222' }}>
+                  {fmtShift(data.shift_start)}–{new Date(data.shift_end).toLocaleString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', hour12: false })}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid #f1f5f9' }}>
+                <span style={{ color: '#94a3b8', fontWeight: 600 }}>Site</span>
+                <span style={{ fontWeight: 500, color: '#0b1222' }}>{data.site_town}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0' }}>
+                <span style={{ color: '#94a3b8', fontWeight: 600 }}>Role</span>
+                <span style={{ fontWeight: 500, color: '#0b1222', textAlign: 'right', maxWidth: '60%' }}>{data.job_summary}</span>
+              </div>
+            </div>
+            {currentResponse ? (
+              <div>
+                <div style={{ textAlign: 'center', marginBottom: '1rem', padding: '0.75rem', borderRadius: 8,
+                  background: currentResponse === 'yes' ? '#dcfce7' : '#f1f5f9',
+                  color:      currentResponse === 'yes' ? '#15803d' : '#475569',
+                  fontWeight: 700, fontSize: '0.88rem' }}>
+                  {currentResponse === 'yes' ? 'You responded: Yes, I\'m available' : 'You responded: Not available'}
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button onClick={() => handleRespond('yes')} disabled={saving || currentResponse === 'yes'}
+                    style={{ flex: 1, padding: '0.65rem', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit',
+                      background: currentResponse === 'yes' ? '#dcfce7' : '#15803d',
+                      color:      currentResponse === 'yes' ? '#15803d' : '#fff',
+                      opacity: saving ? 0.7 : 1 }}>
+                    Yes, available
+                  </button>
+                  <button onClick={() => handleRespond('no')} disabled={saving || currentResponse === 'no'}
+                    style={{ flex: 1, padding: '0.65rem', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit',
+                      background: currentResponse === 'no' ? '#f1f5f9' : '#f8fafc',
+                      color: '#475569', border: '1px solid #e2e8f0',
+                      opacity: saving ? 0.7 : 1 }}>
+                    Not available
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button onClick={() => handleRespond('yes')} disabled={saving}
+                  style={{ flex: 1, padding: '0.75rem', borderRadius: 8, border: 'none', background: '#15803d', color: '#fff',
+                    fontWeight: 700, fontSize: '0.92rem', cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.7 : 1 }}>
+                  {saving ? 'Saving…' : 'Yes, I\'m available'}
+                </button>
+                <button onClick={() => handleRespond('no')} disabled={saving}
+                  style={{ flex: 1, padding: '0.75rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569',
+                    fontWeight: 700, fontSize: '0.92rem', cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.7 : 1 }}>
+                  {saving ? 'Saving…' : 'Not available'}
+                </button>
+              </div>
+            )}
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', marginTop: '1rem' }}>
+              You can change your response at any time before the shift starts.
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }) {
   const { isLoaded, isSignedIn } = useUser();
   const location = useLocation();
@@ -6049,6 +6405,7 @@ export default function App() {
           <Route path="/jobs" element={<JobListingsPage/>}/>
           <Route path="/profile" element={<ProtectedRoute><div className="page" style={{background:'var(--off)'}}><Nav/><ProfileBuilder/></div></ProtectedRoute>}/>
           <Route path="/invite/:token" element={<ProtectedRoute><InvitePage/></ProtectedRoute>}/>
+          <Route path="/callout/:token" element={<CalloutResponsePage/>}/>
           <Route path="*" element={<Navigate to="/dashboard" replace/>}/>
         </Routes>
       </BrowserRouter>

@@ -250,6 +250,13 @@ test.describe('Talent pool — invites', () => {
   });
 
   test('7. RLS: anon client cannot read talent_pool_invites', async () => {
+    // Prove the anon key is valid first — briefing_data has an anon SELECT policy.
+    const { error: probeErr } = await anonSb
+      .from('briefing_data')
+      .select('id')
+      .limit(1);
+    expect(probeErr, 'anon API key must be valid (briefing_data SELECT failed)').toBeNull();
+
     const token = crypto.randomBytes(32).toString('hex');
     const { data: inv } = await sb.from('talent_pool_invites').insert({
       employer_id:   riskSecuredId,
@@ -259,12 +266,13 @@ test.describe('Talent pool — invites', () => {
       status:        'invited',
     }).select('id').single();
 
-    const { data: rows } = await anonSb
+    const { data: rows, error: rlsErr } = await anonSb
       .from('talent_pool_invites')
       .select('id')
       .eq('id', inv.id);
 
-    expect((rows || []).length).toBe(0);
+    // Valid key + RLS in place: either permission error or 0 rows. Both prove access is blocked.
+    expect(rlsErr !== null || (rows || []).length === 0).toBe(true);
 
     await sb.from('talent_pool_invites').delete().eq('id', inv.id);
   });
