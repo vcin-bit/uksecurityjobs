@@ -45,6 +45,11 @@ const POOL_INVITE_EMAIL_PARA =
 const POOL_CALLOUT_EMAIL_INTRO =
   'has a shift available that matches your licence and wants to know if you are interested.';
 
+// DRAFT — shown on the candidate dashboard when their pool membership is paused
+// due to licence expiry. Displayed by PoolMemberCard in the React app.
+const POOL_MEMBER_PAUSED_LICENCE =
+  'Paused — your SIA licence has expired. Renew and verify it to become active again.';
+
 module.exports = {
   POOL_WORDING_VERSION,
   POOL_CONSENT_COPY,
@@ -54,4 +59,5 @@ module.exports = {
   POOL_ACCEPT_CONFIRMATION_TEMPLATE,
   POOL_INVITE_EMAIL_PARA,
   POOL_CALLOUT_EMAIL_INTRO,
+  POOL_MEMBER_PAUSED_LICENCE,
 };

@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
 const { runNudges } = require('./lib/nudges');
 const { runIngestion } = require('./lib/jobIngestion');
+const { runLicenceCheck } = require('./lib/poolLicenceCheck');
 
 const candidateRoutes = require('./routes/candidates');
 const siaRoutes = require('./routes/sia');
@@ -289,6 +290,14 @@ if (process.env.REED_INGESTION_ENABLED === 'true') {
 } else {
   console.log('[ingestion] Reed ingestion disabled (REED_INGESTION_ENABLED not set).');
 }
+
+// ── 02:00 UTC — nightly pool licence expiry check ────────────────────────────
+// Pauses active pool members whose verified SIA licences have expired;
+// un-pauses members whose licences have been renewed and re-verified.
+// Updates nearest_licence_expiry on all active members.
+cron.schedule('0 2 * * *', () => {
+  runLicenceCheck().catch(err => console.error('[licenceCheck] Cron error:', err.message));
+}, { timezone: 'UTC' });
 
 // ── 09:00 UTC — incomplete profile nudge emails ──────────────────────────────
 // Sends 24h and 72h reminder emails to candidates who signed up but haven't

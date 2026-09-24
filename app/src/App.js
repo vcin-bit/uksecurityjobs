@@ -3381,7 +3381,7 @@ function PoolMemberCard({ getToken }) {
   return (
     <>
       {memberships.map(m => (
-        <div key={m.id} className="dash-card" style={{borderLeft:'3px solid #15803d'}}>
+        <div key={m.id} className="dash-card" style={{borderLeft:`3px solid ${m.status === 'paused' ? '#f59e0b' : '#15803d'}`}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
             <div>
               <div style={{fontWeight:700,fontSize:'0.95rem',color:'#0b1222'}}>
@@ -3390,6 +3390,11 @@ function PoolMemberCard({ getToken }) {
               <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.1rem'}}>
                 Joined {new Date(m.joined_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}
               </div>
+              {m.status === 'paused' && m.paused_reason === 'licence_expired' && (
+                <div style={{fontSize:'0.78rem',color:'#92400e',background:'#fef9c3',borderRadius:'6px',padding:'0.35rem 0.6rem',marginTop:'0.4rem',fontWeight:600}}>
+                  Paused — your SIA licence has expired. Renew and verify it to become active again.
+                </div>
+              )}
             </div>
             {confirmLeave === m.employer_id ? (
               <div style={{display:'flex',gap:'0.5rem',alignItems:'center',flexWrap:'wrap'}}>
@@ -4757,7 +4762,7 @@ function TalentPoolTab({ getToken }) {
     const timer = setTimeout(async () => {
       setMembersLoading(true);
       try {
-        const data = await getPoolMembers(getToken, { licenceType: membersLicenceFilter, city: membersCityFilter });
+        const data = await getPoolMembers(getToken, { licenceType: membersLicenceFilter, city: membersCityFilter, status: 'all' });
         if (!cancelled) setMembers(data.members || []);
       } catch (e) { if (!cancelled) console.error('TalentPoolTab members load:', e); }
       if (!cancelled) setMembersLoading(false);
@@ -4917,58 +4922,102 @@ function TalentPoolTab({ getToken }) {
         )}
       </>)}
 
-      {poolView === 'members' && (<>
-        <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap',marginBottom:'1rem'}}>
-          <select value={membersLicenceFilter} onChange={e=>setMembersLicenceFilter(e.target.value)}
-            style={{padding:'0.45rem 0.75rem',borderRadius:'8px',border:'1px solid #e2e8f0',fontSize:'0.82rem',background:'#fff',fontFamily:'inherit',minWidth:'180px'}}>
-            <option value="">All licence types</option>
-            <option>Door Supervisor</option>
-            <option>Security Guard</option>
-            <option>CCTV Operator</option>
-            <option>Close Protection</option>
-            <option>Cash &amp; Valuables in Transit</option>
-            <option>Key Holding</option>
-          </select>
-          <input value={membersCityFilter} onChange={e=>setMembersCityFilter(e.target.value)}
-            placeholder="Town or city"
-            style={{padding:'0.45rem 0.75rem',borderRadius:'8px',border:'1px solid #e2e8f0',fontSize:'0.82rem',fontFamily:'inherit',minWidth:'140px',flex:1}}/>
-        </div>
-        {membersLoading ? (
-          <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>Loading…</div>
-        ) : members.length === 0 ? (
-          <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>
-            {membersLicenceFilter || membersCityFilter ? 'No members match these filters.' : 'No active pool members yet. Pass accepted candidates to add them.'}
-          </div>
-        ) : (
-          <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
-            {members.map(m => (
-              <div key={m.member_id} style={{background:'#f8fafc',borderRadius:'10px',border:'1px solid #e2e8f0',padding:'1rem 1.25rem'}}>
-                <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222'}}>{m.first_name} {m.last_name}</div>
-                    <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.1rem'}}>{m.city || 'Location not set'}</div>
-                    {(m.email || m.phone) && (
-                      <div style={{fontSize:'0.8rem',color:'#334155',marginTop:'0.2rem'}}>
-                        {m.email && <a href={`mailto:${m.email}`} style={{color:'#1a52a8',textDecoration:'none'}}>{m.email}</a>}
-                        {m.email && m.phone && <span style={{color:'#94a3b8'}}> · </span>}
-                        {m.phone && <span>{m.phone}</span>}
-                      </div>
-                    )}
-                    <div style={{marginTop:'0.35rem',display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
-                      {(m.licence_types || []).map(l => (
-                        <span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8'}}>{l}</span>
-                      ))}
+      {poolView === 'members' && (()=>{
+        const activeMembers = members.filter(m => m.status !== 'paused');
+        const pausedMembers = members.filter(m => m.status === 'paused');
+        const sixtyDaysStr  = (() => { const d = new Date(); d.setDate(d.getDate() + 60); return d.toISOString().slice(0, 10); })();
+        const memberCard = (m) => {
+          const nearExpiry = m.nearest_licence_expiry && m.nearest_licence_expiry <= sixtyDaysStr;
+          return (
+            <div key={m.member_id} style={{background:'#f8fafc',borderRadius:'10px',border:'1px solid #e2e8f0',padding:'1rem 1.25rem'}}>
+              <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222'}}>{m.first_name} {m.last_name}</div>
+                  <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.1rem'}}>{m.city || 'Location not set'}</div>
+                  {(m.email || m.phone) && (
+                    <div style={{fontSize:'0.8rem',color:'#334155',marginTop:'0.2rem'}}>
+                      {m.email && <a href={`mailto:${m.email}`} style={{color:'#1a52a8',textDecoration:'none'}}>{m.email}</a>}
+                      {m.email && m.phone && <span style={{color:'#94a3b8'}}> · </span>}
+                      {m.phone && <span>{m.phone}</span>}
                     </div>
-                  </div>
-                  <div style={{fontSize:'0.75rem',color:'#94a3b8',flexShrink:0,textAlign:'right'}}>
-                    Joined {new Date(m.joined_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
+                  )}
+                  <div style={{marginTop:'0.35rem',display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
+                    {(m.licence_types || []).map(l => (
+                      <span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8'}}>{l}</span>
+                    ))}
+                    {nearExpiry && (
+                      <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#fef9c3',color:'#854d0e'}}>
+                        Licence expires {new Date(m.nearest_licence_expiry).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}
+                      </span>
+                    )}
                   </div>
                 </div>
+                <div style={{fontSize:'0.75rem',color:'#94a3b8',flexShrink:0,textAlign:'right'}}>
+                  Joined {new Date(m.joined_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
+                </div>
               </div>
-            ))}
+            </div>
+          );
+        };
+        return (<>
+          <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap',marginBottom:'1rem'}}>
+            <select value={membersLicenceFilter} onChange={e=>setMembersLicenceFilter(e.target.value)}
+              style={{padding:'0.45rem 0.75rem',borderRadius:'8px',border:'1px solid #e2e8f0',fontSize:'0.82rem',background:'#fff',fontFamily:'inherit',minWidth:'180px'}}>
+              <option value="">All licence types</option>
+              <option>Door Supervisor</option>
+              <option>Security Guard</option>
+              <option>CCTV Operator</option>
+              <option>Close Protection</option>
+              <option>Cash &amp; Valuables in Transit</option>
+              <option>Key Holding</option>
+            </select>
+            <input value={membersCityFilter} onChange={e=>setMembersCityFilter(e.target.value)}
+              placeholder="Town or city"
+              style={{padding:'0.45rem 0.75rem',borderRadius:'8px',border:'1px solid #e2e8f0',fontSize:'0.82rem',fontFamily:'inherit',minWidth:'140px',flex:1}}/>
           </div>
-        )}
-      </>)}
+          {membersLoading ? (
+            <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>Loading…</div>
+          ) : (activeMembers.length === 0 && pausedMembers.length === 0) ? (
+            <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>
+              {membersLicenceFilter || membersCityFilter ? 'No members match these filters.' : 'No active pool members yet. Pass accepted candidates to add them.'}
+            </div>
+          ) : (<>
+            {activeMembers.length > 0 && (
+              <div style={{display:'flex',flexDirection:'column',gap:'0.75rem',marginBottom: pausedMembers.length > 0 ? '1.5rem' : 0}}>
+                {activeMembers.map(m => memberCard(m))}
+              </div>
+            )}
+            {pausedMembers.length > 0 && (<>
+              <div style={{fontSize:'0.78rem',fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'0.5rem'}}>
+                Paused ({pausedMembers.length})
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
+                {pausedMembers.map(m => (
+                  <div key={m.member_id} style={{background:'#fffbeb',borderRadius:'10px',border:'1px solid #fde68a',padding:'1rem 1.25rem'}}>
+                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222'}}>{m.first_name} {m.last_name}</div>
+                        <div style={{fontSize:'0.78rem',color:'#92400e',marginTop:'0.15rem'}}>
+                          {m.paused_reason === 'licence_expired' ? 'Licence expired' : m.paused_reason || 'Paused'}
+                          {m.paused_at && ` — ${new Date(m.paused_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`}
+                        </div>
+                        <div style={{marginTop:'0.35rem',display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
+                          {(m.licence_types || []).map(l => (
+                            <span key={l} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#fef3c7',color:'#92400e'}}>{l}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div style={{fontSize:'0.75rem',color:'#94a3b8',flexShrink:0,textAlign:'right'}}>
+                        Joined {new Date(m.joined_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>)}
+          </>)}
+        </>);
+      })()}
 
       {poolView === 'callouts' && (<>
         <div style={{display:'flex',justifyContent:'flex-end',marginBottom:'1rem'}}>

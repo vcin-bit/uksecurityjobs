@@ -378,17 +378,20 @@ router.post('/invites/:id/outcome', async (req, res) => {
 });
 
 // GET /api/talent-pool/members
-// Returns active pool members for this employer with candidate contact details.
+// Returns pool members for this employer with candidate contact details.
+// ?status=active (default) — active only (used by callout send form).
+// ?status=all              — active + paused (used by employer Members tab).
 // Optional ?licence_type=X and ?city=Y filters applied post-join.
 router.get('/members', async (req, res) => {
   try {
-    const { licence_type, city } = req.query;
+    const { licence_type, city, status } = req.query;
+    const statusFilter = status === 'all' ? ['active', 'paused'] : ['active'];
 
     const { data: members, error: mErr } = await supabase
       .from('talent_pool_members')
-      .select('id, candidate_id, joined_at, status')
+      .select('id, candidate_id, joined_at, status, paused_reason, paused_at, nearest_licence_expiry')
       .eq('employer_id', req.employerId)
-      .eq('status', 'active')
+      .in('status', statusFilter)
       .order('joined_at', { ascending: false });
 
     if (mErr) throw mErr;
@@ -414,15 +417,19 @@ router.get('/members', async (req, res) => {
       const pd   = personalMap [m.candidate_id] || {};
       const cand = candidateMap[m.candidate_id] || {};
       return {
-        member_id:     m.id,
-        candidate_id:  m.candidate_id,
-        first_name:    pd.first_name || null,
-        last_name:     pd.last_name  || null,
-        city:          pd.city       || null,
-        email:         cand.email    || null,
-        phone:         pd.phone      || null,
-        licence_types: licenceMap[m.candidate_id] || [],
-        joined_at:     m.joined_at,
+        member_id:              m.id,
+        candidate_id:           m.candidate_id,
+        status:                 m.status,
+        first_name:             pd.first_name || null,
+        last_name:              pd.last_name  || null,
+        city:                   pd.city       || null,
+        email:                  cand.email    || null,
+        phone:                  pd.phone      || null,
+        licence_types:          licenceMap[m.candidate_id] || [],
+        joined_at:              m.joined_at,
+        nearest_licence_expiry: m.nearest_licence_expiry || null,
+        paused_reason:          m.paused_reason || null,
+        paused_at:              m.paused_at || null,
       };
     });
 

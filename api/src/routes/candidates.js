@@ -883,9 +883,9 @@ router.get('/me/pool-memberships', async (req, res) => {
 
     const { data: members, error: mErr } = await supabase
       .from('talent_pool_members')
-      .select('id, employer_id, joined_at, status')
+      .select('id, employer_id, joined_at, status, paused_reason, paused_at')
       .eq('candidate_id', candidate.id)
-      .eq('status', 'active');
+      .in('status', ['active', 'paused']);
 
     if (mErr) throw mErr;
     if (!members || members.length === 0) return res.json({ memberships: [] });
@@ -901,6 +901,9 @@ router.get('/me/pool-memberships', async (req, res) => {
         employer_id:   m.employer_id,
         employer_name: nameMap[m.employer_id] || null,
         joined_at:     m.joined_at,
+        status:        m.status,
+        paused_reason: m.paused_reason || null,
+        paused_at:     m.paused_at || null,
       }))
     });
   } catch (err) {
@@ -926,7 +929,7 @@ router.post('/me/pool-membership/:employer_id/leave', async (req, res) => {
       .update({ status: 'left', left_at: new Date().toISOString() })
       .eq('candidate_id', candidate.id)
       .eq('employer_id', employer_id)
-      .eq('status', 'active')
+      .in('status', ['active', 'paused'])
       .select('id')
       .maybeSingle();
 
