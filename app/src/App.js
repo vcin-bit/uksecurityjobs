@@ -1544,7 +1544,7 @@ function StepEmployment({ data, onChange, onBack, onNext, isComplete }) {
 
           <div className="divider" style={{margin:'1rem 0 0.75rem'}}></div>
           <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.25rem'}}>Reference Contact *</div>
-          <div style={{fontSize:'0.78rem',color:'#64748b',marginBottom:'0.75rem'}}>The HR manager, Operations manager or direct line manager who can verify your employment. This person will be contacted during vetting.</div>
+          <div style={{fontSize:'0.78rem',color:'#64748b',marginBottom:'0.75rem'}}>The HR manager, Operations manager or direct line manager who can verify your employment. Their details are shared with employers you apply to, who may contact them as part of BS7858 vetting. Please make sure they are happy for you to give their details.</div>
           <div className="field-row">
             <Field label="Contact Name *"><Input type="text" placeholder="Full name" value={job.contactName||''} onChange={v=>update(i,'contactName',fmt.titleCase(v))}/></Field>
             <Field label="Job Title"><Input type="text" placeholder="e.g. HR Manager" value={job.contactTitle||''} onChange={v=>update(i,'contactTitle',fmt.titleCase(v))}/></Field>
