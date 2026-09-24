@@ -536,6 +536,7 @@ router.post('/callouts', async (req, res) => {
           shiftRange,
           siteTown:   site_town,
           jobSummary: job_summary,
+          rate:       rate || null,
           respondUrl: `https://app.uksecurityjobs.co.uk/callout/${r.token}`,
         }).catch(e => console.error('[sendPoolCallout]', e.message));
       });
@@ -554,7 +555,7 @@ router.get('/callouts', async (req, res) => {
   try {
     const { data: callouts, error } = await supabase
       .from('talent_pool_callouts')
-      .select('id, shift_start, shift_end, job_summary, site_town, status, closed_at, created_at, sent_at')
+      .select('id, shift_start, shift_end, job_summary, site_town, rate, status, closed_at, created_at, sent_at')
       .eq('employer_id', req.employerId)
       .order('created_at', { ascending: false });
 
@@ -594,7 +595,7 @@ router.get('/callouts/:id', async (req, res) => {
   try {
     const { data: callout, error: cErr } = await supabase
       .from('talent_pool_callouts')
-      .select('id, shift_start, shift_end, job_summary, site_town, status, closed_at, created_at, sent_at')
+      .select('id, shift_start, shift_end, job_summary, site_town, rate, status, closed_at, created_at, sent_at')
       .eq('id', req.params.id)
       .eq('employer_id', req.employerId)
       .maybeSingle();
@@ -609,7 +610,7 @@ router.get('/callouts/:id', async (req, res) => {
 
     const candidateIds = (recipients || []).map(r => r.candidate_id);
     const { data: personalDetails } = candidateIds.length > 0
-      ? await supabase.from('personal_details').select('candidate_id, first_name, last_name').in('candidate_id', candidateIds)
+      ? await supabase.from('personal_details').select('candidate_id, first_name, last_name, phone').in('candidate_id', candidateIds)
       : { data: [] };
 
     const nameMap = Object.fromEntries((personalDetails || []).map(p => [p.candidate_id, p]));
@@ -620,6 +621,7 @@ router.get('/callouts/:id', async (req, res) => {
         candidate_id: r.candidate_id,
         first_name:   nameMap[r.candidate_id]?.first_name || null,
         last_name:    nameMap[r.candidate_id]?.last_name  || null,
+        phone:        r.response === 'yes' ? (nameMap[r.candidate_id]?.phone || null) : null,
         response:     r.response,
         responded_at: r.responded_at,
       })),

@@ -20,7 +20,7 @@ router.get('/:token', async (req, res) => {
 
     const { data: callout, error: cErr } = await supabase
       .from('talent_pool_callouts')
-      .select('id, shift_start, shift_end, job_summary, site_town, status, employer_id')
+      .select('id, shift_start, shift_end, job_summary, site_town, rate, status, employer_id')
       .eq('id', recipient.callout_id)
       .single();
 
@@ -39,6 +39,7 @@ router.get('/:token', async (req, res) => {
       shift_end:     callout.shift_end,
       job_summary:   callout.job_summary,
       site_town:     callout.site_town,
+      rate:          callout.rate || null,
       employer_name: employer?.company_name || null,
       response:      recipient.response,
       responded_at:  recipient.responded_at,

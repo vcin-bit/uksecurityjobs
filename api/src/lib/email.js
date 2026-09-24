@@ -315,22 +315,33 @@ async function sendPoolInvite({ toEmail, candidateFirstName, employerName, token
 }
 
 // ── 11. SHIFT CALLOUT (CANDIDATE) ──
-// Formats a UTC shift range as "Sat 26 Sep, 19:00–07:00" in Europe/London time.
+// Formats a UTC shift range in Europe/London time.
+// Same-day:     "Thu 24 Sep, 18:45–22:00"
+// Overnight:    "Thu 24 Sep 18:45 – Fri 25 Sep 13:40"
 function formatShiftRange(startUtc, endUtc) {
   const toL = (d, opts) =>
     new Date(d).toLocaleString('en-GB', { timeZone: 'Europe/London', ...opts });
-  const dayPart   = toL(startUtc, { weekday: 'short', day: 'numeric', month: 'short' });
   const startTime = toL(startUtc, { hour: '2-digit', minute: '2-digit', hour12: false });
   const endTime   = toL(endUtc,   { hour: '2-digit', minute: '2-digit', hour12: false });
-  return `${dayPart}, ${startTime}–${endTime}`;
+  // Compare calendar dates in London time using a numeric-only locale string for reliability.
+  const startDay = toL(startUtc, { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const endDay   = toL(endUtc,   { day: '2-digit', month: '2-digit', year: 'numeric' });
+  if (startDay === endDay) {
+    const dayPart = toL(startUtc, { weekday: 'short', day: 'numeric', month: 'short' });
+    return `${dayPart}, ${startTime}–${endTime}`;
+  }
+  const startFull = toL(startUtc, { weekday: 'short', day: 'numeric', month: 'short' });
+  const endFull   = toL(endUtc,   { weekday: 'short', day: 'numeric', month: 'short' });
+  return `${startFull} ${startTime} – ${endFull} ${endTime}`;
 }
 
-async function sendPoolCallout({ toEmail, candidateFirstName, employerName, shiftRange, siteTown, jobSummary, respondUrl }) {
+async function sendPoolCallout({ toEmail, candidateFirstName, employerName, shiftRange, siteTown, jobSummary, rate, respondUrl }) {
   const safeName  = escHtml(candidateFirstName);
   const safeEmp   = escHtml(employerName);
   const safeSite  = escHtml(siteTown);
   const safeJob   = escHtml(jobSummary);
   const safeRange = escHtml(shiftRange);
+  const rateRow   = rate ? `<div class="detail-row"><span class="detail-label">Rate</span><span class="detail-value">${escHtml(rate)}</span></div>` : '';
   const html = baseTemplate(`
     <h1>Shift callout from ${safeEmp}</h1>
     <p>Hi ${safeName},</p>
@@ -339,6 +350,7 @@ async function sendPoolCallout({ toEmail, candidateFirstName, employerName, shif
       <div class="detail-row"><span class="detail-label">Shift</span><span class="detail-value">${safeRange}</span></div>
       <div class="detail-row"><span class="detail-label">Site</span><span class="detail-value">${safeSite}</span></div>
       <div class="detail-row"><span class="detail-label">Role</span><span class="detail-value">${safeJob}</span></div>
+      ${rateRow}
     </div>
     <a href="${respondUrl}" class="btn">Respond to Callout →</a>
     <hr class="divider"/>

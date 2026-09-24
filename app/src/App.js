@@ -6,6 +6,21 @@ import './styles.css';
 
 startApiKeepAlive();
 
+// Formats a UTC shift range as a human-readable London-time string.
+// Same day:  "Thu 24 Sep, 18:45–22:00"
+// Overnight: "Thu 24 Sep 18:45 – Fri 25 Sep 13:40"
+function fmtShiftRange(startUtc, endUtc) {
+  const toL = (d, opts) => new Date(d).toLocaleString('en-GB', { timeZone: 'Europe/London', ...opts });
+  const startTime = toL(startUtc, { hour: '2-digit', minute: '2-digit', hour12: false });
+  const endTime   = toL(endUtc,   { hour: '2-digit', minute: '2-digit', hour12: false });
+  const startDay  = toL(startUtc, { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const endDay    = toL(endUtc,   { day: '2-digit', month: '2-digit', year: 'numeric' });
+  if (startDay === endDay) {
+    return `${toL(startUtc, { weekday: 'short', day: 'numeric', month: 'short' })}, ${startTime}–${endTime}`;
+  }
+  return `${toL(startUtc, { weekday: 'short', day: 'numeric', month: 'short' })} ${startTime} – ${toL(endUtc, { weekday: 'short', day: 'numeric', month: 'short' })} ${endTime}`;
+}
+
 const CLERK_KEY = 'pk_live_Y2xlcmsudWtzZWN1cml0eWpvYnMuY28udWsk';
 
 // ── LOGO ──
@@ -4669,6 +4684,9 @@ function TalentPoolTab({ getToken }) {
   const [calloutMembersLoading, setCalloutMembersLoading] = React.useState(false);
   // Client-side filter state for the send-form member tick list.
   const [calloutFilter, setCalloutFilter] = React.useState({ licenceTypes: [], city: '' });
+  // Expandable callout detail in the list.
+  const [expandedCalloutId, setExpandedCalloutId] = React.useState(null);
+  const [expandedCalloutData, setExpandedCalloutData] = React.useState({});
 
   // Shortlist: debounced re-fetch on filter change
   React.useEffect(() => {
@@ -4797,13 +4815,6 @@ function TalentPoolTab({ getToken }) {
       alert(e.message || 'Failed to close callout');
     }
   };
-
-  function fmtShiftUk(utcStr) {
-    return new Date(utcStr).toLocaleString('en-GB', {
-      timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short',
-      hour: '2-digit', minute: '2-digit', hour12: false,
-    });
-  }
 
   const OPEN  = ['invited', 'accepted', 'call_booked'];
   const AVAIL = { available: 'Available', available_from: 'Available soon', not_available: 'Not available' };
@@ -5120,19 +5131,36 @@ function TalentPoolTab({ getToken }) {
           <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8',fontSize:'0.88rem'}}>No callouts sent yet.</div>
         ) : (
           <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
-            {callouts.map(c => (
-              <div key={c.id} style={{background:'#f8fafc',borderRadius:'10px',border:'1px solid #e2e8f0',padding:'1rem 1.25rem'}}>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:'0.5rem'}}>
+            {callouts.map(c => {
+              const isExpanded = expandedCalloutId === c.id;
+              const detail = expandedCalloutData[c.id];
+              const noReply = c.recipients.total - c.recipients.yes - c.recipients.no;
+              const toggleExpand = async () => {
+                if (isExpanded) { setExpandedCalloutId(null); return; }
+                setExpandedCalloutId(c.id);
+                if (!expandedCalloutData[c.id]) {
+                  try {
+                    const d = await getCalloutDetail(getToken, c.id);
+                    setExpandedCalloutData(prev => ({ ...prev, [c.id]: d }));
+                  } catch(e) { console.error('callout detail:', e); }
+                }
+              };
+              return (
+              <div key={c.id} style={{background:'#f8fafc',borderRadius:'10px',border:'1px solid #e2e8f0',overflow:'hidden'}}>
+                {/* Summary row — click anywhere to expand */}
+                <div onClick={toggleExpand} style={{padding:'1rem 1.25rem',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:'0.5rem'}}>
                   <div>
                     <div style={{fontWeight:700,fontSize:'0.88rem',color:'#0b1222'}}>
-                      {fmtShiftUk(c.shift_start)}–{new Date(c.shift_end).toLocaleString('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit',hour12:false})}
+                      {fmtShiftRange(c.shift_start, c.shift_end)}
                     </div>
-                    <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.1rem'}}>{c.job_summary} · {c.site_town}</div>
+                    <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.1rem'}}>
+                      {c.job_summary} · {c.site_town}{c.rate ? ` · ${c.rate}` : ''}
+                    </div>
                     <div style={{fontSize:'0.72rem',color:'#94a3b8',marginTop:'0.25rem'}}>
-                      {c.recipients.yes} yes · {c.recipients.no} no · {c.recipients.total - c.recipients.yes - c.recipients.no} no response
+                      {c.recipients.yes} yes · {c.recipients.no} no · {noReply} no response
                     </div>
                   </div>
-                  <div style={{display:'flex',alignItems:'center',gap:'0.5rem',flexShrink:0}}>
+                  <div style={{display:'flex',alignItems:'center',gap:'0.5rem',flexShrink:0}} onClick={e=>e.stopPropagation()}>
                     {c.status === 'closed' ? (
                       <span style={{fontSize:'0.72rem',fontWeight:700,color:'#94a3b8',background:'#f1f5f9',padding:'0.2rem 0.6rem',borderRadius:'999px'}}>Closed</span>
                     ) : (
@@ -5143,8 +5171,43 @@ function TalentPoolTab({ getToken }) {
                     )}
                   </div>
                 </div>
+                {/* Expandable recipient detail */}
+                {isExpanded && (
+                  <div style={{borderTop:'1px solid #e2e8f0',background:'#fff',padding:'0.75rem 1.25rem'}}>
+                    {!detail ? (
+                      <div style={{fontSize:'0.78rem',color:'#94a3b8'}}>Loading…</div>
+                    ) : detail.recipients.length === 0 ? (
+                      <div style={{fontSize:'0.78rem',color:'#94a3b8'}}>No recipients.</div>
+                    ) : (
+                      <div style={{display:'flex',flexDirection:'column',gap:'0.35rem'}}>
+                        {detail.recipients.map(r => (
+                          <div key={r.candidate_id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'0.75rem',flexWrap:'wrap',fontSize:'0.8rem',padding:'0.25rem 0',borderBottom:'1px solid #f1f5f9'}}>
+                            <div style={{fontWeight:600,color:'#0b1222',minWidth:'120px'}}>
+                              {r.first_name} {r.last_name}
+                              {r.phone && <span style={{fontWeight:400,color:'#1a52a8',marginLeft:'0.4rem'}}>{r.phone}</span>}
+                            </div>
+                            <div style={{display:'flex',gap:'0.75rem',alignItems:'center'}}>
+                              <span style={{
+                                fontWeight:700,fontSize:'0.72rem',padding:'0.15rem 0.55rem',borderRadius:'999px',
+                                background: r.response==='yes' ? '#dcfce7' : r.response==='no' ? '#fee2e2' : '#f1f5f9',
+                                color:      r.response==='yes' ? '#15803d' : r.response==='no' ? '#b91c1c' : '#94a3b8',
+                              }}>
+                                {r.response==='yes' ? 'Yes' : r.response==='no' ? 'No' : 'No reply'}
+                              </span>
+                              {r.responded_at && (
+                                <span style={{fontSize:'0.7rem',color:'#94a3b8'}}>
+                                  {new Date(r.responded_at).toLocaleString('en-GB',{timeZone:'Europe/London',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:false})}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            ))}
+            ); })}
           </div>
         )}
       </>)}
@@ -6370,14 +6433,6 @@ function CalloutResponsePage() {
   const [saving, setSaving] = React.useState(false);
   const [currentResponse, setCurrentResponse] = React.useState(null);
 
-  // Format UTC timestamp as "Sat 26 Sep, 19:00" in Europe/London
-  function fmtShift(utcStr) {
-    return new Date(utcStr).toLocaleString('en-GB', {
-      timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short',
-      hour: '2-digit', minute: '2-digit', hour12: false,
-    });
-  }
-
   React.useEffect(() => {
     getCalloutPublic(token)
       .then(d => { setData(d); setCurrentResponse(d.response !== 'none' ? d.response : null); })
@@ -6435,18 +6490,24 @@ function CalloutResponsePage() {
             <div style={{ background: '#f8fafc', borderRadius: 8, padding: '1rem', marginBottom: '1.5rem', fontSize: '0.88rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid #f1f5f9' }}>
                 <span style={{ color: '#94a3b8', fontWeight: 600 }}>Shift</span>
-                <span style={{ fontWeight: 500, color: '#0b1222' }}>
-                  {fmtShift(data.shift_start)}–{new Date(data.shift_end).toLocaleString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', hour12: false })}
+                <span style={{ fontWeight: 500, color: '#0b1222', textAlign: 'right', maxWidth: '65%' }}>
+                  {fmtShiftRange(data.shift_start, data.shift_end)}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid #f1f5f9' }}>
                 <span style={{ color: '#94a3b8', fontWeight: 600 }}>Site</span>
                 <span style={{ fontWeight: 500, color: '#0b1222' }}>{data.site_town}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: data.rate ? '1px solid #f1f5f9' : 'none' }}>
                 <span style={{ color: '#94a3b8', fontWeight: 600 }}>Role</span>
                 <span style={{ fontWeight: 500, color: '#0b1222', textAlign: 'right', maxWidth: '60%' }}>{data.job_summary}</span>
               </div>
+              {data.rate && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0' }}>
+                  <span style={{ color: '#94a3b8', fontWeight: 600 }}>Rate</span>
+                  <span style={{ fontWeight: 500, color: '#0b1222' }}>{data.rate}</span>
+                </div>
+              )}
             </div>
             {currentResponse ? (
               <div>
