@@ -98,8 +98,12 @@ export function leavePool(getToken, employerId) {
   return apiRequest(`/api/candidates/me/pool-membership/${employerId}/leave`, 'POST', {}, getToken);
 }
 
-export function getPoolMembers(getToken) {
-  return apiRequest('/api/talent-pool/members', 'GET', null, getToken);
+export function getPoolMembers(getToken, { licenceType, city } = {}) {
+  const params = new URLSearchParams();
+  if (licenceType) params.set('licence_type', licenceType);
+  if (city)        params.set('city', city);
+  const qs = params.toString();
+  return apiRequest(`/api/talent-pool/members${qs ? '?' + qs : ''}`, 'GET', null, getToken);
 }
 
 export function sendCallout(getToken, body) {

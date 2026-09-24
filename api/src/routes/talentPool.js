@@ -378,9 +378,12 @@ router.post('/invites/:id/outcome', async (req, res) => {
 });
 
 // GET /api/talent-pool/members
-// Returns active pool members for this employer with candidate details.
+// Returns active pool members for this employer with candidate contact details.
+// Optional ?licence_type=X and ?city=Y filters applied post-join.
 router.get('/members', async (req, res) => {
   try {
+    const { licence_type, city } = req.query;
+
     const { data: members, error: mErr } = await supabase
       .from('talent_pool_members')
       .select('id, candidate_id, joined_at, status')
@@ -393,30 +396,43 @@ router.get('/members', async (req, res) => {
 
     const candidateIds = members.map(m => m.candidate_id);
 
-    const [{ data: personalDetails }, { data: licences }] = await Promise.all([
-      supabase.from('personal_details').select('candidate_id, first_name, last_name, city').in('candidate_id', candidateIds),
+    const [{ data: candidates }, { data: personalDetails }, { data: licences }] = await Promise.all([
+      supabase.from('candidates').select('id, email').in('id', candidateIds),
+      supabase.from('personal_details').select('candidate_id, first_name, last_name, city, phone').in('candidate_id', candidateIds),
       supabase.from('sia_licences').select('candidate_id, licence_type').eq('verified', true).in('candidate_id', candidateIds),
     ]);
 
-    const personalMap = Object.fromEntries((personalDetails || []).map(p => [p.candidate_id, p]));
-    const licenceMap  = {};
+    const candidateMap = Object.fromEntries((candidates     || []).map(c => [c.id, c]));
+    const personalMap  = Object.fromEntries((personalDetails|| []).map(p => [p.candidate_id, p]));
+    const licenceMap   = {};
     (licences || []).forEach(l => {
       if (!licenceMap[l.candidate_id]) licenceMap[l.candidate_id] = [];
       if (!licenceMap[l.candidate_id].includes(l.licence_type)) licenceMap[l.candidate_id].push(l.licence_type);
     });
 
-    const result = members.map(m => {
-      const pd = personalMap[m.candidate_id] || {};
+    let result = members.map(m => {
+      const pd   = personalMap [m.candidate_id] || {};
+      const cand = candidateMap[m.candidate_id] || {};
       return {
         member_id:     m.id,
         candidate_id:  m.candidate_id,
         first_name:    pd.first_name || null,
         last_name:     pd.last_name  || null,
         city:          pd.city       || null,
+        email:         cand.email    || null,
+        phone:         pd.phone      || null,
         licence_types: licenceMap[m.candidate_id] || [],
         joined_at:     m.joined_at,
       };
     });
+
+    if (licence_type) {
+      result = result.filter(m => (m.licence_types || []).includes(licence_type));
+    }
+    if (city) {
+      const lc = city.toLowerCase();
+      result = result.filter(m => (m.city || '').toLowerCase().includes(lc));
+    }
 
     res.json({ members: result });
   } catch (err) {
@@ -432,7 +448,7 @@ router.get('/members', async (req, res) => {
 // Emails sent fire-and-forget.
 router.post('/callouts', async (req, res) => {
   try {
-    const { shift_start, shift_end, job_summary, site_town, candidate_ids } = req.body;
+    const { shift_start, shift_end, job_summary, site_town, rate, candidate_ids } = req.body;
 
     if (!shift_start || !shift_end || !job_summary || !site_town) {
       return res.status(400).json({ error: 'shift_start, shift_end, job_summary and site_town are required' });
@@ -472,6 +488,7 @@ router.post('/callouts', async (req, res) => {
         shift_end:   endUtc.toISOString(),
         job_summary,
         site_town,
+        rate:        rate || null,
         created_by:  req.userId,
         sent_at:     new Date().toISOString(),
       })
