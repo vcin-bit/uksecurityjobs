@@ -2,6 +2,8 @@
 # Test results
 tests/test-results/
 tests/reports/
+test-results/
+api/test-results/
 
 # macOS
 .DS_Store
