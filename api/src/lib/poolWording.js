@@ -40,6 +40,11 @@ const POOL_INVITE_EMAIL_PARA =
   'has found your profile on UKSecurityJobs and would like to invite you ' +
   'to discuss future security roles that match your licence and availability.';
 
+// DRAFT — intro sentence used in shift callout emails.
+// Employer name prepended by sendPoolCallout before this is inserted.
+const POOL_CALLOUT_EMAIL_INTRO =
+  'has a shift available that matches your licence and wants to know if you are interested.';
+
 module.exports = {
   POOL_WORDING_VERSION,
   POOL_CONSENT_COPY,
@@ -48,4 +53,5 @@ module.exports = {
   POOL_INVITE_CONSENT_COPY,
   POOL_ACCEPT_CONFIRMATION_TEMPLATE,
   POOL_INVITE_EMAIL_PARA,
+  POOL_CALLOUT_EMAIL_INTRO,
 };

@@ -2,7 +2,32 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const { supabase, auditLog } = require('../lib/supabase');
-const { sendPoolInvite } = require('../lib/email');
+const { sendPoolInvite, sendPoolCallout, formatShiftRange } = require('../lib/email');
+
+// ── Timezone helpers ──────────────────────────────────────────────────────────
+
+// londonToUtc: takes "YYYY-MM-DDTHH:MM" (UK local time, no tz suffix)
+// and returns a UTC Date. Works for both BST (UTC+1) and GMT (UTC+0).
+function londonToUtc(localStr) {
+  // Parse as UTC+0, then check what London thinks that moment is.
+  const asGmt = new Date(localStr + ':00+00:00');
+  const londonAtGmt = asGmt
+    .toLocaleString('sv-SE', { timeZone: 'Europe/London' })
+    .slice(0, 16)
+    .replace(' ', 'T');
+  // If London time matches input we're in GMT; otherwise BST (UTC+1).
+  return londonAtGmt === localStr.slice(0, 16)
+    ? asGmt
+    : new Date(localStr + ':00+01:00');
+}
+
+// validateCalloutTimes: returns error code string or null.
+// startDate and endDate are UTC Date objects (already converted via londonToUtc).
+function validateCalloutTimes(startDate, endDate) {
+  if (startDate <= new Date()) return 'shift_start_past';
+  if (endDate   <= startDate)  return 'shift_end_before_start';
+  return null;
+}
 
 // GET /api/talent-pool/shortlist
 // Returns all discoverable, eligible candidates visible to this employer.
@@ -352,4 +377,265 @@ router.post('/invites/:id/outcome', async (req, res) => {
   }
 });
 
+// GET /api/talent-pool/members
+// Returns active pool members for this employer with candidate details.
+router.get('/members', async (req, res) => {
+  try {
+    const { data: members, error: mErr } = await supabase
+      .from('talent_pool_members')
+      .select('id, candidate_id, joined_at, status')
+      .eq('employer_id', req.employerId)
+      .eq('status', 'active')
+      .order('joined_at', { ascending: false });
+
+    if (mErr) throw mErr;
+    if (!members || members.length === 0) return res.json({ members: [] });
+
+    const candidateIds = members.map(m => m.candidate_id);
+
+    const [{ data: personalDetails }, { data: licences }] = await Promise.all([
+      supabase.from('personal_details').select('candidate_id, first_name, last_name, city').in('candidate_id', candidateIds),
+      supabase.from('sia_licences').select('candidate_id, licence_type').eq('verified', true).in('candidate_id', candidateIds),
+    ]);
+
+    const personalMap = Object.fromEntries((personalDetails || []).map(p => [p.candidate_id, p]));
+    const licenceMap  = {};
+    (licences || []).forEach(l => {
+      if (!licenceMap[l.candidate_id]) licenceMap[l.candidate_id] = [];
+      if (!licenceMap[l.candidate_id].includes(l.licence_type)) licenceMap[l.candidate_id].push(l.licence_type);
+    });
+
+    const result = members.map(m => {
+      const pd = personalMap[m.candidate_id] || {};
+      return {
+        member_id:     m.id,
+        candidate_id:  m.candidate_id,
+        first_name:    pd.first_name || null,
+        last_name:     pd.last_name  || null,
+        city:          pd.city       || null,
+        licence_types: licenceMap[m.candidate_id] || [],
+        joined_at:     m.joined_at,
+      };
+    });
+
+    res.json({ members: result });
+  } catch (err) {
+    console.error('GET /talent-pool/members error:', err);
+    res.status(500).json({ error: 'Failed to fetch members' });
+  }
+});
+
+// POST /api/talent-pool/callouts
+// Creates a callout and inserts one recipient row (with unique token) per candidate.
+// shift_start and shift_end are "YYYY-MM-DDTHH:MM" UK local — converted server-side.
+// Token per recipient expires at shift_start UTC.
+// Emails sent fire-and-forget.
+router.post('/callouts', async (req, res) => {
+  try {
+    const { shift_start, shift_end, job_summary, site_town, candidate_ids } = req.body;
+
+    if (!shift_start || !shift_end || !job_summary || !site_town) {
+      return res.status(400).json({ error: 'shift_start, shift_end, job_summary and site_town are required' });
+    }
+    if (!Array.isArray(candidate_ids) || candidate_ids.length === 0) {
+      return res.status(400).json({ error: 'candidate_ids must be a non-empty array' });
+    }
+
+    const startUtc = londonToUtc(shift_start);
+    const endUtc   = londonToUtc(shift_end);
+
+    const validErr = validateCalloutTimes(startUtc, endUtc);
+    if (validErr === 'shift_start_past')       return res.status(422).json({ error: 'Shift start must be in the future',   code: validErr });
+    if (validErr === 'shift_end_before_start') return res.status(422).json({ error: 'Shift end must be after shift start', code: validErr });
+
+    // All candidate_ids must be active members of this employer.
+    const { data: members, error: mErr } = await supabase
+      .from('talent_pool_members')
+      .select('id, candidate_id')
+      .eq('employer_id', req.employerId)
+      .eq('status', 'active')
+      .in('candidate_id', candidate_ids);
+
+    if (mErr) throw mErr;
+
+    const memberMap = Object.fromEntries((members || []).map(m => [m.candidate_id, m.id]));
+    const invalid   = candidate_ids.filter(id => !memberMap[id]);
+    if (invalid.length > 0) {
+      return res.status(422).json({ error: 'One or more candidates are not active pool members', code: 'not_active_members', invalid });
+    }
+
+    const { data: callout, error: cErr } = await supabase
+      .from('talent_pool_callouts')
+      .insert({
+        employer_id: req.employerId,
+        shift_start: startUtc.toISOString(),
+        shift_end:   endUtc.toISOString(),
+        job_summary,
+        site_town,
+        created_by:  req.userId,
+        sent_at:     new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+
+    if (cErr) throw cErr;
+
+    // One token per recipient — expires at shift_start UTC.
+    const recipientRows = candidate_ids.map(cid => ({
+      callout_id:    callout.id,
+      member_id:     memberMap[cid],
+      candidate_id:  cid,
+      employer_id:   req.employerId,
+      token:         crypto.randomBytes(32).toString('hex'),
+      token_expires: startUtc.toISOString(),
+      response:      'none',
+    }));
+
+    const { data: recipients, error: rErr } = await supabase
+      .from('talent_pool_callout_recipients')
+      .insert(recipientRows)
+      .select('candidate_id, token');
+
+    if (rErr) throw rErr;
+
+    // Fire-and-forget emails.
+    Promise.all([
+      supabase.from('employers').select('company_name').eq('id', req.employerId).single(),
+      supabase.from('candidates').select('id, email').in('id', candidate_ids),
+      supabase.from('personal_details').select('candidate_id, first_name').in('candidate_id', candidate_ids),
+    ]).then(([empRes, candRes, pdRes]) => {
+      const employerName = empRes.data?.company_name || 'Your employer';
+      const emailMap     = Object.fromEntries((candRes.data || []).map(c => [c.id, c.email]));
+      const nameMap      = Object.fromEntries((pdRes.data  || []).map(p => [p.candidate_id, p.first_name]));
+      const shiftRange   = formatShiftRange(startUtc.toISOString(), endUtc.toISOString());
+
+      (recipients || []).forEach(r => {
+        const toEmail = emailMap[r.candidate_id];
+        if (!toEmail) return;
+        sendPoolCallout({
+          toEmail,
+          candidateFirstName: nameMap[r.candidate_id] || 'there',
+          employerName,
+          shiftRange,
+          siteTown:   site_town,
+          jobSummary: job_summary,
+          respondUrl: `https://app.uksecurityjobs.co.uk/callout/${r.token}`,
+        }).catch(e => console.error('[sendPoolCallout]', e.message));
+      });
+    }).catch(e => console.error('[callout emails]', e.message));
+
+    res.status(201).json({ id: callout.id, recipient_count: (recipients || []).length });
+  } catch (err) {
+    console.error('POST /talent-pool/callouts error:', err);
+    res.status(500).json({ error: 'Failed to create callout' });
+  }
+});
+
+// GET /api/talent-pool/callouts
+// Lists callouts for this employer, newest first, with response counts.
+router.get('/callouts', async (req, res) => {
+  try {
+    const { data: callouts, error } = await supabase
+      .from('talent_pool_callouts')
+      .select('id, shift_start, shift_end, job_summary, site_town, status, closed_at, created_at, sent_at')
+      .eq('employer_id', req.employerId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const calloutIds = (callouts || []).map(c => c.id);
+    const recipientCounts = {};
+    if (calloutIds.length > 0) {
+      const { data: recs } = await supabase
+        .from('talent_pool_callout_recipients')
+        .select('callout_id, response')
+        .in('callout_id', calloutIds);
+
+      (recs || []).forEach(r => {
+        if (!recipientCounts[r.callout_id]) recipientCounts[r.callout_id] = { total: 0, yes: 0, no: 0 };
+        recipientCounts[r.callout_id].total++;
+        if (r.response === 'yes') recipientCounts[r.callout_id].yes++;
+        if (r.response === 'no')  recipientCounts[r.callout_id].no++;
+      });
+    }
+
+    res.json({
+      callouts: (callouts || []).map(c => ({
+        ...c,
+        recipients: recipientCounts[c.id] || { total: 0, yes: 0, no: 0 },
+      })),
+    });
+  } catch (err) {
+    console.error('GET /talent-pool/callouts error:', err);
+    res.status(500).json({ error: 'Failed to fetch callouts' });
+  }
+});
+
+// GET /api/talent-pool/callouts/:id
+// Returns callout detail with per-recipient response data.
+router.get('/callouts/:id', async (req, res) => {
+  try {
+    const { data: callout, error: cErr } = await supabase
+      .from('talent_pool_callouts')
+      .select('id, shift_start, shift_end, job_summary, site_town, status, closed_at, created_at, sent_at')
+      .eq('id', req.params.id)
+      .eq('employer_id', req.employerId)
+      .maybeSingle();
+
+    if (cErr) throw cErr;
+    if (!callout) return res.status(404).json({ error: 'Callout not found' });
+
+    const { data: recipients } = await supabase
+      .from('talent_pool_callout_recipients')
+      .select('candidate_id, response, responded_at')
+      .eq('callout_id', callout.id);
+
+    const candidateIds = (recipients || []).map(r => r.candidate_id);
+    const { data: personalDetails } = candidateIds.length > 0
+      ? await supabase.from('personal_details').select('candidate_id, first_name, last_name').in('candidate_id', candidateIds)
+      : { data: [] };
+
+    const nameMap = Object.fromEntries((personalDetails || []).map(p => [p.candidate_id, p]));
+
+    res.json({
+      callout,
+      recipients: (recipients || []).map(r => ({
+        candidate_id: r.candidate_id,
+        first_name:   nameMap[r.candidate_id]?.first_name || null,
+        last_name:    nameMap[r.candidate_id]?.last_name  || null,
+        response:     r.response,
+        responded_at: r.responded_at,
+      })),
+    });
+  } catch (err) {
+    console.error('GET /talent-pool/callouts/:id error:', err);
+    res.status(500).json({ error: 'Failed to fetch callout' });
+  }
+});
+
+// POST /api/talent-pool/callouts/:id/close
+// Sets status='closed' and closed_at=now() on an open callout.
+router.post('/callouts/:id/close', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('talent_pool_callouts')
+      .update({ status: 'closed', closed_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .eq('employer_id', req.employerId)
+      .eq('status', 'open')
+      .select('id')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return res.status(409).json({ error: 'Callout not found or already closed', code: 'not_open' });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('POST /talent-pool/callouts/:id/close error:', err);
+    res.status(500).json({ error: 'Failed to close callout' });
+  }
+});
+
 module.exports = router;
+module.exports.londonToUtc = londonToUtc;
+module.exports.validateCalloutTimes = validateCalloutTimes;

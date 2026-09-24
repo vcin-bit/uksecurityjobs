@@ -255,6 +255,10 @@ app.get('/api/pool/employers/public', async (req, res) => {
 const interviewPublicRoutes = require('./routes/interview-public');
 app.use('/api/employers', interviewPublicRoutes);
 
+// Public callout respond routes — no Clerk auth, validated by per-recipient token
+const calloutRoutes = require('./routes/callout');
+app.use('/api/callout', calloutRoutes);
+
 // Authenticated API routes — each mounts requireAuth explicitly.
 app.use('/api/candidates', requireAuth, candidateRoutes);
 app.use('/api/sia', requireAuth, siaRoutes);

@@ -1,5 +1,5 @@
 const sgMail = require('@sendgrid/mail');
-const { POOL_INVITE_EMAIL_PARA } = require('./poolWording');
+const { POOL_INVITE_EMAIL_PARA, POOL_CALLOUT_EMAIL_INTRO } = require('./poolWording');
 
 function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -314,6 +314,39 @@ async function sendPoolInvite({ toEmail, candidateFirstName, employerName, token
   return send(toEmail, `Talent pool invitation from ${employerName} — UKSecurityJobs`, html);
 }
 
+// ── 11. SHIFT CALLOUT (CANDIDATE) ──
+// Formats a UTC shift range as "Sat 26 Sep, 19:00–07:00" in Europe/London time.
+function formatShiftRange(startUtc, endUtc) {
+  const toL = (d, opts) =>
+    new Date(d).toLocaleString('en-GB', { timeZone: 'Europe/London', ...opts });
+  const dayPart   = toL(startUtc, { weekday: 'short', day: 'numeric', month: 'short' });
+  const startTime = toL(startUtc, { hour: '2-digit', minute: '2-digit', hour12: false });
+  const endTime   = toL(endUtc,   { hour: '2-digit', minute: '2-digit', hour12: false });
+  return `${dayPart}, ${startTime}–${endTime}`;
+}
+
+async function sendPoolCallout({ toEmail, candidateFirstName, employerName, shiftRange, siteTown, jobSummary, respondUrl }) {
+  const safeName  = escHtml(candidateFirstName);
+  const safeEmp   = escHtml(employerName);
+  const safeSite  = escHtml(siteTown);
+  const safeJob   = escHtml(jobSummary);
+  const safeRange = escHtml(shiftRange);
+  const html = baseTemplate(`
+    <h1>Shift callout from ${safeEmp}</h1>
+    <p>Hi ${safeName},</p>
+    <p><strong>${safeEmp}</strong> ${POOL_CALLOUT_EMAIL_INTRO}</p>
+    <div style="background:#f8fafc;border-radius:8px;padding:1rem;margin:1rem 0;">
+      <div class="detail-row"><span class="detail-label">Shift</span><span class="detail-value">${safeRange}</span></div>
+      <div class="detail-row"><span class="detail-label">Site</span><span class="detail-value">${safeSite}</span></div>
+      <div class="detail-row"><span class="detail-label">Role</span><span class="detail-value">${safeJob}</span></div>
+    </div>
+    <a href="${respondUrl}" class="btn">Respond to Callout →</a>
+    <hr class="divider"/>
+    <p style="font-size:0.82rem;color:#64748b;">This link expires when the shift starts. You can change your response at any time before then.</p>
+  `);
+  return send(toEmail, `Shift callout from ${employerName} — UKSecurityJobs`, html);
+}
+
 module.exports = {
   sendSiaVerified,
   sendApplicationConfirmation,
@@ -326,4 +359,6 @@ module.exports = {
   sendNudge24h,
   sendNudge72h,
   sendPoolInvite,
+  formatShiftRange,
+  sendPoolCallout,
 };
