@@ -76,19 +76,21 @@ router.post('/jobs', requireVerifiedEmployer, async (req, res) => {
     const employerId = await getEmployerId(db, req.userId);
     if (!employerId) return res.status(404).json({ error: 'Employer profile not found' });
 
-    // Check how many jobs this employer has posted
-    const { count } = await db
-      .from('jobs')
-      .select('*', { count: 'exact', head: true })
-      .eq('employer_id', employerId);
+    // Gate: first job free, subsequent jobs require payment.
+    // Only enforced when JOB_LIMIT_ENABLED=true — omit or set to any other value for unlimited posting.
+    if (process.env.JOB_LIMIT_ENABLED === 'true') {
+      const { count } = await db
+        .from('jobs')
+        .select('*', { count: 'exact', head: true })
+        .eq('employer_id', employerId);
 
-    // Gate: first job free, subsequent jobs require payment
-    if (count > 0) {
-      return res.status(402).json({
-        error: 'payment_required',
-        message: 'Your free job posting has been used. Contact us to post additional jobs.',
-        jobs_posted: count,
-      });
+      if (count > 0) {
+        return res.status(402).json({
+          error: 'payment_required',
+          message: 'Your free job posting has been used. Contact us to post additional jobs.',
+          jobs_posted: count,
+        });
+      }
     }
 
     const expires_at = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
