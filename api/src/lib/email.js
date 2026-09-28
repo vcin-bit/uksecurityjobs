@@ -360,6 +360,9 @@ async function sendPoolCallout({ toEmail, candidateFirstName, employerName, shif
 }
 
 module.exports = {
+  baseTemplate,
+  send,
+  escHtml,
   sendSiaVerified,
   sendApplicationConfirmation,
   sendInterviewScheduled,
