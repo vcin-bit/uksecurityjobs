@@ -4229,7 +4229,7 @@ function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken,
                       <div key={i} style={{background:'#f8fafc',borderRadius:'8px',padding:'0.75rem 1rem',marginBottom:'0.4rem'}}>
                         <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222'}}>{e.job_title} — {e.company_name}</div>
                         <div style={{fontSize:'0.75rem',color:'#64748b'}}>{e.start_date} → {e.end_date||'Present'}</div>
-                        {e.reference_name && <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.2rem'}}>Ref: {e.reference_name} · {e.reference_phone}</div>}
+                        {e.reference_name && <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.2rem'}}>Ref: {e.reference_name}{e.reference_job_title && ` (${e.reference_job_title})`}{e.reference_phone && ` · ${e.reference_phone}`}</div>}
                       </div>
                     ))}
                   </div>
@@ -4513,7 +4513,7 @@ function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken,
                         <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.15rem'}}>{e.start_date} → {e.end_date||'Present'}</div>
                         {e.reference_name && (
                           <div style={{marginTop:'0.4rem',fontSize:'0.78rem',color:'#475569'}}>
-                            <strong>Reference:</strong> {e.reference_name}
+                            <strong>Reference:</strong> {e.reference_name}{e.reference_job_title && ` (${e.reference_job_title})`}
                             {e.reference_email && <span> · {e.reference_email}</span>}
                             {e.reference_phone && <span> · {e.reference_phone}</span>}
                           </div>

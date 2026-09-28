@@ -354,7 +354,7 @@ router.get('/candidate/:id', requireVerifiedEmployer, async (req, res) => {
 
       // Employment — full history for BS7858. Reference contacts included.
       supabase.from('employment_history').select(
-        'job_title, employer_name, start_date, end_date, is_current, reference_name, reference_phone, reference_email, reason_for_leaving'
+        'job_title, employer_name, start_date, end_date, is_current, reference_name, reference_job_title, reference_phone, reference_email, reason_for_leaving'
       ).eq('candidate_id', req.params.id).order('start_date', { ascending: false }),
 
       // Addresses — include proof declarations for vetting summary
