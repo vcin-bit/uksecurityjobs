@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase, getClientForUser, auditLog } = require('../lib/supabase');
 const email = require('../lib/email');
+const adminNotify = require('../lib/adminNotify');
 const { requireVerifiedEmployer } = require('../middleware/employer');
 const { canApply } = require('./candidates');
 
@@ -48,6 +49,11 @@ router.post('/me', async (req, res) => {
         companyName: data.company_name,
         contactName: data.contact_name,
       }).catch(err => console.error('Welcome email failed:', err));
+      adminNotify.sendNewEmployerAlert({
+        companyName: data.company_name,
+        contactName: data.contact_name,
+        postcode:    data.postcode,
+      }).catch(err => console.error('[adminNotify] employer alert failed:', err.message));
     }
     res.json({ success: true, employer: data });
   } catch(err) { console.error('POST /employers/me error:', err); res.status(500).json({ error: 'Failed to save employer' }); }

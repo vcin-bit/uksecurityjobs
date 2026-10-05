@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
 const { runNudges } = require('./lib/nudges');
+const { runRegistrationDigest } = require('./lib/adminNotify');
 const { runIngestion } = require('./lib/jobIngestion');
 const { runLicenceCheck, runInvitePurge } = require('./lib/poolLicenceCheck');
 
@@ -298,11 +299,12 @@ cron.schedule('0 2 * * *', async () => {
   try { await runInvitePurge(); } catch (e) { console.error('[invitePurge] Cron error:', e.message); }
 }, { timezone: 'UTC' });
 
-// ── 09:00 UTC — incomplete profile nudge emails ──────────────────────────────
-// Sends 24h and 72h reminder emails to candidates who signed up but haven't
-// completed their profile. Deduped via candidate_nudges table.
+// ── 09:00 UTC — nudge emails + registration digest ───────────────────────────
+// runNudges: 24h and 72h reminder emails to candidates with incomplete profiles.
+// runRegistrationDigest: daily summary of new candidates and employers to admin.
 cron.schedule('0 9 * * *', () => {
   runNudges().catch(err => console.error('[nudges] Cron job error:', err.message));
+  runRegistrationDigest().catch(err => console.error('[adminNotify] Digest error:', err.message));
 }, { timezone: 'UTC' });
 
 app.listen(PORT, () => {

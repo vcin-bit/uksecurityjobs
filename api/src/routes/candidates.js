@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase, getClientForUser, encrypt, decrypt, auditLog } = require('../lib/supabase');
 const { createClerkClient } = require('@clerk/backend');
+const adminNotify = require('../lib/adminNotify');
 
 // ── Apply gate ───────────────────────────────────────────────────────────────
 // Minimum requirement to submit a job application.
@@ -57,8 +58,31 @@ async function isBS7858Ready(db, candidateId) {
 // so employers always see a current badge without waiting for the candidate to
 // reload their dashboard.
 async function refreshBadge(db, candidateId) {
+  // Read current profile_complete before updating so we can detect the transition.
+  const { data: current } = await db
+    .from('candidates')
+    .select('profile_complete')
+    .eq('id', candidateId)
+    .single();
+
   const { complete } = await isBS7858Ready(db, candidateId);
   await db.from('candidates').update({ profile_complete: complete }).eq('id', candidateId);
+
+  // Fire admin alert only on the false → true transition (never repeatedly).
+  if (complete && current && current.profile_complete !== true) {
+    // Fetch name, city and verified licence types for the alert.
+    const [pdRes, licRes] = await Promise.all([
+      db.from('personal_details').select('first_name, last_name, city').eq('candidate_id', candidateId).single(),
+      db.from('sia_licences').select('licence_type').eq('candidate_id', candidateId).eq('verified', true),
+    ]);
+    const pd           = pdRes.data || {};
+    const firstName    = pd.first_name  || 'Unknown';
+    const lastInitial  = pd.last_name   ? pd.last_name.charAt(0).toUpperCase() : '?';
+    const city         = pd.city        || 'Unknown';
+    const licenceTypes = (licRes.data || []).map(l => l.licence_type).filter(Boolean).join(', ') || 'Unknown';
+    adminNotify.sendNewCandidateCompleteAlert({ firstName, lastInitial, city, licenceTypes })
+      .catch(err => console.error('[adminNotify] candidate complete alert failed:', err.message));
+  }
 }
 
 
