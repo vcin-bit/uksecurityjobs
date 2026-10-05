@@ -1,17 +1,19 @@
 /* ============================================================
    UKSecurityJobs — shared cookie consent
    Single source of truth. Include on every public page with:
-     <script src="/cookie-consent.js" defer></script>
+     <script src="/footer-extras.js" defer></script>
    Do NOT include on admin.html or sign-in pages.
 
    - Injects the consent banner and its styles.
    - Google Analytics (G-23Z2MEN8N5) loads ONLY after "Accept".
+   - Meta Pixel (1080163437752517) loads ONLY after "Accept".
    - Choice stored in localStorage key 'cookie_consent'.
    - window.openCookieSettings() re-opens the banner so users
      can change their choice (wire a footer link to it).
    ============================================================ */
 (function () {
-  var GA_ID = 'G-23Z2MEN8N5';
+  var GA_ID    = 'G-23Z2MEN8N5';
+  var PIXEL_ID = '1080163437752517';
   var STORE_KEY = 'cookie_consent';
 
   // ---- styles (matches the existing site banner) ----
@@ -41,9 +43,10 @@
   // ---- banner markup ----
   var bannerHTML = ''
     + '<div id="cookie-banner" role="dialog" aria-label="Cookie consent">'
-    + '<p>We use essential cookies to keep the site working, and Google '
-    + 'Analytics to understand how it is used. Analytics cookies are set '
-    + 'only with your consent. <a href="/cookies">Cookie Policy</a> &middot; '
+    + '<p>We use essential cookies to keep the site working, and analytics '
+    + 'and advertising cookies (Google Analytics, Meta Pixel) to understand '
+    + 'how it is used. These are set only with your consent. '
+    + '<a href="/cookies">Cookie Policy</a> &middot; '
     + '<a href="/privacy">Privacy Policy</a></p>'
     + '<div class="cookie-btns">'
     + '<button type="button" class="cookie-reject" id="cookie-reject-btn">Reject</button>'
@@ -65,6 +68,23 @@
     gtag('config', GA_ID);
   }
 
+  // ---- Meta Pixel loader: runs only on consent ----
+  function loadPixel() {
+    if (window._pixelLoaded) return;
+    window._pixelLoaded = true;
+    // Standard Meta Pixel base code (no personal data sent).
+    !function(f,b,e,v,n,t,s){
+      if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)
+    }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', PIXEL_ID);
+    fbq('track', 'PageView');
+  }
+
   function show() {
     var b = document.getElementById('cookie-banner');
     if (b) b.classList.add('show');
@@ -78,6 +98,7 @@
     try { localStorage.setItem(STORE_KEY, 'accepted'); } catch (e) {}
     hide();
     loadGA();
+    loadPixel();
   }
   function reject() {
     try { localStorage.setItem(STORE_KEY, 'rejected'); } catch (e) {}
@@ -127,6 +148,7 @@
 
     if (consent === 'accepted') {
       loadGA();
+      loadPixel();
     } else if (consent === 'rejected') {
       // do nothing — GA stays off
     } else {

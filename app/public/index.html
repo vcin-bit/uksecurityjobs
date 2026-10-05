@@ -9,5 +9,97 @@
 </head>
 <body>
 <div id="root"></div>
+
+<!-- Cookie consent + Meta Pixel for app.uksecurityjobs.co.uk
+     Pixel (ID 1080163437752517) loads ONLY after the user accepts.
+     localStorage key 'cookie_consent' mirrors the marketing site convention.
+     PageView is fired on load; route-change PageViews are fired by
+     the MetaPixelPageView component in App.js. -->
+<script>
+(function () {
+  var PIXEL_ID  = '1080163437752517';
+  var STORE_KEY = 'cookie_consent';
+
+  window.loadMetaPixel = function () {
+    if (window._pixelLoaded) return;
+    window._pixelLoaded = true;
+    !function(f,b,e,v,n,t,s){
+      if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)
+    }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', PIXEL_ID);
+    fbq('track', 'PageView');
+  };
+
+  function injectBanner() {
+    var style = document.createElement('style');
+    style.textContent =
+      '#uksj-cookie{position:fixed;bottom:0;left:0;right:0;z-index:99999;'
+      +'background:#0b1222;border-top:1px solid #1e293b;padding:1.1rem 1.5rem;'
+      +'display:flex;align-items:center;justify-content:space-between;'
+      +'flex-wrap:wrap;gap:0.875rem;font-family:-apple-system,BlinkMacSystemFont,'
+      +"'Segoe UI','Helvetica Neue',Arial,sans-serif;}"
+      +'#uksj-cookie p{font-size:0.82rem;color:#94a3b8;line-height:1.6;margin:0;max-width:680px;}'
+      +'#uksj-cookie a{color:#93c5fd;font-weight:600;text-decoration:none;}'
+      +'.uksj-btns{display:flex;gap:0.6rem;flex-shrink:0;}'
+      +'.uksj-accept{background:#1a52a8;color:#fff;border:none;border-radius:7px;'
+      +'padding:0.55rem 1.25rem;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;}'
+      +'.uksj-reject{background:transparent;color:#94a3b8;border:1px solid #334155;'
+      +'border-radius:7px;padding:0.55rem 1.25rem;font-size:0.85rem;font-weight:700;'
+      +'cursor:pointer;font-family:inherit;}'
+      +'@media(max-width:560px){#uksj-cookie{padding:0.875rem 1rem;}'
+      +'.uksj-btns{width:100%;}.uksj-accept,.uksj-reject{flex:1;text-align:center;}}';
+    document.head.appendChild(style);
+
+    var banner = document.createElement('div');
+    banner.id = 'uksj-cookie';
+    banner.innerHTML =
+      '<p>We use analytics and advertising cookies (Google Analytics, Meta Pixel) '
+      +'only with your consent. '
+      +'<a href="https://www.uksecurityjobs.co.uk/cookies" target="_blank" rel="noopener">Cookie Policy</a></p>'
+      +'<div class="uksj-btns">'
+      +'<button class="uksj-reject" id="uksj-reject">Reject</button>'
+      +'<button class="uksj-accept" id="uksj-accept">Accept</button>'
+      +'</div>';
+    document.body.appendChild(banner);
+
+    document.getElementById('uksj-accept').onclick = function () {
+      try { localStorage.setItem(STORE_KEY, 'accepted'); } catch(e) {}
+      banner.remove();
+      window.loadMetaPixel();
+    };
+    document.getElementById('uksj-reject').onclick = function () {
+      try { localStorage.setItem(STORE_KEY, 'rejected'); } catch(e) {}
+      banner.remove();
+    };
+  }
+
+  // Re-open the banner and clear stored consent so the user can change their choice.
+  // Called by the "Cookie Settings" button in the React app footer.
+  window.showCookieBanner = function () {
+    try { localStorage.removeItem(STORE_KEY); } catch(e) {}
+    var existing = document.getElementById('uksj-cookie');
+    if (existing) existing.remove();
+    injectBanner();
+  };
+
+  var consent;
+  try { consent = localStorage.getItem(STORE_KEY); } catch(e) {}
+
+  if (consent === 'accepted') {
+    window.loadMetaPixel();
+  } else if (!consent) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', injectBanner);
+    } else {
+      setTimeout(injectBanner, 800);
+    }
+  }
+})();
+</script>
 </body>
 </html>

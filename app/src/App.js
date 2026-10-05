@@ -6,6 +6,23 @@ import './styles.css';
 
 startApiKeepAlive();
 
+// ── Meta Pixel — fires PageView on every client-side route change ─────────────
+// Pixel is loaded by index.html only after cookie consent ('accepted').
+// The initial PageView is already fired by index.html on load, so we skip the
+// first effect run to avoid a double-count.
+// window.fbq will be undefined if consent was not given — all calls are no-ops.
+function MetaPixelPageView() {
+  const location = useLocation();
+  const mounted = React.useRef(false);
+  useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return; }
+    if (typeof window.fbq === 'function') {
+      window.fbq('track', 'PageView');
+    }
+  }, [location.pathname]);
+  return null;
+}
+
 // Formats a UTC shift range as a human-readable London-time string.
 // Same day:  "Thu 24 Sep, 18:45–22:00"
 // Overnight: "Thu 24 Sep 18:45 – Fri 25 Sep 13:40"
@@ -2174,7 +2191,9 @@ function ProfileBuilder() {
         }, getToken); } catch(e) { console.error("Failed to save personal details:", e.message); }
       }
       if (d.licences) {
-        try { await apiRequest('/api/sia', 'PUT', { licences: d.licences }, getToken); } catch(e) { console.error("Failed to save SIA licences:", e.message); }
+        try { await apiRequest('/api/sia', 'PUT', { licences: d.licences }, getToken);
+          if (typeof window.fbq === 'function') window.fbq('trackCustom', 'LicenceSubmitted');
+        } catch(e) { console.error("Failed to save SIA licences:", e.message); }
       }
       if (d.driving) {
         const dr = d.driving;
@@ -3715,6 +3734,7 @@ function SignUpPage() {
         setLoading(false);
         return;
       }
+      if (typeof window.fbq === 'function') window.fbq('track', 'CompleteRegistration');
       navigate('/dashboard');
     } catch(err) { setError(err.errors?.[0]?.message || 'Invalid code. Please try again.'); }
     setLoading(false);
@@ -5763,6 +5783,7 @@ function EmployerRegisterForm({ onSaved, getToken }) {
     try {
       const payload = { ...form, address: [form.address_line1, form.address_line2, form.city, form.county, form.postcode].filter(Boolean).join(', ') };
       const res = await apiRequest('/api/employers/me', 'POST', payload, getToken);
+      if (typeof window.fbq === 'function') window.fbq('trackCustom', 'EmployerSignup');
       onSaved(res.employer);
     } catch(err) { setError('Failed to save. Please try again.'); }
     setSaving(false);
@@ -6317,6 +6338,13 @@ function JobListingsPage() {
               <a key={t} href={href} style={{fontSize:'0.72rem',color:'#1a52a8',background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'999px',padding:'0.2rem 0.6rem',textDecoration:'none'}}>{t}</a>
             ))}
           </div>
+          <div style={{marginTop:'1.25rem',paddingTop:'1rem',borderTop:'1px solid #f1f5f9',display:'flex',gap:'1.25rem',flexWrap:'wrap'}}>
+            <a href="https://www.uksecurityjobs.co.uk/privacy" target="_blank" rel="noopener" style={{fontSize:'0.75rem',color:'#94a3b8',textDecoration:'none'}}>Privacy Policy</a>
+            <a href="https://www.uksecurityjobs.co.uk/cookies" target="_blank" rel="noopener" style={{fontSize:'0.75rem',color:'#94a3b8',textDecoration:'none'}}>Cookie Policy</a>
+            <button onClick={() => {
+              if (typeof window.showCookieBanner === 'function') window.showCookieBanner();
+            }} style={{fontSize:'0.75rem',color:'#94a3b8',background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',textDecoration:'underline'}}>Cookie Settings</button>
+          </div>
         </div>
       </div>
     {/* Application confirmation modal */}
@@ -6633,6 +6661,7 @@ export default function App() {
   return (
     <ClerkProvider publishableKey={CLERK_KEY}>
       <BrowserRouter>
+        <MetaPixelPageView/>
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace/>}/>
           <Route path="/sign-up" element={<SignUpPage/>}/>
