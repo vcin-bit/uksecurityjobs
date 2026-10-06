@@ -287,29 +287,24 @@ function StepWelcome({ onNext, name }) {
     <div className="welcome-screen">
       <div className="welcome-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg></div>
       <h1>Welcome, {name}.</h1>
-      <p className="welcome-lead">You are about to build the most powerful security profile in the UK.</p>
+      <p className="welcome-lead">Two minutes to start applying.</p>
       <div className="welcome-cards">
         <div className="wcard">
-          <div className="wcard-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
-          <div className="wcard-title">Takes about 15 minutes</div>
-          <div className="wcard-desc">You only ever do this once. Every future application takes seconds.</div>
+          <div className="wcard-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+          <div className="wcard-title">Your SIA licence number</div>
+          <div className="wcard-desc">The 16-digit number on your licence card. We check it against the SIA register.</div>
         </div>
         <div className="wcard">
-          <div className="wcard-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-          <div className="wcard-title">Your data is secure</div>
-          <div className="wcard-desc">Employers only see your profile when you apply. Nothing is shared without your consent.</div>
-        </div>
-        <div className="wcard">
-          <div className="wcard-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
-          <div className="wcard-title">Faster vetting</div>
-          <div className="wcard-desc">A complete profile means employers can start BS7858 vetting immediately — no delays, no chasing.</div>
+          <div className="wcard-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/><path d="M2 22c0-5.523 4.477-10 10-10s10 4.477 10 10"/></svg></div>
+          <div className="wcard-title">Your personal details</div>
+          <div className="wcard-desc">Name, contact details and location.</div>
         </div>
       </div>
-      <div className="welcome-honest">
-        <strong>We know some sections are tedious.</strong> But here is the thing — once this is done, you never fill in another application form. Every employer on this platform sees your verified profile instantly. One profile. Every opportunity.
-      </div>
+      <p style={{fontSize:'0.85rem',color:'#64748b',lineHeight:1.65,marginTop:'1.25rem',marginBottom:0}}>
+        That's all you need to start applying. Complete your full profile once to become BS7858 Ready — then join the talent pool and let work come to you. Extra shifts on your days off, without applying.
+      </p>
       <button className="btn-next" style={{width:'100%',marginTop:'2rem'}} onClick={onNext}>
-        Let's Build My Profile &#8250;
+        Add my SIA licence &#8250;
       </button>
     </div>
   );
@@ -3556,12 +3551,28 @@ function Dashboard() {
 
         <div className="dash-header">
           <div className="dash-greeting">Welcome{!profileLoading && !profileData?.personal?.first_name ? `, ${user?.firstName || 'Officer'}` : `, ${profileData?.personal?.first_name || user?.firstName || 'Officer'}`}</div>
-          <div className="dash-sub">Complete your profile to unlock security vacancies and exclusive member benefits.</div>
+          <div className="dash-sub">{!sections[0].complete ? 'Add your SIA licence to start applying for roles.' : 'Complete your profile to unlock security vacancies and exclusive member benefits.'}</div>
         </div>
 
-        {/* PREPARATION GUIDE — shown when profile incomplete or loading */}
+        {/* QUICK CTA — shown when SIA licence not yet verified */}
+        {!profileLoading && !sections[0].complete && (
+          <div className="dash-card" style={{marginBottom:'1.5rem',background:'#1a52a8',border:'none'}}>
+            <div style={{fontWeight:800,fontSize:'1rem',color:'#fff',marginBottom:'0.35rem'}}>Start applying in two minutes</div>
+            <div style={{fontSize:'0.85rem',color:'rgba(255,255,255,0.75)',marginBottom:'1rem',lineHeight:1.6}}>Add your SIA licence to start. Complete your profile to join the talent pool — and let employers come to you.</div>
+            <button className="btn-next" style={{background:'#fff',color:'#1a52a8',whiteSpace:'nowrap'}} onClick={()=>navigate('/profile')}>
+              Add my SIA licence &#8250;
+            </button>
+          </div>
+        )}
+
+        {/* PREPARATION GUIDE — collapsed, shown when profile incomplete or loading */}
         {(profileLoading || pct < 100) && (
-          <div className="dash-card" style={{marginBottom:'1.5rem',background:'#f0f9ff',border:'1px solid #bae6fd'}}>
+          <details style={{marginBottom:'1.5rem'}}>
+            <summary style={{cursor:'pointer',fontWeight:700,fontSize:'0.88rem',color:'#475569',padding:'0.75rem 1rem',background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'10px',listStyle:'none',display:'flex',alignItems:'center',gap:'0.5rem'}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              Going for the BS7858 Ready badge? See what you'll need
+            </summary>
+            <div className="dash-card" style={{marginTop:'0.5rem',background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'10px'}}>
             <div style={{fontWeight:700,fontSize:'0.95rem',color:'#0b1222',marginBottom:'0.75rem',display:'flex',alignItems:'center',gap:'0.5rem'}}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a52a8" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16.5"/></svg>
               Before you start — have these to hand
@@ -3614,7 +3625,8 @@ function Dashboard() {
             <div style={{marginTop:'1rem',padding:'0.75rem 1rem',background:'#fff',borderRadius:'8px',border:'1px solid #bae6fd',fontSize:'0.8rem',color:'#0369a1'}}>
               <strong>Important:</strong> Your profile cannot go live until it is complete and your SIA licence is verified. A complete profile typically takes 20–30 minutes. You can save your progress and return at any time.
             </div>
-          </div>
+            </div>
+          </details>
         )}
 
         {/* PROGRESS + CTA */}
@@ -3725,6 +3737,13 @@ function SignUpPage() {
           const body = await res.json().catch(() => ({}));
           console.error('API create failed:', res.status, body);
           setError('Account created but profile setup failed. Please try signing in.');
+          setLoading(false);
+          return;
+        }
+        const body = await res.json().catch(() => ({}));
+        if ((body?.candidate?.profile_step ?? 0) === 0) {
+          if (typeof window.fbq === 'function') window.fbq('track', 'CompleteRegistration');
+          navigate('/profile');
           setLoading(false);
           return;
         }
