@@ -4,7 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
-const { runNudges } = require('./lib/nudges');
+const { runNudges, sendFinalWarnings, runRemoval } = require('./lib/nudges');
 const { runRegistrationDigest } = require('./lib/adminNotify');
 const { runIngestion } = require('./lib/jobIngestion');
 const { runLicenceCheck, runInvitePurge } = require('./lib/poolLicenceCheck');
@@ -299,12 +299,24 @@ cron.schedule('0 2 * * *', async () => {
   try { await runInvitePurge(); } catch (e) { console.error('[invitePurge] Cron error:', e.message); }
 }, { timezone: 'UTC' });
 
-// ── 09:00 UTC — nudge emails + registration digest ───────────────────────────
-// runNudges: 24h and 72h reminder emails to candidates with incomplete profiles.
-// runRegistrationDigest: daily summary of new candidates and employers to admin.
-cron.schedule('0 9 * * *', () => {
-  runNudges().catch(err => console.error('[nudges] Cron job error:', err.message));
-  runRegistrationDigest().catch(err => console.error('[adminNotify] Digest error:', err.message));
+// ── 09:00 UTC — nudge emails + removal + registration digest ─────────────────
+// Steps run in sequence so each result can be passed to the next.
+// Each step has its own try/catch so one failure does not stop the rest.
+//   1. runNudges:         24h and 72h reminder emails for incomplete profiles.
+//   2. sendFinalWarnings: day-7 final warning to candidates with no SIA licence.
+//   3. runRemoval:        day-14 deletion of accounts that ignored the warning.
+//                         Gated by CANDIDATE_REMOVAL_ENABLED=true (default: dry-run).
+//   4. runRegistrationDigest: daily summary to admin, including enforcement counts.
+cron.schedule('0 9 * * *', async () => {
+  try { await runNudges(); } catch (err) { console.error('[nudges] Cron job error:', err.message); }
+
+  let warningsSent = 0;
+  try { warningsSent = await sendFinalWarnings(); } catch (err) { console.error('[nudges] Final-warning error:', err.message); }
+
+  let removalResult = { removed: 0, wouldRemove: [], skipped: 0 };
+  try { removalResult = await runRemoval(); } catch (err) { console.error('[nudges] Removal error:', err.message); }
+
+  try { await runRegistrationDigest({ warningsSent, removalResult }); } catch (err) { console.error('[adminNotify] Digest error:', err.message); }
 }, { timezone: 'UTC' });
 
 app.listen(PORT, () => {

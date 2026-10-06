@@ -297,7 +297,28 @@ async function sendNudge72h({ toEmail, firstName, blocking, badge }) {
   return send(toEmail, subject, baseTemplate(content));
 }
 
-// ── 10. TALENT POOL INVITE (CANDIDATE) ──
+// ── 10. FINAL WARNING — NO SIA LICENCE ──
+async function sendFinalWarningEmail({ toEmail, firstName, deadlineDate }) {
+  const safeName = escHtml(firstName);
+  const deadline = new Date(deadlineDate).toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+  const html = baseTemplate(`
+    <h1>Add your SIA licence or your account will be closed</h1>
+    <p>Hi ${safeName},</p>
+    <p>You registered on UKSecurityJobs but have not yet added an SIA licence to your profile.</p>
+    <p>UKSecurityJobs is a verified platform — every candidate must hold a valid SIA licence. Without one, we cannot make your profile visible to employers.</p>
+    <p><strong>If no SIA licence is added by ${deadline}, your account and all associated data will be permanently deleted.</strong></p>
+    <p>It takes two minutes. Add your licence, complete your profile, and you can join the talent pool — and let work come to you.</p>
+    <a href="https://app.uksecurityjobs.co.uk/profile" class="btn">Add My SIA Licence ›</a>
+    <hr class="divider"/>
+    <p style="font-size:0.85rem;color:#64748b;">If you believe this is an error or need help adding your licence, reply to this email or contact <a href="mailto:admin@uksecurityjobs.co.uk" style="color:#1a52a8;">admin@uksecurityjobs.co.uk</a>.</p>
+    <p style="font-size:0.85rem;color:#64748b;">If you no longer wish to use UKSecurityJobs, you can ignore this email — your account will be closed automatically on the date above.</p>
+  `);
+  return send(toEmail, 'Add your SIA licence or your account will be closed — UKSecurityJobs', html);
+}
+
+// ── 11. TALENT POOL INVITE (CANDIDATE) ──
 // candidateFirstName and employerName are HTML-escaped before insertion.
 async function sendPoolInvite({ toEmail, candidateFirstName, employerName, token }) {
   const acceptUrl = `https://app.uksecurityjobs.co.uk/invite/${token}`;
@@ -314,7 +335,7 @@ async function sendPoolInvite({ toEmail, candidateFirstName, employerName, token
   return send(toEmail, `Talent pool invitation from ${employerName} — UKSecurityJobs`, html);
 }
 
-// ── 11. SHIFT CALLOUT (CANDIDATE) ──
+// ── 12. SHIFT CALLOUT (CANDIDATE) ──
 // Formats a UTC shift range in Europe/London time.
 // Same-day:     "Thu 24 Sep, 18:45–22:00"
 // Overnight:    "Thu 24 Sep 18:45 – Fri 25 Sep 13:40"
@@ -373,6 +394,7 @@ module.exports = {
   sendAdminSiaRequest,
   sendNudge24h,
   sendNudge72h,
+  sendFinalWarningEmail,
   sendPoolInvite,
   formatShiftRange,
   sendPoolCallout,

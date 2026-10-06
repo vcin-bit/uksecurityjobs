@@ -69,8 +69,17 @@ async function sendNewEmployerAlert({ companyName, contactName, postcode }) {
 }
 
 // ── Daily digest ─────────────────────────────────────────────────────────────
+//
+// warningsSent  — number of final-warning emails sent this run (from sendFinalWarnings).
+// removalResult — { removed, wouldRemove, skipped } from runRemoval.
+//   removed     — accounts deleted (live mode)
+//   wouldRemove — array of { id, email, created_at } (dry-run mode)
+//   skipped     — count skipped for manual review
 
-async function runRegistrationDigest() {
+async function runRegistrationDigest({
+  warningsSent  = 0,
+  removalResult = { removed: 0, wouldRemove: [], skipped: 0 },
+} = {}) {
   console.log(`[adminNotify] Digest run started at ${new Date().toISOString()}`);
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -89,12 +98,16 @@ async function runRegistrationDigest() {
       .order('created_at', { ascending: false }),
   ]);
 
-  const candidates = candRes.data || [];
-  const employers  = empRes.data  || [];
-  const total      = candidates.length + employers.length;
+  const candidates     = candRes.data || [];
+  const employers      = empRes.data  || [];
+  const total          = candidates.length + employers.length;
+  const removalEnabled = process.env.CANDIDATE_REMOVAL_ENABLED === 'true';
 
-  if (total === 0) {
-    console.log('[adminNotify] Digest: no registrations in last 24h — nothing sent.');
+  const { removed, wouldRemove, skipped } = removalResult;
+  const hasEnforcement = warningsSent > 0 || removed > 0 || wouldRemove.length > 0 || skipped > 0;
+
+  if (total === 0 && !hasEnforcement) {
+    console.log('[adminNotify] Digest: no activity in last 24h — nothing sent.');
     return;
   }
 
@@ -104,12 +117,12 @@ async function runRegistrationDigest() {
     candRows = `
       <h2 style="font-size:1rem;font-weight:700;color:#0b1222;margin:1.5rem 0 0.5rem;">Candidates (${candidates.length})</h2>
       ${candidates.map(c => {
-        const pd        = c.personal_details;
-        const name      = (pd?.first_name && pd?.last_name)
+        const pd       = c.personal_details;
+        const name     = (pd?.first_name && pd?.last_name)
           ? `${escHtml(pd.first_name)} ${escHtml(pd.last_name)}`
           : escHtml(c.email);
-        const location  = pd?.city ? escHtml(pd.city) : 'Town not yet set';
-        const time      = new Date(c.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
+        const location = pd?.city ? escHtml(pd.city) : 'Town not yet set';
+        const time     = new Date(c.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
         return `<div style="background:#f8fafc;border-radius:6px;padding:0.6rem 0.875rem;margin-bottom:0.4rem;font-size:0.88rem;color:#0b1222;">
           ${name} \u2014 ${location} <span style="color:#94a3b8;font-size:0.8rem;">(${time})</span>
         </div>`;
@@ -131,12 +144,56 @@ async function runRegistrationDigest() {
     `;
   }
 
+  // Build enforcement section.
+  let enforcementRows = '';
+  if (hasEnforcement) {
+    // Removal row: red if accounts were actually removed, yellow for dry-run, grey if zero.
+    let removalBg, removalBorder, removalText;
+    if (removalEnabled && removed > 0) {
+      removalBg = '#fee2e2'; removalBorder = '#fca5a5';
+      removalText = `${removed} account${removed === 1 ? '' : 's'} removed today`;
+    } else if (!removalEnabled && wouldRemove.length > 0) {
+      removalBg = '#fef9c3'; removalBorder = '#fde047';
+      removalText = `${wouldRemove.length} would be removed today (dry run — set CANDIDATE_REMOVAL_ENABLED=true to enable)`;
+    } else {
+      removalBg = '#f8fafc'; removalBorder = '#e2e8f0';
+      removalText = removalEnabled ? '0 accounts removed today' : '0 would be removed today (dry run)';
+    }
+
+    // Dry-run list of would-remove candidates.
+    const wouldRemoveList = (!removalEnabled && wouldRemove.length > 0)
+      ? wouldRemove.map(c =>
+          `<div style="background:#fefce8;border-radius:4px;padding:0.35rem 0.75rem;margin-top:0.25rem;font-size:0.82rem;color:#0b1222;">
+            ${escHtml(c.email)} <span style="color:#94a3b8;">(id: ${c.id}, registered: ${new Date(c.created_at).toLocaleDateString('en-GB')})</span>
+          </div>`
+        ).join('')
+      : '';
+
+    const skippedRow = skipped > 0
+      ? `<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:0.6rem 0.875rem;margin-bottom:0.4rem;font-size:0.88rem;color:#0b1222;">
+          ${skipped} candidate${skipped === 1 ? '' : 's'} skipped — interview activity found, manual review needed
+        </div>`
+      : '';
+
+    enforcementRows = `
+      <h2 style="font-size:1rem;font-weight:700;color:#0b1222;margin:1.5rem 0 0.5rem;">SIA Licence Enforcement</h2>
+      <div style="background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:0.6rem 0.875rem;margin-bottom:0.4rem;font-size:0.88rem;color:#0b1222;">
+        Final warnings sent today: <strong>${warningsSent}</strong>
+      </div>
+      <div style="background:${removalBg};border:1px solid ${removalBorder};border-radius:6px;padding:0.6rem 0.875rem;margin-bottom:0.4rem;font-size:0.88rem;color:#0b1222;">
+        ${removalText}${wouldRemoveList}
+      </div>
+      ${skippedRow}
+    `;
+  }
+
   const subject = COPY.digestSubject(total);
   const html    = baseTemplate(`
     <h1>Registration digest</h1>
     <p>${COPY.digestIntro(total)}</p>
     ${candRows}
     ${empRows}
+    ${enforcementRows}
     <hr class="divider"/>
     <a href="${ADMIN_PANEL_URL}" class="btn">Go to Admin Panel \u2192</a>
   `);
