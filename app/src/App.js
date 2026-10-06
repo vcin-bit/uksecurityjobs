@@ -67,8 +67,8 @@ function Nav() {
       <div className="nav-inner">
         <Logo />
         <div className="nav-links">
-          {!isEmployer && <a className="nav-link" href="/jobs">Jobs</a>}
-          <a className="nav-link" href="mailto:support@uksecurityjobs.co.uk" style={{display:'flex',alignItems:'center',gap:'0.35rem'}}>
+          {!isEmployer && <a className="nav-link nav-link-secondary" href="/jobs">Jobs</a>}
+          <a className="nav-link nav-link-secondary" href="mailto:support@uksecurityjobs.co.uk" style={{display:'flex',alignItems:'center',gap:'0.35rem'}}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
             Help
           </a>
@@ -1896,7 +1896,7 @@ function StepPhoto({ data, onChange, onBack, onNext, isComplete }) {
         </label>
         <div className="photo-policy">
           <div className="photo-policy-title">Your photo is never shown to employers</div>
-          <p>We made this decision deliberately. Employers on this platform hire based on your SIA licence, your vettability score, your employment history and your professional record — not how you look.</p>
+          <p>We made this decision deliberately. Employers on this platform hire based on your SIA licence, your BS7858 Ready badge status, your employment history and your professional record — not how you look.</p>
           <p>This protects you from unconscious bias and keeps every hiring decision focused on what actually matters: your credentials and your character.</p>
           <p><strong>This is how professional recruitment should work.</strong></p>
         </div>
@@ -1945,7 +1945,7 @@ function StepComplete({ name, sections, onGoToStep }) {
       <div className="complete-next">
         <div className="cn-item"><div className="cn-n">1</div><div><strong>SIA Verification</strong><p>We will verify your SIA licence against the public register within 24 hours.</p></div></div>
         <div className="cn-item"><div className="cn-n">2</div><div><strong>Profile Review</strong><p>Our team reviews your profile for completeness. We may be in touch if anything needs clarifying.</p></div></div>
-        <div className="cn-item"><div className="cn-n">3</div><div><strong>Apply for Roles</strong><p>Once verified, you can apply for jobs on the platform. Employers will be able to see your vettability score and verified profile when you apply.</p></div></div>
+        <div className="cn-item"><div className="cn-n">3</div><div><strong>Apply for Roles</strong><p>Once verified, you can apply for jobs on the platform. Employers will be able to see your BS7858 Ready badge status and verified profile when you apply.</p></div></div>
       </div>
       <a href="/dashboard" className="btn-next" style={{display:'block',textAlign:'center',marginTop:'2rem'}}>Go to My Dashboard</a>
     </div>
@@ -2689,7 +2689,7 @@ const industryFacts = [
   {
     title: '350,000+ SIA Licence Holders',
     fact: 'There are over 350,000 active SIA licensed security professionals in the UK — one of the largest regulated workforces in the country.',
-    why: 'In a crowded market, a complete verified profile is what separates you. Employers on this platform see your vettability score before they see anyone else\'s CV.'
+    why: 'In a crowded market, a complete verified profile is what separates you. Employers on this platform see your BS7858 Ready badge and verified profile before they decide to call you.'
   },
   {
     title: 'SIA Licence Expiry',
@@ -3497,8 +3497,8 @@ function Dashboard() {
   const completed = sections.filter(s => s.complete).length;
   const total = sections.length;
   const pct = Math.round((completed / total) * 100);
-  const scoreLabel = pct >= 80 ? 'Premium roles unlocked' : pct >= 60 ? 'Standard roles unlocked' : 'Complete your profile to unlock roles';
-  const scoreColor = pct >= 80 ? '#10b981' : pct >= 60 ? '#f59e0b' : '#1a52a8';
+  const scoreLabel = !sections[0].complete ? 'Add your SIA licence to start applying' : pct === 100 ? 'BS7858 Ready — shown first by employers' : 'Keep going — complete every section to earn the BS7858 Ready badge';
+  const scoreColor = !sections[0].complete ? '#1a52a8' : pct === 100 ? '#10b981' : '#f59e0b';
 
   if (!accountChecked) return <div className="page" style={{background:'var(--off)'}}><Nav/></div>;
 
@@ -3551,7 +3551,7 @@ function Dashboard() {
 
         <div className="dash-header">
           <div className="dash-greeting">Welcome{!profileLoading && !profileData?.personal?.first_name ? `, ${user?.firstName || 'Officer'}` : `, ${profileData?.personal?.first_name || user?.firstName || 'Officer'}`}</div>
-          <div className="dash-sub">{!sections[0].complete ? 'Add your SIA licence to start applying for roles.' : 'Complete your profile to unlock security vacancies and exclusive member benefits.'}</div>
+          <div className="dash-sub">{!sections[0].complete ? 'Add your SIA licence to start applying for roles.' : 'Complete your full profile to earn the BS7858 Ready badge — badged candidates are seen first and can join the talent pool.'}</div>
         </div>
 
         {/* QUICK CTA — shown when SIA licence not yet verified */}
@@ -3633,7 +3633,7 @@ function Dashboard() {
         <div className="dash-card" style={{marginBottom:'1.5rem'}}>
           <div className="dash-card-top">
             <div>
-              <div className="dash-progress-label">Your Vettability Score</div>
+              <div className="dash-progress-label">Your Profile Progress</div>
               <div className="dash-progress-status" style={{color:scoreColor}}>{scoreLabel}</div>
             </div>
             <button className="btn-next" style={{whiteSpace:'nowrap'}} onClick={()=>navigate('/profile')}>
@@ -3767,7 +3767,7 @@ function SignUpPage() {
           <div className="auth-logo"><Logo/></div>
           {step === 1 ? <>
             <div className="auth-title">Create your profile</div>
-            <div className="auth-sub">Join the UK's only verified security jobs platform</div>
+            <div className="auth-sub">Free for SIA-licensed security officers. Have your SIA licence number ready — it takes two minutes to start applying.</div>
             <form className="auth-form" onSubmit={handleRegister}>
               {error && <div className="auth-error">{error}</div>}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
