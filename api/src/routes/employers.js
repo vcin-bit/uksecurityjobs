@@ -187,14 +187,17 @@ router.get('/jobs/:id/applicants', requireVerifiedEmployer, async (req, res) => 
       .select(`
         id, status, applied_at,
         candidates(id, profile_complete,
-          personal_details(first_name, last_name, phone, city, right_to_work_status),
+          personal_details(first_name, last_name, phone, city),
           sia_licences(licence_type, expiry_date, verified),
           employment_history(job_title, employer_name, start_date, end_date, is_current)
         )
       `)
       .eq('job_id', req.params.id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase select error in applicants endpoint:', error);
+      return res.status(500).json({ error: `Failed to fetch applicants: ${error.message}` });
+    }
 
     let applicants = (data || []).map(a => {
       const employment = a.candidates?.employment_history || [];
@@ -203,7 +206,6 @@ router.get('/jobs/:id/applicants', requireVerifiedEmployer, async (req, res) => 
         .sort((x, y) => new Date(y.start_date) - new Date(x.start_date))[0] || null;
       return {
         ...a,
-        created_at: a.applied_at,
         bs7858_ready: a.candidates?.profile_complete === true,
         recent_job: recentJob,
       };

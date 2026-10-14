@@ -5441,8 +5441,15 @@ function EmployerDashboard() {
     setSelectedJob(jobId);
     try {
       const res = await apiRequest(`/api/employers/jobs/${jobId}/applicants`, 'GET', null, getToken);
-      setApplicants(prev => ({ ...prev, [jobId]: res.applicants || [] }));
-    } catch(e) { console.error(e); }
+      if (res.error) {
+        setAppError(`Could not load applicants: ${res.error}`);
+      } else {
+        setApplicants(prev => ({ ...prev, [jobId]: res.applicants || [] }));
+      }
+    } catch(e) {
+      console.error(e);
+      setAppError('Could not load applicants. Please try again.');
+    }
     setLoadingApplicants(false);
   };
 
@@ -5750,12 +5757,12 @@ function EmployerDashboard() {
                                     return [desc, range].filter(Boolean).join(' · ') || null;
                                   })();
                                   const appliedAgo = (() => {
-                                    if (!app.created_at) return '';
-                                    const days = Math.floor((Date.now() - new Date(app.created_at)) / 86400000);
+                                    if (!app.applied_at) return '';
+                                    const days = Math.floor((Date.now() - new Date(app.applied_at)) / 86400000);
                                     if (days === 0) return 'Today';
                                     if (days === 1) return 'Yesterday';
                                     if (days < 7) return `${days} days ago`;
-                                    return new Date(app.created_at).toLocaleDateString('en-GB');
+                                    return new Date(app.applied_at).toLocaleDateString('en-GB');
                                   })();
                                   const isTerminal = APP_TERMINAL.includes(app.status);
                                   const busy = updatingApp === app.id;
@@ -5777,7 +5784,7 @@ function EmployerDashboard() {
                                           {licences.slice(0,2).map((l,i) => (
                                             <span key={i} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:l.verified?'#dcfce7':'#fef9c3',color:l.verified?'#15803d':'#854d0e'}}>{l.licence_type}{l.verified?' ✓':''}</span>
                                           ))}
-                                          {p.right_to_work_status && <RtwBadge status={p.right_to_work_status}/>}
+
                                         </div>
                                         <div style={{fontSize:'0.75rem',color:empLine?'#475569':'#94a3b8'}}>{empLine || 'No employment history added'}</div>
                                       </div>
