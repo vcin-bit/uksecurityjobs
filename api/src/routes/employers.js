@@ -187,19 +187,27 @@ router.get('/jobs/:id/applicants', requireVerifiedEmployer, async (req, res) => 
       .select(`
         id, status, applied_at,
         candidates(id, profile_complete,
-          personal_details(first_name, last_name, phone),
-          sia_licences(licence_type, expiry_date, verified)
+          personal_details(first_name, last_name, phone, city, right_to_work_status),
+          sia_licences(licence_type, expiry_date, verified),
+          employment_history(job_title, employer_name, start_date, end_date, is_current)
         )
       `)
       .eq('job_id', req.params.id);
 
     if (error) throw error;
 
-    let applicants = (data || []).map(a => ({
-      ...a,
-      created_at: a.applied_at,
-      bs7858_ready: a.candidates?.profile_complete === true,
-    }));
+    let applicants = (data || []).map(a => {
+      const employment = a.candidates?.employment_history || [];
+      const recentJob = employment
+        .filter(e => e.start_date)
+        .sort((x, y) => new Date(y.start_date) - new Date(x.start_date))[0] || null;
+      return {
+        ...a,
+        created_at: a.applied_at,
+        bs7858_ready: a.candidates?.profile_complete === true,
+        recent_job: recentJob,
+      };
+    });
 
     // Badged first, then most-recent application date within each group
     applicants.sort((a, b) => {

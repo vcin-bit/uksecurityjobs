@@ -5405,6 +5405,10 @@ function EmployerDashboard() {
   const [pauseNotes, setPauseNotes] = React.useState('');
   const [statusUpdating, setStatusUpdating] = React.useState(null);
   const [poolTab, setPoolTab] = React.useState('jobs');
+  const [activeTab, setActiveTab] = React.useState('all');
+  const [rejectConfirm, setRejectConfirm] = React.useState(null);
+  const [updatingApp, setUpdatingApp] = React.useState(null);
+  const [appError, setAppError] = React.useState(null);
 
   const PAUSE_REASONS = [
     'Role filled externally',
@@ -5431,6 +5435,7 @@ function EmployerDashboard() {
   }, []);
 
   const loadApplicants = async (jobId) => {
+    if (jobId !== selectedJob) { setActiveTab('all'); setAppError(null); }
     if (applicants[jobId]) { setSelectedJob(jobId === selectedJob ? null : jobId); return; }
     setLoadingApplicants(true);
     setSelectedJob(jobId);
@@ -5439,6 +5444,26 @@ function EmployerDashboard() {
       setApplicants(prev => ({ ...prev, [jobId]: res.applicants || [] }));
     } catch(e) { console.error(e); }
     setLoadingApplicants(false);
+  };
+
+  const updateApplicationStatus = async (applicationId, status, jobId) => {
+    setUpdatingApp(applicationId);
+    setAppError(null);
+    try {
+      const res = await apiRequest(`/api/employers/applications/${applicationId}`, 'PATCH', { status }, getToken);
+      if (res.success) {
+        setApplicants(prev => ({
+          ...prev,
+          [jobId]: prev[jobId].map(a => a.id === applicationId ? { ...a, status } : a),
+        }));
+      } else {
+        setAppError('Failed to update status. Please try again.');
+      }
+    } catch(e) {
+      console.error(e);
+      setAppError('Failed to update status. Please try again.');
+    }
+    setUpdatingApp(null);
   };
 
   const updateJobStatus = async (jobId, status, reason, notes) => {
@@ -5483,6 +5508,29 @@ function EmployerDashboard() {
     if (!expiresAt) return null;
     const days = Math.ceil((new Date(expiresAt) - new Date()) / (1000*60*60*24));
     return days;
+  };
+
+  const APP_TABS = [
+    { key:'all', label:'All' },
+    { key:'applied', label:'New', statuses:['applied'] },
+    { key:'shortlisted', label:'Shortlisted', statuses:['shortlisted'] },
+    { key:'interview', label:'Interview', statuses:['interview_proposed','interview_confirmed','interview_completed'] },
+    { key:'offered', label:'Offered', statuses:['offered'] },
+    { key:'rejected', label:'Rejected', statuses:['rejected'] },
+    { key:'no_show', label:'No-show', statuses:['no_show'] },
+    { key:'withdrawn', label:'Withdrawn', statuses:['withdrawn'] },
+  ];
+  const APP_TERMINAL = ['rejected','no_show','withdrawn'];
+  const APP_STATUS_PILL = {
+    applied:{bg:'#eff6ff',color:'#1d4ed8',label:'New'},
+    shortlisted:{bg:'#f0fdf4',color:'#15803d',label:'Shortlisted'},
+    interview_proposed:{bg:'#fffbeb',color:'#92400e',label:'Interview invited'},
+    interview_confirmed:{bg:'#fffbeb',color:'#92400e',label:'Interview confirmed'},
+    interview_completed:{bg:'#f1f5f9',color:'#475569',label:'Interviewed'},
+    offered:{bg:'#fdf4ff',color:'#7e22ce',label:'Offered'},
+    rejected:{bg:'#fef2f2',color:'#b91c1c',label:'Rejected'},
+    no_show:{bg:'#fdf4ff',color:'#7c3aed',label:'No-show'},
+    withdrawn:{bg:'#f1f5f9',color:'#64748b',label:'Withdrawn'},
   };
 
   if (loading) return <div style={{textAlign:'center',padding:'4rem',color:'#64748b'}}>Loading...</div>;
@@ -5655,47 +5703,114 @@ function EmployerDashboard() {
 
                     {isSelected && (
                       <div style={{borderTop:'1px solid #e2e8f0',padding:'1rem 1.25rem',background:'#fff'}}>
-                        <div style={{fontWeight:700,fontSize:'0.85rem',color:'#0b1222',marginBottom:'0.875rem'}}>
-                          Applicants {loadingApplicants ? '...' : `(${jobApplicants.length})`}
-                        </div>
                         {loadingApplicants ? (
                           <div style={{textAlign:'center',padding:'1rem',color:'#94a3b8',fontSize:'0.85rem'}}>Loading...</div>
                         ) : jobApplicants.length === 0 ? (
                           <div style={{textAlign:'center',padding:'1rem',color:'#94a3b8',fontSize:'0.85rem'}}>No applications yet.</div>
-                        ) : (
-                          <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
-                            {jobApplicants.map(app => {
-                              const p = app.candidates?.candidate_personal?.[0] || app.candidates?.candidate_personal || {};
-                              const licences = app.candidates?.candidate_licences || [];
-                              return (
-                                <div key={app.id} style={{background:'#f8fafc',borderRadius:'8px',padding:'0.875rem 1rem',border:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'1rem',flexWrap:'wrap'}}>
-                                  <div style={{flex:1}}>
-                                    <div style={{fontWeight:700,fontSize:'0.88rem',color:'#0b1222',display:'flex',alignItems:'center',gap:'0.4rem'}}>
-                                      {p.first_name || 'Candidate'} {p.last_name || ''}
-                                      {app.candidates?.reputation_score && (
-                                        <span style={{fontSize:'0.65rem',fontWeight:700,color:'#15803d',background:'#f0fdf4',border:'1px solid #bbf7d0',padding:'0.1rem 0.4rem',borderRadius:'4px'}}>★ {app.candidates.reputation_score}</span>
-                                      )}
-                                    </div>
-                                    <div style={{display:'flex',gap:'0.4rem',flexWrap:'wrap',marginTop:'0.3rem'}}>
-                                      {app.bs7858_ready && (
-                                        <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8',border:'1px solid #bfdbfe'}}>BS7858 Ready</span>
-                                      )}
-                                      {licences.slice(0,2).map((l,i) => (
-                                        <span key={i} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:l.verified?'#dcfce7':'#fef9c3',color:l.verified?'#15803d':'#854d0e'}}>{l.licence_type} {l.verified?'✓':''}</span>
-                                      ))}
-                                      {p.right_to_work_status && <RtwBadge status={p.right_to_work_status}/>}
-                                    </div>
-                                    <div style={{fontSize:'0.72rem',color:'#94a3b8',marginTop:'0.25rem'}}>Applied {new Date(app.created_at).toLocaleDateString('en-GB')}</div>
-                                  </div>
-                                  <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
-                                    <span style={{fontSize:'0.7rem',fontWeight:700,padding:'0.2rem 0.6rem',borderRadius:'999px',background:'#f1f5f9',color:statusColors[app.status]||'#64748b',textTransform:'capitalize'}}>{app.status?.replace('_',' ')}</span>
-                                    <button onClick={() => setViewingApplicant({applicationId:app.id, candidateId:app.candidates?.id, jobId:job.id, jobTitle:job.title})} style={{background:'#0b1222',color:'#fff',border:'none',borderRadius:'7px',padding:'0.4rem 0.875rem',fontSize:'0.78rem',fontWeight:700,cursor:'pointer'}}>View Profile</button>
-                                  </div>
+                        ) : (() => {
+                          const filteredApps = activeTab === 'all' ? jobApplicants
+                            : jobApplicants.filter(a => APP_TABS.find(t => t.key === activeTab)?.statuses?.includes(a.status));
+                          return (
+                            <>
+                              {appError && (
+                                <div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'0.6rem 0.875rem',marginBottom:'0.75rem',fontSize:'0.82rem',color:'#b91c1c',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                                  {appError}
+                                  <button onClick={() => setAppError(null)} style={{background:'none',border:'none',color:'#b91c1c',cursor:'pointer',fontWeight:700,fontSize:'1rem',lineHeight:1,padding:'0 0.25rem'}}>×</button>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        )}
+                              )}
+                              <div style={{display:'flex',gap:'0.375rem',flexWrap:'wrap',marginBottom:'1rem'}}>
+                                {APP_TABS.map(tab => {
+                                  const cnt = tab.key === 'all' ? jobApplicants.length : jobApplicants.filter(a => tab.statuses.includes(a.status)).length;
+                                  if (tab.key !== 'all' && cnt === 0) return null;
+                                  const isActive = activeTab === tab.key;
+                                  return (
+                                    <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                                      style={{padding:'0.3rem 0.75rem',borderRadius:'999px',border:`1px solid ${isActive?'#0b1222':'#e2e8f0'}`,background:isActive?'#0b1222':'#f8fafc',color:isActive?'#fff':'#475569',fontSize:'0.75rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+                                      {tab.label} {cnt}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+                                {filteredApps.length === 0 ? (
+                                  <div style={{textAlign:'center',padding:'1rem',color:'#94a3b8',fontSize:'0.85rem'}}>No applicants in this tab.</div>
+                                ) : filteredApps.map(app => {
+                                  const p = app.candidates?.personal_details?.[0] || app.candidates?.personal_details || {};
+                                  const licences = app.candidates?.sia_licences || [];
+                                  const pill = APP_STATUS_PILL[app.status] || {bg:'#f1f5f9',color:'#64748b',label:app.status};
+                                  const candidateName = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Candidate';
+                                  const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB', {month:'short',year:'numeric'}) : '';
+                                  const empLine = (() => {
+                                    if (!app.recent_job) return null;
+                                    const rj = app.recent_job;
+                                    const desc = [rj.job_title, rj.employer_name].filter(Boolean).join(', ');
+                                    const range = rj.start_date
+                                      ? `${fmtDate(rj.start_date)} – ${rj.is_current ? 'Present' : fmtDate(rj.end_date)}`
+                                      : '';
+                                    return [desc, range].filter(Boolean).join(' · ') || null;
+                                  })();
+                                  const appliedAgo = (() => {
+                                    if (!app.created_at) return '';
+                                    const days = Math.floor((Date.now() - new Date(app.created_at)) / 86400000);
+                                    if (days === 0) return 'Today';
+                                    if (days === 1) return 'Yesterday';
+                                    if (days < 7) return `${days} days ago`;
+                                    return new Date(app.created_at).toLocaleDateString('en-GB');
+                                  })();
+                                  const isTerminal = APP_TERMINAL.includes(app.status);
+                                  const busy = updatingApp === app.id;
+                                  return (
+                                    <div key={app.id} className="app-row" style={{background:'#f8fafc',borderRadius:'8px',border:'1px solid #e2e8f0',padding:'0.875rem 1rem'}}>
+                                      <div>
+                                        <div style={{fontWeight:700,fontSize:'0.88rem',color:'#0b1222'}}>{candidateName}</div>
+                                        {p.city && <div style={{fontSize:'0.75rem',color:'#64748b',marginTop:'0.1rem'}}>{p.city}</div>}
+                                        <div style={{marginTop:'0.35rem'}}>
+                                          <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:pill.bg,color:pill.color}}>{pill.label}</span>
+                                        </div>
+                                        <div style={{fontSize:'0.72rem',color:'#94a3b8',marginTop:'0.3rem'}}>Applied {appliedAgo}</div>
+                                      </div>
+                                      <div>
+                                        <div style={{display:'flex',gap:'0.3rem',flexWrap:'wrap',marginBottom:'0.35rem'}}>
+                                          {app.bs7858_ready && (
+                                            <span style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:'#eff6ff',color:'#1a52a8',border:'1px solid #bfdbfe'}}>BS7858 Ready</span>
+                                          )}
+                                          {licences.slice(0,2).map((l,i) => (
+                                            <span key={i} style={{fontSize:'0.65rem',fontWeight:700,padding:'0.15rem 0.5rem',borderRadius:'999px',background:l.verified?'#dcfce7':'#fef9c3',color:l.verified?'#15803d':'#854d0e'}}>{l.licence_type}{l.verified?' ✓':''}</span>
+                                          ))}
+                                          {p.right_to_work_status && <RtwBadge status={p.right_to_work_status}/>}
+                                        </div>
+                                        <div style={{fontSize:'0.75rem',color:empLine?'#475569':'#94a3b8'}}>{empLine || 'No employment history added'}</div>
+                                      </div>
+                                      <div className="app-row-actions">
+                                        {isTerminal ? (
+                                          <span style={{fontSize:'0.72rem',fontWeight:600,color:'#94a3b8'}}>{pill.label}</span>
+                                        ) : app.status === 'applied' ? (
+                                          <>
+                                            <button onClick={() => updateApplicationStatus(app.id, 'shortlisted', job.id)} disabled={busy}
+                                              style={{padding:'0.35rem 0.875rem',borderRadius:'6px',border:'none',background:'#0b1222',color:'#fff',fontSize:'0.75rem',fontWeight:700,cursor:busy?'default':'pointer',opacity:busy?0.6:1,fontFamily:'inherit',whiteSpace:'nowrap'}}>
+                                              Shortlist
+                                            </button>
+                                            <button onClick={() => setRejectConfirm({applicationId:app.id, candidateName, jobId:job.id})} disabled={busy}
+                                              style={{padding:'0.35rem 0.875rem',borderRadius:'6px',border:'1px solid #fecaca',background:'#fef2f2',color:'#b91c1c',fontSize:'0.75rem',fontWeight:700,cursor:busy?'default':'pointer',opacity:busy?0.6:1,fontFamily:'inherit',whiteSpace:'nowrap'}}>
+                                              Reject
+                                            </button>
+                                          </>
+                                        ) : (
+                                          <button onClick={() => setViewingApplicant({applicationId:app.id, candidateId:app.candidates?.id, jobId:job.id, jobTitle:job.title})}
+                                            style={{padding:'0.35rem 0.6rem',borderRadius:'6px',border:'1px solid #e2e8f0',background:'#f8fafc',color:'#475569',fontSize:'0.85rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>…</button>
+                                        )}
+                                        <button onClick={() => setViewingApplicant({applicationId:app.id, candidateId:app.candidates?.id, jobId:job.id, jobTitle:job.title})}
+                                          style={{padding:'0.35rem 0.75rem',borderRadius:'6px',border:'1px solid #e2e8f0',background:'#fff',color:'#0b1222',fontSize:'0.72rem',fontWeight:600,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
+                                          View Profile
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
@@ -5721,6 +5836,28 @@ function EmployerDashboard() {
           </div>
         </div>
         </>)}
+
+        {/* Reject confirmation modal */}
+        {rejectConfirm && (
+          <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem'}}>
+            <div style={{background:'#fff',borderRadius:'14px',padding:'1.75rem',width:'100%',maxWidth:'400px'}}>
+              <div style={{fontWeight:800,fontSize:'1rem',color:'#0b1222',marginBottom:'0.5rem'}}>Reject application</div>
+              <div style={{fontSize:'0.88rem',color:'#475569',marginBottom:'1.5rem'}}>
+                Reject <strong>{rejectConfirm.candidateName}</strong>? They will be notified by email.
+              </div>
+              <div style={{display:'flex',gap:'0.75rem',justifyContent:'flex-end'}}>
+                <button onClick={() => setRejectConfirm(null)}
+                  style={{padding:'0.6rem 1.25rem',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',color:'#475569',fontWeight:600,fontSize:'0.88rem',cursor:'pointer',fontFamily:'inherit'}}>
+                  Cancel
+                </button>
+                <button onClick={async () => { const c = rejectConfirm; setRejectConfirm(null); await updateApplicationStatus(c.applicationId, 'rejected', c.jobId); }}
+                  style={{padding:'0.6rem 1.25rem',borderRadius:'8px',border:'none',background:'#b91c1c',color:'#fff',fontWeight:700,fontSize:'0.88rem',cursor:'pointer',fontFamily:'inherit'}}>
+                  Reject
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Pause job modal */}
         {pauseModal && (
