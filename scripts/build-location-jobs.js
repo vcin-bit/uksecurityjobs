@@ -150,8 +150,16 @@ ${cards}
 </div>`;
 }
 
+// Cities served by Pages Functions — skip build-time job injection for these.
+const PAGES_FUNCTION_CITIES = ['Birmingham'];
+
 async function main() {
   const { city, file } = parseArgs();
+
+  if (PAGES_FUNCTION_CITIES.map(c => c.toLowerCase()).includes(city.toLowerCase())) {
+    console.log(`${city} is served by a Pages Function — skipping build-time job injection.`);
+    process.exit(0);
+  }
   const filePath = path.resolve(process.cwd(), file);
 
   if (!fs.existsSync(filePath)) {

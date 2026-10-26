@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/vacancies/*", "/sitemap-jobs.xml"],
+  "include": ["/vacancies/*", "/sitemap-jobs.xml", "/security-jobs-birmingham"],
   "exclude": []
 }
