@@ -254,7 +254,7 @@ async function sendFinalWarnings() {
 //   - still have no SIA licence row — detected via embedded sia_licences(id)
 //
 // Skips any with rows in interview_slots or interview_feedback (manual review).
-// Gated by CANDIDATE_REMOVAL_ENABLED env var (default: dry-run only).
+// Gated by REMOVAL_ENABLED=true env var (default: off).
 //
 // Returns { removed, wouldRemove, skipped } where:
 //   removed     — count of successfully deleted accounts (live mode)
@@ -262,7 +262,7 @@ async function sendFinalWarnings() {
 //   skipped     — count skipped due to interview activity
 
 async function runRemoval() {
-  const enabled = process.env.CANDIDATE_REMOVAL_ENABLED === 'true';
+  const enabled = process.env.REMOVAL_ENABLED === 'true';
   console.log(`[nudges] runRemoval started at ${new Date().toISOString()} (${enabled ? 'LIVE' : 'DRY RUN'})`);
 
   const EMPTY = { removed: 0, wouldRemove: [], skipped: 0 };
@@ -357,6 +357,10 @@ async function runRemoval() {
   const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
   let removedCount = 0;
 
+  // Fetch all employer clerk_user_ids so we never delete an employer's Clerk account.
+  const { data: employerRows } = await supabase.from('employers').select('clerk_user_id');
+  const employerClerkIds = new Set((employerRows || []).map(e => e.clerk_user_id).filter(Boolean));
+
   for (const candidate of toRemove) {
     try {
       // Delete only the candidates row — FK ON DELETE CASCADE handles:
@@ -373,29 +377,45 @@ async function runRemoval() {
       }
 
       // Delete Clerk user only after the DB row is confirmed gone.
+      // Safety: never delete the Clerk account if it belongs to an employer or admin.
       if (candidate.clerk_user_id) {
-        try {
-          await clerk.users.deleteUser(candidate.clerk_user_id);
-        } catch (clerkErr) {
-          console.error(
-            `[nudges] runRemoval: Clerk delete failed for ${candidate.clerk_user_id}:`,
-            clerkErr.message
+        let keepClerk = employerClerkIds.has(candidate.clerk_user_id);
+        if (!keepClerk) {
+          try {
+            const clerkUser = await clerk.users.getUser(candidate.clerk_user_id);
+            if (clerkUser.publicMetadata?.role === 'admin') keepClerk = true;
+          } catch {
+            // 404 = already gone; any other error is non-fatal here — attempt delete anyway
+          }
+        }
+        if (keepClerk) {
+          console.warn(
+            `[nudges] runRemoval: Clerk user kept — employer/admin: ${candidate.clerk_user_id} (candidate ${candidate.id})`
           );
-          // Continue — Supabase row is already gone; a Clerk orphan is preferable to leaving the row.
+        } else {
+          try {
+            await clerk.users.deleteUser(candidate.clerk_user_id);
+          } catch (clerkErr) {
+            console.error(
+              `[nudges] runRemoval: Clerk delete failed for ${candidate.clerk_user_id}:`,
+              clerkErr.message
+            );
+            // Continue — Supabase row is already gone; a Clerk orphan is preferable to leaving the row.
+          }
         }
       }
 
       // Audit log — written only after the DB delete succeeded.
+      // audit_log.action CHECK constraint: INSERT | UPDATE | DELETE | READ only.
       await auditLog({
         tableName:   'candidates',
         recordId:    candidate.id,
-        action:      'candidate_auto_removed',
+        action:      'DELETE',
         performedBy: 'system',
         ipAddress:   null,
         changes: {
-          reason:     'No SIA licence added within 7 days of final warning email',
-          email:      candidate.email,
-          created_at: candidate.created_at,
+          reason:               'No SIA licence added within 7 days of final warning email',
+          candidate_created_at: candidate.created_at,
         },
       });
 

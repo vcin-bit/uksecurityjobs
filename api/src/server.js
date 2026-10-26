@@ -305,7 +305,7 @@ cron.schedule('0 2 * * *', async () => {
 //   1. runNudges:         24h and 72h reminder emails for incomplete profiles.
 //   2. sendFinalWarnings: day-7 final warning to candidates with no SIA licence.
 //   3. runRemoval:        day-14 deletion of accounts that ignored the warning.
-//                         Gated by CANDIDATE_REMOVAL_ENABLED=true (default: dry-run).
+//                         Gated by REMOVAL_ENABLED=true (default: off — must be set explicitly).
 //   4. runRegistrationDigest: daily summary to admin, including enforcement counts.
 cron.schedule('0 9 * * *', async () => {
   try { await runNudges(); } catch (err) { console.error('[nudges] Cron job error:', err.message); }

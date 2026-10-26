@@ -74,17 +74,17 @@ function extractStoragePath(url) {
 
 /**
  * Look up a Clerk user by ID.
- * Returns 'found' if the user exists.
- * Returns 'not-found' if Clerk returns 404.
+ * Returns { status: 'found', user } if the user exists.
+ * Returns { status: 'not-found' } if Clerk returns 404.
  * THROWS for any other error (401, 403, 429, 5xx) — caller must abort the run.
  */
 async function clerkLookup(clerkUserId) {
   try {
-    await clerk.users.getUser(clerkUserId);
-    return 'found';
+    const user = await clerk.users.getUser(clerkUserId);
+    return { status: 'found', user };
   } catch (err) {
     const status = err.status ?? err.statusCode ?? null;
-    if (status === 404) return 'not-found';
+    if (status === 404) return { status: 'not-found' };
     // Any other error means the key is broken or Clerk is unavailable — abort.
     throw Object.assign(
       new Error(`Clerk API error (status ${status ?? 'unknown'}): ${err.message}`),
@@ -123,7 +123,7 @@ async function runGateCheck() {
       console.error('[gate] Aborting: fix CLERK_SECRET_KEY before retrying.');
       process.exit(1);
     }
-    if (result === 'not-found') {
+    if (result.status === 'not-found') {
       console.error(`[gate] Clerk key check failed — control candidate ${c.id} not found in Clerk (404).`);
       console.error('[gate] Aborting: key may be pointing at the wrong Clerk instance.');
       process.exit(1);
@@ -242,11 +242,21 @@ async function main() {
   const toRemove = targets.filter(c => !skipSet.has(c.id));
   const skipped  = targets.filter(c =>  skipSet.has(c.id));
 
-  // ── Step 3: Dry-run checks (Clerk existence, storage paths) ───────────────
-  // Check Clerk user existence and collect storage paths regardless of mode
-  let clerkFound    = 0;
-  let clerkNotFound = 0;
-  let storageCount  = 0;
+  // ── Step 3: Fetch employer clerk_user_ids (safety: never delete these) ────
+  const { data: employerRows, error: empErr } = await supabase
+    .from('employers')
+    .select('clerk_user_id');
+  if (empErr) {
+    console.error('[remove-unlicensed-candidates] employers query failed:', empErr.message);
+    process.exit(1);
+  }
+  const employerClerkIds = new Set((employerRows || []).map(e => e.clerk_user_id).filter(Boolean));
+
+  // ── Step 4: Dry-run checks (Clerk existence, employer/admin guard, storage) ─
+  let clerkFound      = 0;
+  let clerkNotFound   = 0;
+  let clerkKept       = 0; // found but employer or admin — Clerk account would be kept
+  let storageCount    = 0;
   const storageByCandidate = {};
 
   for (const c of toRemove) {
@@ -255,12 +265,19 @@ async function main() {
     storageByCandidate[c.id] = storagePath;
     if (storagePath) storageCount++;
 
-    // Clerk existence check (read-only, safe in dry-run)
+    // Clerk check (read-only, safe in dry-run)
     if (c.clerk_user_id) {
       const result = await clerkLookup(c.clerk_user_id);
       // clerkLookup throws on non-404 errors — propagates to main().catch() → exit 1
-      if (result === 'found') {
-        clerkFound++;
+      if (result.status === 'found') {
+        const isEmployer = employerClerkIds.has(c.clerk_user_id);
+        const isAdmin    = result.user?.publicMetadata?.role === 'admin';
+        if (isEmployer || isAdmin) {
+          clerkKept++;
+          console.log(`  [${c.id}] Clerk user would be KEPT (${isAdmin ? 'admin' : 'employer'}): ${c.clerk_user_id}`);
+        } else {
+          clerkFound++;
+        }
       } else {
         clerkNotFound++; // 404 = already deleted from Clerk
       }
@@ -269,15 +286,16 @@ async function main() {
     }
   }
 
-  // ── Step 4a: Dry-run report ────────────────────────────────────────────────
+  // ── Step 5a: Dry-run report ────────────────────────────────────────────────
   if (!LIVE) {
     console.log('── DRY RUN SUMMARY ─────────────────────────────────────────');
-    console.log(`  Targeted:              ${targets.length}`);
-    console.log(`  Would remove:          ${toRemove.length}`);
-    console.log(`  Skipped (interview):   ${skipped.length}`);
-    console.log(`  Storage files to del:  ${storageCount}`);
-    console.log(`  Clerk users found:     ${clerkFound}`);
-    console.log(`  Clerk users not found: ${clerkNotFound}`);
+    console.log(`  Targeted:                    ${targets.length}`);
+    console.log(`  Would remove:                ${toRemove.length}`);
+    console.log(`  Skipped (interview):         ${skipped.length}`);
+    console.log(`  Storage files to del:        ${storageCount}`);
+    console.log(`  Clerk users to delete:       ${clerkFound}`);
+    console.log(`  Clerk users KEPT (emp/admin):${clerkKept}`);
+    console.log(`  Clerk users not found (404): ${clerkNotFound}`);
     if (skipped.length > 0) {
       console.log(`\n  Skipped IDs (interview activity — manual review):`);
       for (const c of skipped) console.log(`    ${c.id}`);
@@ -292,7 +310,7 @@ async function main() {
     return;
   }
 
-  // ── Step 4b: Live removal ─────────────────────────────────────────────────
+  // ── Step 5b: Live removal ─────────────────────────────────────────────────
   console.log(`── LIVE REMOVAL — ${toRemove.length} candidates ─────────────────────────────`);
   if (skipped.length > 0) {
     console.warn(
@@ -305,6 +323,7 @@ async function main() {
   let storageDeleted  = 0;
   let storageErrors   = 0;
   let clerkDeleted    = 0;
+  let clerkKeptLive   = 0; // employer or admin — Clerk account preserved
   let clerkDeleteFail = 0;
 
   for (const candidate of toRemove) {
@@ -335,26 +354,44 @@ async function main() {
         }
       }
 
-      // 3. Delete Clerk user
+      // 3. Delete Clerk user — safety: never delete employer or admin accounts
       if (candidate.clerk_user_id) {
-        try {
-          await clerk.users.deleteUser(candidate.clerk_user_id);
-          clerkDeleted++;
-        } catch (clerkErr) {
-          const status = clerkErr.status ?? clerkErr.statusCode ?? null;
-          if (status === 404) {
-            // Already deleted from Clerk — DB row is gone, this is fine
-            console.log(`  [${candidate.id}] Clerk user already deleted (404) — skipping Clerk step`);
-            clerkDeleted++; // counts as handled
-          } else {
-            // 401/403/429/5xx — something is wrong with the key or Clerk itself.
-            // DB row is already deleted; log, then STOP to prevent further damage.
-            console.error(
-              `  [${candidate.id}] Clerk delete returned status ${status ?? 'unknown'}: ${clerkErr.message}`
-            );
-            console.error('  STOPPING RUN — Clerk API error after DB delete. Remaining candidates untouched.');
-            console.error(`  Removed so far: ${removedCount + 1}  Remaining: ${toRemove.length - removedCount - 1}`);
-            process.exit(1);
+        const isEmployer = employerClerkIds.has(candidate.clerk_user_id);
+        let isAdmin = false;
+        if (!isEmployer) {
+          try {
+            const clerkUser = await clerk.users.getUser(candidate.clerk_user_id);
+            isAdmin = clerkUser.publicMetadata?.role === 'admin';
+          } catch (lookupErr) {
+            const s = lookupErr.status ?? lookupErr.statusCode ?? null;
+            if (s !== 404) {
+              console.error(`  [${candidate.id}] Clerk lookup returned status ${s}: ${lookupErr.message}`);
+              console.error('  STOPPING RUN — Clerk API error. Remaining candidates untouched.');
+              process.exit(1);
+            }
+            // 404 = already gone; fall through to skip delete
+          }
+        }
+        if (isEmployer || isAdmin) {
+          console.warn(`  [${candidate.id}] Clerk user kept — ${isAdmin ? 'admin' : 'employer'}: ${candidate.clerk_user_id}`);
+          clerkKeptLive++;
+        } else {
+          try {
+            await clerk.users.deleteUser(candidate.clerk_user_id);
+            clerkDeleted++;
+          } catch (clerkErr) {
+            const status = clerkErr.status ?? clerkErr.statusCode ?? null;
+            if (status === 404) {
+              console.log(`  [${candidate.id}] Clerk user already deleted (404) — skipping Clerk step`);
+              clerkDeleted++; // counts as handled
+            } else {
+              console.error(
+                `  [${candidate.id}] Clerk delete returned status ${status ?? 'unknown'}: ${clerkErr.message}`
+              );
+              console.error('  STOPPING RUN — Clerk API error after DB delete. Remaining candidates untouched.');
+              console.error(`  Removed so far: ${removedCount + 1}  Remaining: ${toRemove.length - removedCount - 1}`);
+              process.exit(1);
+            }
           }
         }
       }
@@ -371,11 +408,12 @@ async function main() {
   }
 
   console.log('\n── LIVE REMOVAL COMPLETE ───────────────────────────────────');
-  console.log(`  Targeted:            ${targets.length}`);
-  console.log(`  Removed:             ${removedCount}`);
-  console.log(`  Skipped (interview): ${skipped.length}`);
-  console.log(`  Storage deleted:     ${storageDeleted}  (errors: ${storageErrors})`);
-  console.log(`  Clerk deleted:       ${clerkDeleted}  (errors: ${clerkDeleteFail})`);
+  console.log(`  Targeted:                    ${targets.length}`);
+  console.log(`  Removed:                     ${removedCount}`);
+  console.log(`  Skipped (interview):         ${skipped.length}`);
+  console.log(`  Storage deleted:             ${storageDeleted}  (errors: ${storageErrors})`);
+  console.log(`  Clerk deleted:               ${clerkDeleted}  (errors: ${clerkDeleteFail})`);
+  console.log(`  Clerk kept (employer/admin): ${clerkKeptLive}`);
   console.log(`  Completed at:        ${new Date().toISOString()}\n`);
 }
 
