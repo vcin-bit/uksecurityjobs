@@ -249,7 +249,6 @@ async function loadJobs() {
     const data = await res.json();
     allJobs = data.jobs || [];
     renderJobs(allJobs);
-    injectJobsSchema(allJobs);
   } catch(e) {
     document.getElementById('jobsList').innerHTML = '<div class="empty-state"><h2>No vacancies yet</h2><p>We are building our employer network. Register your profile now so you are ready when roles go live.</p><a href="https://app.uksecurityjobs.co.uk/sign-up" class="btn-primary">Register Free →</a></div>';
     document.getElementById('jobsCount').textContent = '';
@@ -269,16 +268,17 @@ function renderJobs(jobs) {
     const companyName = job.employers?.company_name || job.company_name || '';
     const rate = job.rate_from ? `£${job.rate_from}${job.rate_to && job.rate_to !== job.rate_from ? '–'+job.rate_to : ''}` : '';
     const rateType = job.rate_type === 'hourly' ? '/hr' : job.rate_type === 'daily' ? '/day' : '/yr';
-    const applyUrl = isDirect
-      ? `https://app.uksecurityjobs.co.uk/jobs/${job.id}`
-      : (job.source_url || `https://app.uksecurityjobs.co.uk/jobs/${job.id}`);
+    // Direct jobs get a canonical detail page; aggregated jobs link to source.
+    const detailUrl  = isDirect ? `/vacancies/${job.id}` : null;
+    const externalUrl = isDirect ? null : (job.source_url || `https://app.uksecurityjobs.co.uk/jobs?job=${job.id}`);
+    const applyUrl   = detailUrl || externalUrl;
     const applyAttrs = isDirect ? '' : 'target="_blank" rel="noopener noreferrer"';
     const sourceBadge = isDirect
       ? '<span class="job-badge badge-green">Verified Employer</span>'
       : '<span class="job-badge badge-grey">via Reed</span>';
     return `<div class="job-card">
       <div style="flex:1">
-        <div class="job-title">${job.title}</div>
+        ${isDirect ? `<a href="/vacancies/${job.id}" class="job-title" style="text-decoration:none;color:inherit;">${job.title}</a>` : `<div class="job-title">${job.title}</div>`}
         <div class="job-company">${companyName} &mdash; ${job.location || ''}</div>
         <div class="job-meta">
           ${sourceBadge}
@@ -289,7 +289,7 @@ function renderJobs(jobs) {
       </div>
       <div style="text-align:right;flex-shrink:0">
         ${rate ? `<div class="job-rate">${rate}<span class="job-rate-sub">${rateType}</span></div>` : ''}
-        <a href="${applyUrl}" class="job-apply" ${applyAttrs}>Apply →</a>
+        <a href="${applyUrl}" class="job-apply" ${applyAttrs}>${isDirect ? 'View job →' : 'Apply →'}</a>
       </div>
     </div>`;
   }).join('');
@@ -314,67 +314,6 @@ function clearFilters() {
 }
 
 function toggle(btn) { btn.parentElement.classList.toggle('open'); }
-
-function buildAddress(job) {
-  var addr = { '@type': 'PostalAddress', addressCountry: 'GB' };
-  if (job.location) addr.addressLocality = job.location;
-  if (job.postcode) addr.postalCode = job.postcode;
-  return addr;
-}
-
-function buildJobPosting(job) {
-  var isDirect = !job.source || job.source === 'direct';
-  var companyName = (job.employers && job.employers.company_name)
-    ? job.employers.company_name
-    : (job.company_name || 'Unknown Employer');
-  var applyUrl = isDirect
-    ? ('https://app.uksecurityjobs.co.uk/jobs/' + job.id)
-    : (job.source_url || ('https://app.uksecurityjobs.co.uk/jobs/' + job.id));
-  var org = { '@type': 'Organization', name: companyName };
-  if (isDirect) org.sameAs = 'https://www.uksecurityjobs.co.uk';
-  var posting = {
-    '@context': 'https://schema.org',
-    '@type': 'JobPosting',
-    title: (job.title || '').trim(),
-    description: job.description || (job.title || '').trim(),
-    datePosted: new Date(job.created_at).toISOString().split('T')[0],
-    url: applyUrl,
-    hiringOrganization: org,
-    jobLocation: { '@type': 'Place', address: buildAddress(job) }
-  };
-  if (job.expires_at) posting.validThrough = new Date(job.expires_at).toISOString().split('T')[0];
-  if (job.employment_type) {
-    var typeMap = { 'Full Time': 'FULL_TIME', 'Part Time': 'PART_TIME', 'Either': ['FULL_TIME', 'PART_TIME'] };
-    var mapped = typeMap[job.employment_type];
-    if (mapped) posting.employmentType = mapped;
-  }
-  if (job.rate_from) {
-    var unitMap = { hourly: 'HOUR', daily: 'DAY', annual: 'YEAR' };
-    posting.baseSalary = {
-      '@type': 'MonetaryAmount',
-      currency: 'GBP',
-      value: {
-        '@type': 'QuantitativeValue',
-        minValue: parseFloat(job.rate_from),
-        maxValue: parseFloat(job.rate_to || job.rate_from),
-        unitText: unitMap[job.rate_type] || 'HOUR'
-      }
-    };
-  }
-  return posting;
-}
-
-function injectJobsSchema(jobs) {
-  var existing = document.getElementById('jobs-schema');
-  if (existing) existing.remove();
-  var directJobs = (jobs || []).filter(function(j) { return !j.source || j.source === 'direct'; });
-  if (!directJobs.length) return;
-  var script = document.createElement('script');
-  script.type = 'application/ld+json';
-  script.id = 'jobs-schema';
-  script.textContent = JSON.stringify(directJobs.map(buildJobPosting));
-  document.head.appendChild(script);
-}
 
 loadJobs();
 </script>

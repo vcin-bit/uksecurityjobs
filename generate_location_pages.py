@@ -352,15 +352,6 @@ TEMPLATE = '''<!DOCTYPE html>
 <link rel="canonical" href="https://www.uksecurityjobs.co.uk/{slug}"/>
 <script type="application/ld+json">{{
   "@context":"https://schema.org",
-  "@type":"JobPosting",
-  "title":"Security Officer &mdash; {city}",
-  "description":"SIA-licensed security officer positions in {city}, {region}",
-  "hiringOrganization":{{"@type":"Organization","name":"UKSecurityJobs","sameAs":"https://www.uksecurityjobs.co.uk"}},
-  "jobLocation":{{"@type":"Place","address":{{"@type":"PostalAddress","addressLocality":"{city}","addressRegion":"{region}","addressCountry":"GB"}}}},
-  "employmentType":"FULL_TIME"
-}}</script>
-<script type="application/ld+json">{{
-  "@context":"https://schema.org",
   "@type":"FAQPage",
   "mainEntity":[
     {{"@type":"Question","name":"What security jobs are available in {city}?","acceptedAnswer":{{"@type":"Answer","text":"UKSecurityJobs lists verified security vacancies in {city} across {sectors}. Roles include door supervisor positions, security guard roles, CCTV operator jobs and close protection opportunities. Every role requires a valid SIA licence."}}}},
