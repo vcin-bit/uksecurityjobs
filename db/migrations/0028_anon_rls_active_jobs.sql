@@ -1,19 +1,9 @@
--- Allow the anon role to read active direct jobs.
+-- Reverts the mistaken anon RLS policy added earlier in this migration file.
 --
--- The public_active_jobs view uses SECURITY INVOKER (the default), so it runs
--- as the requesting role (anon). Without a policy on the underlying jobs table
--- the view returns 0 rows even though the GRANT on the view is in place.
+-- public_active_jobs is a SECURITY DEFINER view (Postgres default), so it
+-- already runs as the view owner and anon can query it via the GRANT on the
+-- view alone — no policy on the underlying jobs table is needed or wanted.
 --
--- This policy mirrors the WHERE clause in the view, so no extra rows are exposed.
+-- The policy was dropped in production; this migration keeps the repo in sync.
 
-ALTER TABLE jobs ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "anon_read_active_direct_jobs"
-  ON jobs
-  FOR SELECT
-  TO anon
-  USING (
-    status    = 'active'
-    AND source = 'direct'
-    AND (expires_at IS NULL OR expires_at > now())
-  );
+DROP POLICY IF EXISTS "anon_read_active_direct_jobs" ON jobs;
