@@ -10,15 +10,31 @@
 <body>
 <div id="root"></div>
 
-<!-- Cookie consent + Meta Pixel for app.uksecurityjobs.co.uk
-     Pixel (ID 1080163437752517) loads ONLY after the user accepts.
+<!-- Cookie consent + GA4 + Meta Pixel for app.uksecurityjobs.co.uk
+     Both load ONLY after the user accepts cookies.
      localStorage key 'cookie_consent' mirrors the marketing site convention.
-     PageView is fired on load; route-change PageViews are fired by
-     the MetaPixelPageView component in App.js. -->
+     GA4: G-23Z2MEN8N5 — no linked_domains needed; 'auto' cookie_domain
+          already covers www and app subdomains (.uksecurityjobs.co.uk).
+     Pixel (ID 1080163437752517) PageView is fired on load;
+     route-change PageViews are fired by MetaPixelPageView in App.js. -->
 <script>
 (function () {
+  var GA_ID     = 'G-23Z2MEN8N5';
   var PIXEL_ID  = '1080163437752517';
   var STORE_KEY = 'cookie_consent';
+
+  window.loadGA = function () {
+    if (window._gaLoaded) return;
+    window._gaLoaded = true;
+    var s = document.createElement('script');
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+    s.async = true;
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function() { dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', GA_ID);
+  };
 
   window.loadMetaPixel = function () {
     if (window._pixelLoaded) return;
@@ -70,6 +86,7 @@
     document.getElementById('uksj-accept').onclick = function () {
       try { localStorage.setItem(STORE_KEY, 'accepted'); } catch(e) {}
       banner.remove();
+      window.loadGA();
       window.loadMetaPixel();
     };
     document.getElementById('uksj-reject').onclick = function () {
@@ -91,6 +108,7 @@
   try { consent = localStorage.getItem(STORE_KEY); } catch(e) {}
 
   if (consent === 'accepted') {
+    window.loadGA();
     window.loadMetaPixel();
   } else if (!consent) {
     if (document.readyState === 'loading') {

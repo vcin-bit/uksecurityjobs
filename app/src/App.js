@@ -6,11 +6,20 @@ import './styles.css';
 
 startApiKeepAlive();
 
+// ── Analytics helpers ─────────────────────────────────────────────────────────
+// Both GA4 (gtag) and Meta Pixel (fbq) are loaded by index.html only after
+// cookie consent. These wrappers are no-ops when the libraries are absent.
+
+// Fire a GA4 event. No personal data (no email, name, or IDs) in any call.
+function gtagEvent(name, params) {
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', name, params || {});
+  }
+}
+
 // ── Meta Pixel — fires PageView on every client-side route change ─────────────
-// Pixel is loaded by index.html only after cookie consent ('accepted').
 // The initial PageView is already fired by index.html on load, so we skip the
 // first effect run to avoid a double-count.
-// window.fbq will be undefined if consent was not given — all calls are no-ops.
 function MetaPixelPageView() {
   const location = useLocation();
   const mounted = React.useRef(false);
@@ -2188,6 +2197,7 @@ function ProfileBuilder() {
       if (d.licences) {
         try { await apiRequest('/api/sia', 'PUT', { licences: d.licences }, getToken);
           if (typeof window.fbq === 'function') window.fbq('trackCustom', 'LicenceSubmitted');
+          gtagEvent('sia_licence_added');
         } catch(e) { console.error("Failed to save SIA licences:", e.message); }
       }
       if (d.driving) {
@@ -3741,8 +3751,12 @@ function SignUpPage() {
           return;
         }
         const body = await res.json().catch(() => ({}));
-        if ((body?.candidate?.profile_step ?? 0) === 0) {
+        // Fire conversion events only when the API confirms a new row was created.
+        if (body?.created === true) {
           if (typeof window.fbq === 'function') window.fbq('track', 'CompleteRegistration');
+          gtagEvent('sign_up_candidate');
+        }
+        if ((body?.candidate?.profile_step ?? 0) === 0) {
           navigate('/profile');
           setLoading(false);
           return;
@@ -3753,7 +3767,6 @@ function SignUpPage() {
         setLoading(false);
         return;
       }
-      if (typeof window.fbq === 'function') window.fbq('track', 'CompleteRegistration');
       navigate('/dashboard');
     } catch(err) { setError(err.errors?.[0]?.message || 'Invalid code. Please try again.'); }
     setLoading(false);
@@ -5947,6 +5960,7 @@ function EmployerRegisterForm({ onSaved, getToken }) {
       const payload = { ...form, address: [form.address_line1, form.address_line2, form.city, form.county, form.postcode].filter(Boolean).join(', ') };
       const res = await apiRequest('/api/employers/me', 'POST', payload, getToken);
       if (typeof window.fbq === 'function') window.fbq('trackCustom', 'EmployerSignup');
+      gtagEvent('sign_up_employer');
       onSaved(res.employer);
     } catch(err) { setError('Failed to save. Please try again.'); }
     setSaving(false);
@@ -6046,6 +6060,8 @@ function PostJobForm({ employerName, getToken, onSaved, onCancel, onPaymentRequi
         onSaved(res.job);
       } else {
         const res = await apiRequest('/api/employers/jobs', 'POST', payload, getToken);
+        if (typeof window.fbq === 'function') window.fbq('trackCustom', 'JobPosted');
+        gtagEvent('job_posted');
         onSaved(res.job);
       }
     } catch(err) {

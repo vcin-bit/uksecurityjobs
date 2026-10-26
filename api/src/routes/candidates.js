@@ -143,6 +143,16 @@ router.get('/me', async (req, res) => {
 
       if (createError) throw createError;
       candidate = newCandidate;
+
+      await auditLog({
+        tableName: 'candidates',
+        recordId: candidate.id,
+        action: 'INSERT',
+        performedBy: req.userId,
+        ipAddress: req.ip
+      });
+
+      return res.json({ candidate, created: true });
     } else if (error) {
       throw error;
     }
@@ -194,7 +204,7 @@ router.post('/', async (req, res) => {
       ipAddress: req.ip
     });
 
-    res.status(201).json({ candidate });
+    res.status(201).json({ candidate, created: true });
   } catch (err) {
     console.error('POST /candidates error:', err);
     res.status(500).json({ error: 'Failed to create profile' });
