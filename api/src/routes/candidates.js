@@ -98,6 +98,24 @@ router.get('/me', async (req, res) => {
 
     // Auto-create candidate record on first login if it doesn't exist
     if (error && error.code === 'PGRST116') {
+      // Guard: never auto-create a candidate row for an employer or admin account.
+      const { data: existingEmployer } = await supabase
+        .from('employers')
+        .select('id')
+        .eq('clerk_user_id', req.userId)
+        .maybeSingle();
+
+      let clerkRole = null;
+      try {
+        const ck = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const clerkUser = await ck.users.getUser(req.userId);
+        clerkRole = clerkUser.publicMetadata?.role ?? null;
+      } catch { /* non-fatal — if Clerk is unreachable, fall through to create */ }
+
+      if (existingEmployer || clerkRole === 'admin') {
+        return res.status(403).json({ error: 'This account is an employer/admin account' });
+      }
+
       // Fetch email from Clerk API — JWT does not include the email claim
       let candidateEmail = req.userEmail || '';
       try {
