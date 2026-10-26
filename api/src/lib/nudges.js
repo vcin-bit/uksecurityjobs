@@ -19,7 +19,7 @@
 const { supabase, auditLog } = require('./supabase');
 const { isBS7858Ready, canApply } = require('../routes/candidates');
 const email = require('./email');
-const { createClerkClient } = require('@clerk/backend');
+const { deleteCandidateAccount } = require('./candidateDeletion');
 
 const NUDGE_WINDOWS = [
   { type: '24h', minHours: 20, maxHours: 28 },
@@ -354,72 +354,26 @@ async function runRemoval() {
   }
 
   // Live removal.
-  const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
   let removedCount = 0;
-
-  // Fetch all employer clerk_user_ids so we never delete an employer's Clerk account.
-  const { data: employerRows } = await supabase.from('employers').select('clerk_user_id');
-  const employerClerkIds = new Set((employerRows || []).map(e => e.clerk_user_id).filter(Boolean));
 
   for (const candidate of toRemove) {
     try {
-      // Delete only the candidates row — FK ON DELETE CASCADE handles:
-      // candidate_nudges, candidate_employer_visibility, talent_pool_invites,
-      // talent_pool_members, talent_pool_callout_recipients.
-      const { error: delErr } = await supabase
-        .from('candidates')
-        .delete()
-        .eq('id', candidate.id);
-
-      if (delErr) {
-        console.error(`[nudges] runRemoval: delete failed for candidate ${candidate.id}:`, delErr.message);
-        continue; // leave this candidate in place; try again next run
-      }
-
-      // Delete Clerk user only after the DB row is confirmed gone.
-      // Safety: never delete the Clerk account if it belongs to an employer or admin.
-      if (candidate.clerk_user_id) {
-        let keepClerk = employerClerkIds.has(candidate.clerk_user_id);
-        if (!keepClerk) {
-          try {
-            const clerkUser = await clerk.users.getUser(candidate.clerk_user_id);
-            if (clerkUser.publicMetadata?.role === 'admin') keepClerk = true;
-          } catch {
-            // 404 = already gone; any other error is non-fatal here — attempt delete anyway
-          }
-        }
-        if (keepClerk) {
-          console.warn(
-            `[nudges] runRemoval: Clerk user kept — employer/admin: ${candidate.clerk_user_id} (candidate ${candidate.id})`
-          );
-        } else {
-          try {
-            await clerk.users.deleteUser(candidate.clerk_user_id);
-          } catch (clerkErr) {
-            console.error(
-              `[nudges] runRemoval: Clerk delete failed for ${candidate.clerk_user_id}:`,
-              clerkErr.message
-            );
-            // Continue — Supabase row is already gone; a Clerk orphan is preferable to leaving the row.
-          }
-        }
-      }
-
-      // Audit log — written only after the DB delete succeeded.
-      // audit_log.action CHECK constraint: INSERT | UPDATE | DELETE | READ only.
-      await auditLog({
-        tableName:   'candidates',
-        recordId:    candidate.id,
-        action:      'DELETE',
-        performedBy: 'system',
-        ipAddress:   null,
-        changes: {
+      const result = await deleteCandidateAccount(candidate.id, {
+        performedBy:  'system',
+        auditChanges: {
           reason:               'No SIA licence added within 7 days of final warning email',
           candidate_created_at: candidate.created_at,
         },
       });
 
-      console.log(`[nudges] runRemoval: removed candidate ${candidate.id} (${candidate.email})`);
+      if (result.clerk_status === 'error' || result.clerk_status === 'kept_check_failed') {
+        console.error(
+          `[nudges] runRemoval: clerk_status=${result.clerk_status} for candidate ${candidate.id} — STOPPING RUN`
+        );
+        return { removed: removedCount, wouldRemove: [], skipped: skippedCount };
+      }
+
+      console.log(`[nudges] runRemoval: removed candidate ${candidate.id} (clerk_status=${result.clerk_status})`);
       removedCount++;
     } catch (err) {
       console.error(`[nudges] runRemoval: unexpected error for candidate ${candidate.id}:`, err.message);

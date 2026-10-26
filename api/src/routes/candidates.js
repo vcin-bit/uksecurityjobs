@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase, getClientForUser, encrypt, decrypt, auditLog } = require('../lib/supabase');
 const { createClerkClient } = require('@clerk/backend');
+const { deleteCandidateAccount } = require('../lib/candidateDeletion');
 const adminNotify = require('../lib/adminNotify');
 
 // ── Apply gate ───────────────────────────────────────────────────────────────
@@ -530,28 +531,25 @@ router.patch('/me/availability', async (req, res) => {
 router.delete('/me', async (req, res) => {
   try {
     const db = getClientForUser(req.token);
-    const { data: candidate } = await db.from('candidates').select('id').eq('clerk_user_id', req.userId).single();
+    const { data: candidate } = await db
+      .from('candidates').select('id').eq('clerk_user_id', req.userId).single();
     if (!candidate) return res.status(404).json({ error: 'Profile not found' });
 
-    const id = candidate.id;
+    const result = await deleteCandidateAccount(candidate.id, {
+      performedBy:  'self-service',
+      auditChanges: { reason: 'candidate erasure request' },
+    });
 
-    // Delete all candidate data in order (child tables first)
-    await db.from('job_applications').delete().eq('candidate_id', id);
-    await db.from('sia_licences').delete().eq('candidate_id', id);
-    await db.from('personal_details').delete().eq('candidate_id', id);
-    await db.from('employment_history').delete().eq('candidate_id', id);
-    await db.from('address_history').delete().eq('candidate_id', id);
-    await db.from('qualifications').delete().eq('candidate_id', id);
-    await db.from('preferred_sectors').delete().eq('candidate_id', id);
-    await db.from('driving_details').delete().eq('candidate_id', id);
-    await db.from('professional_background').delete().eq('candidate_id', id);
-    await db.from('candidates').delete().eq('id', id);
+    // DB delete succeeded — return 200 regardless of Clerk/Storage outcome.
+    // If Clerk action is uncertain, log for manual follow-up in Render logs.
+    if (result.clerk_status === 'error' || result.clerk_status === 'kept_check_failed') {
+      console.error(
+        `ERASURE INCOMPLETE — manual Clerk follow-up required: candidate_id=${candidate.id} clerk_status=${result.clerk_status}`
+      );
+    }
 
-    // Log the deletion for GDPR audit trail
-    console.log(`GDPR deletion completed for clerk_user_id: ${req.userId} candidate_id: ${id} at ${new Date().toISOString()}`);
-
-    res.json({ success: true });
-  } catch(err) {
+    res.status(200).json({ success: true });
+  } catch (err) {
     console.error('DELETE /candidates/me error:', err);
     res.status(500).json({ error: 'Failed to delete account' });
   }

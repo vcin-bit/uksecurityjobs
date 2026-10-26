@@ -36,6 +36,9 @@ const { createClient } = require(
 const { createClerkClient } = require(
   path.join(__dirname, '../api/node_modules/@clerk/backend')
 );
+const { deleteCandidateAccount } = require(
+  path.join(__dirname, '../api/src/lib/candidateDeletion')
+);
 
 // ── Config ───────────────────────────────────────────────────────────────────
 const LIVE = process.argv.includes('--live');
@@ -319,91 +322,29 @@ async function main() {
     );
   }
 
-  let removedCount    = 0;
-  let storageDeleted  = 0;
-  let storageErrors   = 0;
-  let clerkDeleted    = 0;
-  let clerkKeptLive   = 0; // employer or admin — Clerk account preserved
-  let clerkDeleteFail = 0;
+  let removedCount = 0;
 
   for (const candidate of toRemove) {
     try {
-      // 1. Delete candidates row — CASCADE cleans up child tables
-      const { error: delErr } = await supabase
-        .from('candidates')
-        .delete()
-        .eq('id', candidate.id);
+      const result = await deleteCandidateAccount(candidate.id, {
+        performedBy:  'admin-script',
+        auditChanges: {
+          reason:               'no SIA licence after winback sequence',
+          script:               'remove-unlicensed-candidates',
+          candidate_created_at: candidate.created_at,
+        },
+      });
 
-      if (delErr) {
-        console.error(`  [${candidate.id}] DB delete failed: ${delErr.message}`);
-        continue; // leave in place; retry next run
+      if (result.clerk_status === 'error' || result.clerk_status === 'kept_check_failed') {
+        console.error(`  [${candidate.id}] clerk_status=${result.clerk_status} — STOPPING RUN`);
+        console.error(`  Removed so far: ${removedCount}  Remaining: ${toRemove.length - removedCount - 1}`);
+        process.exit(1);
       }
 
-      // 2. Delete Storage file (after DB confirmed gone)
-      const storagePath = storageByCandidate[candidate.id];
-      if (storagePath) {
-        const { error: storErr } = await supabase.storage
-          .from(STORAGE_BUCKET)
-          .remove([storagePath]);
-        if (storErr) {
-          console.error(`  [${candidate.id}] Storage delete failed (${storagePath}): ${storErr.message}`);
-          storageErrors++;
-        } else {
-          console.log(`  [${candidate.id}] storage deleted: ${storagePath}`);
-          storageDeleted++;
-        }
-      }
-
-      // 3. Delete Clerk user — safety: never delete employer or admin accounts
-      if (candidate.clerk_user_id) {
-        const isEmployer = employerClerkIds.has(candidate.clerk_user_id);
-        let isAdmin = false;
-        if (!isEmployer) {
-          try {
-            const clerkUser = await clerk.users.getUser(candidate.clerk_user_id);
-            isAdmin = clerkUser.publicMetadata?.role === 'admin';
-          } catch (lookupErr) {
-            const s = lookupErr.status ?? lookupErr.statusCode ?? null;
-            if (s !== 404) {
-              console.error(`  [${candidate.id}] Clerk lookup returned status ${s}: ${lookupErr.message}`);
-              console.error('  STOPPING RUN — Clerk API error. Remaining candidates untouched.');
-              process.exit(1);
-            }
-            // 404 = already gone; fall through to skip delete
-          }
-        }
-        if (isEmployer || isAdmin) {
-          console.warn(`  [${candidate.id}] Clerk user kept — ${isAdmin ? 'admin' : 'employer'}: ${candidate.clerk_user_id}`);
-          clerkKeptLive++;
-        } else {
-          try {
-            await clerk.users.deleteUser(candidate.clerk_user_id);
-            clerkDeleted++;
-          } catch (clerkErr) {
-            const status = clerkErr.status ?? clerkErr.statusCode ?? null;
-            if (status === 404) {
-              console.log(`  [${candidate.id}] Clerk user already deleted (404) — skipping Clerk step`);
-              clerkDeleted++; // counts as handled
-            } else {
-              console.error(
-                `  [${candidate.id}] Clerk delete returned status ${status ?? 'unknown'}: ${clerkErr.message}`
-              );
-              console.error('  STOPPING RUN — Clerk API error after DB delete. Remaining candidates untouched.');
-              console.error(`  Removed so far: ${removedCount + 1}  Remaining: ${toRemove.length - removedCount - 1}`);
-              process.exit(1);
-            }
-          }
-        }
-      }
-
-      // 4. Audit log
-      await writeAuditLog(candidate.id, candidate.created_at);
-
-      console.log(`  [${candidate.id}] removed`);
+      console.log(`  [${candidate.id}] removed (clerk_status=${result.clerk_status})`);
       removedCount++;
-
     } catch (err) {
-      console.error(`  [${candidate.id}] unexpected error: ${err.message}`);
+      console.error(`  [${candidate.id}] DB error — ${err.message}`);
     }
   }
 
@@ -411,9 +352,6 @@ async function main() {
   console.log(`  Targeted:                    ${targets.length}`);
   console.log(`  Removed:                     ${removedCount}`);
   console.log(`  Skipped (interview):         ${skipped.length}`);
-  console.log(`  Storage deleted:             ${storageDeleted}  (errors: ${storageErrors})`);
-  console.log(`  Clerk deleted:               ${clerkDeleted}  (errors: ${clerkDeleteFail})`);
-  console.log(`  Clerk kept (employer/admin): ${clerkKeptLive}`);
   console.log(`  Completed at:        ${new Date().toISOString()}\n`);
 }
 
