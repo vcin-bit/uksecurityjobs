@@ -335,20 +335,6 @@ a{display:inline-block;background:#1a52a8;color:#fff;font-size:0.88rem;font-weig
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 export async function onRequestGet(context) {
-  // Outer catch — surfaces any unhandled exception as a plain-text 500
-  // so it is visible in curl rather than being swallowed by CF's error page.
-  // TEMPORARY — remove once root cause is confirmed.
-  try {
-    return await _handle(context);
-  } catch (err) {
-    return new Response(`UNHANDLED: ${err.stack || err.message}`, {
-      status: 500,
-      headers: { 'Content-Type': 'text/plain' },
-    });
-  }
-}
-
-async function _handle(context) {
   const { params, env } = context;
   const id = params.id;
 
