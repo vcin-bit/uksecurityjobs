@@ -199,13 +199,19 @@ router.get('/jobs/:id/applicants', requireVerifiedEmployer, async (req, res) => 
       return res.status(500).json({ error: `Failed to fetch applicants: ${error.message}` });
     }
 
+    const todayApplicants = new Date().toISOString().slice(0, 10);
     let applicants = (data || []).map(a => {
       const employment = a.candidates?.employment_history || [];
       const recentJob = employment
         .filter(e => e.start_date)
         .sort((x, y) => new Date(y.start_date) - new Date(x.start_date))[0] || null;
+      const licences = (a.candidates?.sia_licences || []).map(l => ({
+        ...l,
+        expired: l.expiry_date != null && l.expiry_date < todayApplicants,
+      }));
       return {
         ...a,
+        candidates: a.candidates ? { ...a.candidates, sia_licences: licences } : a.candidates,
         bs7858_ready: a.candidates?.profile_complete === true,
         recent_job: recentJob,
       };
@@ -397,11 +403,17 @@ router.get('/candidate/:id', requireVerifiedEmployer, async (req, res) => {
 
     await auditLog({ tableName: 'candidates', recordId: req.params.id, action: 'READ', performedBy: req.userId, ipAddress: req.ip, changes: { employer_id: employerId, fields_accessed: 'data_minimised_employer_view' } });
 
+    const today = new Date().toISOString().slice(0, 10);
+    const enrichedLicences = (licences || []).map(l => ({
+      ...l,
+      expired: l.expiry_date != null && l.expiry_date < today,
+    }));
+
     res.json({
       candidate: {
         ...candidate,
         personal,
-        licences: licences || [],
+        licences: enrichedLicences,
         employment: employment || [],
         addresses: addresses || [],
         qualifications,
@@ -428,10 +440,13 @@ router.post('/apply', async (req, res) => {
       .from('candidates').select('id').eq('clerk_user_id', req.userId).single();
     if (!candidate) return res.status(404).json({ error: 'Candidate profile not found' });
 
-    // ── Apply gate: verified SIA + personal details required ──
+    // ── Apply gate: verified, in-date SIA + personal details required ──
     const { ok, missing } = await canApply(supabase, candidate.id);
     if (!ok) {
-      return res.status(403).json({ error: 'CANNOT_APPLY', missing });
+      const message = missing.includes('sia_expired')
+        ? 'Your SIA licence has expired. Add your renewed licence to apply.'
+        : undefined;
+      return res.status(403).json({ error: 'CANNOT_APPLY', missing, message });
     }
 
     const { data, error } = await supabase.from('job_applications').insert({

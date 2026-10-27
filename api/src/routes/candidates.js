@@ -11,12 +11,21 @@ const adminNotify = require('../lib/adminNotify');
 async function canApply(db, candidateId) {
   const missing = [];
 
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const [siaRes, personalRes] = await Promise.all([
-    db.from('sia_licences').select('verified').eq('candidate_id', candidateId),
+    db.from('sia_licences')
+      .select('verified, expiry_date')
+      .eq('candidate_id', candidateId),
     db.from('personal_details').select('first_name').eq('candidate_id', candidateId).maybeSingle(),
   ]);
 
-  if (!(siaRes.data || []).some(l => l.verified === true)) missing.push('sia');
+  const hasInDateLicence = (siaRes.data || []).some(
+    l => l.verified === true && l.expiry_date >= today
+  );
+  if (!hasInDateLicence) {
+    const hasVerified = (siaRes.data || []).some(l => l.verified === true);
+    missing.push(hasVerified ? 'sia_expired' : 'sia');
+  }
   if (!personalRes.data?.first_name) missing.push('personal');
 
   return { ok: missing.length === 0, missing };

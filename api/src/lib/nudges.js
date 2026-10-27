@@ -81,7 +81,11 @@ async function sendNudgesForWindow(nudgeType, minHours, maxHours) {
 
 // Maps canApply() missing keys to display strings used in nudge emails.
 // Driven by canApply() return values — won't drift from the apply gate.
-const APPLY_LABEL = { sia: 'Verified SIA licence', personal: 'Personal details' };
+const APPLY_LABEL = {
+  sia:         'Verified SIA licence',
+  sia_expired: 'Renewed SIA licence (your current licence has expired)',
+  personal:    'Personal details',
+};
 
 async function nudgeOne(candidate, nudgeType) {
   try {
