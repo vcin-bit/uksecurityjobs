@@ -380,8 +380,23 @@ async function sendPoolCallout({ toEmail, candidateFirstName, employerName, shif
   return send(toEmail, `Shift callout from ${employerName} — UKSecurityJobs`, html);
 }
 
+// ── OPT-OUT CHECK ──
+// email_optouts is a token store — a row existing only means an unsubscribe
+// token was issued (e.g. the candidate received an email). A person is opted
+// out ONLY when opted_out_at IS NOT NULL. Never treat row existence as opted out.
+async function isOptedOut(db, email) {
+  const { data } = await db
+    .from('email_optouts')
+    .select('opted_out_at')
+    .eq('email', email)
+    .not('opted_out_at', 'is', null)
+    .maybeSingle();
+  return data !== null;
+}
+
 module.exports = {
   baseTemplate,
+  isOptedOut,
   send,
   escHtml,
   sendSiaVerified,
