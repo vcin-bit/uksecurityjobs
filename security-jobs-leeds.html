@@ -13,6 +13,7 @@
 <meta property="og:image" content="https://www.uksecurityjobs.co.uk/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://www.uksecurityjobs.co.uk/security-jobs-leeds"/>
+<meta name="robots" content="noindex, follow"/>
 <script type="application/ld+json">{
   "@context":"https://schema.org",
   "@type":"FAQPage",
@@ -41,7 +42,6 @@ a{color:var(--blue);text-decoration:none;}a:hover{text-decoration:underline;}
 .hero-tag{display:inline-block;background:rgba(26,82,168,0.4);color:#93c5fd;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;padding:0.3rem 0.875rem;border-radius:999px;margin-bottom:1.25rem;border:1px solid rgba(26,82,168,0.5);}
 .hero h1{font-size:2.5rem;font-weight:900;line-height:1.12;letter-spacing:-0.03em;margin-bottom:1rem;}
 .hero p{font-size:1rem;color:#94a3b8;line-height:1.75;max-width:640px;margin-bottom:1.75rem;}
-.live-count{font-size:0.82rem;color:#93c5fd;margin-top:-1rem;margin-bottom:1.5rem;min-height:1.2em;}
 .hero-btns{display:flex;flex-wrap:wrap;gap:0.875rem;}
 .btn-primary{display:inline-block;background:#1a52a8;color:#fff;font-size:0.92rem;font-weight:700;padding:0.8rem 2rem;border-radius:9px;text-decoration:none;}
 .btn-primary:hover{background:#164187;text-decoration:none;}
@@ -141,7 +141,6 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
     <span class="hero-tag">SIA Licensed Roles &middot; West Yorkshire</span>
     <h1>Security Jobs in Leeds</h1>
     <p>UKSecurityJobs lists verified security vacancies in Leeds &mdash; a fast-growing market for licensed security professionals. Every role requires a valid SIA licence. Register once and apply to multiple Leeds employers without filling in another application form.</p>
-    <p class="live-count" id="live-count"></p>
     <div class="hero-btns">
       <a href="https://app.uksecurityjobs.co.uk/sign-up" class="btn-primary">Register Free &rarr;</a>
       <a href="https://app.uksecurityjobs.co.uk/jobs" class="btn-secondary">View Current Jobs</a>
@@ -159,21 +158,10 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
   <div class="jc-section-inner">
     <h2>Live Security Jobs in Leeds</h2>
     <!-- JOBS:START -->
-<div class="jc-grid">
-<article class="jc">
-  <div class="jc-head">
-    <h3 class="jc-title">SIA Security Guards (Leeds Festival 2026)</h3>
-    <div class="jc-employer">Key Recruitment Ltd</div>
-  </div>
-  <div class="jc-meta">
-    <span class="jc-loc">Leeds</span>
-    <span class="jc-tag jc-tag--rate">&pound;13&ndash;&pound;13/yr</span>
-  </div>
-  <p class="jc-via">Listed via Reed</p>
-  <a class="jc-apply" href="https://app.uksecurityjobs.co.uk/sign-up">Register to apply &rarr;</a>
-</article>
-</div>
-<!-- JOBS:END -->
+    <div id="jobs-inject">
+      <p class="jobs-empty">No live roles right now. <a href="/officers">Register free</a> and employers looking for officers in the area can find you.</p>
+    </div>
+    <!-- JOBS:END -->
   </div>
 </section>
 
@@ -351,24 +339,6 @@ function toggle(btn) {
   item.classList.toggle('open');
 }
 
-(function() {
-  var city = 'Leeds';
-  var el = document.getElementById('live-count');
-  if (!el) return;
-  fetch('https://uksecurityjobs-api.onrender.com/api/jobs/public')
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var jobs = (data.jobs || []).filter(function(j) {
-        return j.location && j.location.toLowerCase().indexOf(city.toLowerCase()) !== -1;
-      });
-      if (jobs.length === 0) {
-        el.textContent = 'No live vacancies in Leeds right now — register to be first when roles are posted.';
-      } else {
-        el.textContent = jobs.length + ' live ' + (jobs.length === 1 ? 'vacancy' : 'vacancies') + ' in Leeds right now.';
-      }
-    })
-    .catch(function() { el.textContent = ''; });
-})();
 </script>
 
 <script src="/footer-extras.js" defer></script>

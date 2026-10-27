@@ -1,18 +1,48 @@
 /**
- * functions/security-jobs-birmingham.js
+ * functions/security-jobs-[city].js
  *
- * Serves /security-jobs-birmingham with live West Midlands security jobs
- * injected into the static HTML shell via HTMLRewriter.
+ * Shared Pages Function for all /security-jobs-{city} pages.
+ * Fetches live jobs from public_active_jobs, filters by postcode area,
+ * and injects cards into the static HTML shell via HTMLRewriter.
  *
- * Job source: public_active_jobs view. Jobs are matched by postcode AREA
- * (the letters before the first digit, e.g. "B90 4AB" → "B", "WV1" → "WV").
- * West Midlands areas: B, CV, DY, WS, WV.
+ * Postcode area = letters before the first digit, uppercased.
+ * e.g. "B90 4AB" → "B", "BS1 5TR" → "BS", "WV1" → "WV", "EC1A 1BB" → "EC"
  *
- * Resilient: on Supabase error, serves the shell with the default empty-state
- * block already in the HTML. Never returns 5xx.
+ * Resilient: on Supabase error, serves the shell unchanged (empty-state
+ * block is already in the HTML). Never returns 5xx.
  */
 
-const BIRMINGHAM_AREAS = new Set(['B', 'CV', 'DY', 'WS', 'WV']);
+const CITY_AREAS = {
+  birmingham:      ['B', 'CV', 'DY', 'WS', 'WV'],
+  london:          ['E', 'EC', 'N', 'NW', 'SE', 'SW', 'W', 'WC', 'BR', 'CR', 'DA', 'EN', 'HA', 'IG', 'KT', 'RM', 'SM', 'TW', 'UB'],
+  manchester:      ['M', 'SK', 'OL', 'BL'],
+  leeds:           ['LS', 'WF'],
+  liverpool:       ['L', 'CH'],
+  glasgow:         ['G', 'PA', 'ML'],
+  edinburgh:       ['EH'],
+  aberdeen:        ['AB'],
+  belfast:         ['BT'],
+  cardiff:         ['CF'],
+  bristol:         ['BS'],
+  sheffield:       ['S'],
+  nottingham:      ['NG'],
+  derby:           ['DE'],
+  leicester:       ['LE'],
+  coventry:        ['CV'],
+  wolverhampton:   ['WV'],
+  stoke:           ['ST'],
+  oxford:          ['OX'],
+  cambridge:       ['CB'],
+  'milton-keynes': ['MK'],
+  reading:         ['RG'],
+  brighton:        ['BN'],
+  southampton:     ['SO'],
+  portsmouth:      ['PO'],
+  plymouth:        ['PL'],
+  exeter:          ['EX'],
+  newcastle:       ['NE'],
+  york:            ['YO'],
+};
 
 /** Extract postcode area — letters before the first digit, uppercased. */
 function getPostcodeArea(postcode) {
@@ -47,7 +77,7 @@ function formatPay(job) {
 
 function renderJobCards(jobs) {
   if (!jobs.length) {
-    return '<p class="jobs-empty">No live West Midlands roles right now. ' +
+    return '<p class="jobs-empty">No live roles right now. ' +
       '<a href="/officers">Register free</a> and employers looking for ' +
       'officers in the area can find you.</p>';
   }
@@ -76,11 +106,14 @@ function renderJobCards(jobs) {
 }
 
 export async function onRequestGet(context) {
-  const { request, env } = context;
+  const { request, env, params } = context;
+  const city = params.city;
+  const areas = CITY_AREAS[city];
 
-  // ── 1. Fetch live West Midlands jobs ─────────────────────────────────────
+  // ── 1. Fetch and filter jobs ──────────────────────────────────────────────
   let jobs = [];
-  if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+  if (areas && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+    const areaSet = new Set(areas);
     try {
       const url = new URL(`${env.SUPABASE_URL}/rest/v1/public_active_jobs`);
       url.searchParams.set(
@@ -99,15 +132,17 @@ export async function onRequestGet(context) {
 
       if (res.ok) {
         const all = await res.json();
-        jobs = all.filter(j => BIRMINGHAM_AREAS.has(getPostcodeArea(j.postcode)));
+        jobs = all.filter(j => areaSet.has(getPostcodeArea(j.postcode)));
       } else {
-        console.error('[birmingham] Supabase', res.status, await res.text());
+        console.error(`[${city}] Supabase`, res.status, await res.text());
       }
     } catch (err) {
-      console.error('[birmingham] Supabase fetch failed:', err.message);
+      console.error(`[${city}] Supabase fetch failed:`, err.message);
     }
+  } else if (!areas) {
+    console.error(`[city-function] No area mapping for city: "${city}"`);
   } else {
-    console.error('[birmingham] SUPABASE_URL or SUPABASE_ANON_KEY not set');
+    console.error(`[${city}] SUPABASE_URL or SUPABASE_ANON_KEY not set`);
   }
 
   // ── 2. Fetch the static HTML shell ───────────────────────────────────────
