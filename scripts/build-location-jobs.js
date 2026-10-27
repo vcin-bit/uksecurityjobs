@@ -1,5 +1,17 @@
 #!/usr/bin/env node
 /**
+ * RETIRED — city pages use the live Pages Function.
+ *
+ * functions/security-jobs-[city].js now serves all /security-jobs-{city}
+ * routes, fetching jobs from public_active_jobs via Supabase and injecting
+ * them with HTMLRewriter at request time. Build-time injection is no longer
+ * needed or used.
+ *
+ * This file is kept for reference only. Do not run or restore to any build
+ * or deploy step.
+ *
+ * Original header below:
+ * ──────────────────────────────────────────────────────────────────────────
  * build-location-jobs.js
  *
  * Fetches live jobs from /api/jobs/public and injects location-filtered
