@@ -8,6 +8,7 @@ const { runNudges, sendFinalWarnings, runRemoval } = require('./lib/nudges');
 const { runRegistrationDigest } = require('./lib/adminNotify');
 const { runIngestion } = require('./lib/jobIngestion');
 const { runLicenceCheck, runInvitePurge } = require('./lib/poolLicenceCheck');
+const { runLicenceReminders } = require('./lib/licenceReminders');
 
 const candidateRoutes = require('./routes/candidates');
 const siaRoutes = require('./routes/sia');
@@ -315,6 +316,8 @@ cron.schedule('0 9 * * *', async () => {
 
   let removalResult = { removed: 0, wouldRemove: [], skipped: 0 };
   try { removalResult = await runRemoval(); } catch (err) { console.error('[nudges] Removal error:', err.message); }
+
+  try { await runLicenceReminders(); } catch (err) { console.error('[licenceReminders] Cron error:', err.message); }
 
   try { await runRegistrationDigest({ warningsSent, removalResult }); } catch (err) { console.error('[adminNotify] Digest error:', err.message); }
 }, { timezone: 'UTC' });
