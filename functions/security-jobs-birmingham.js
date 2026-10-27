@@ -4,13 +4,22 @@
  * Serves /security-jobs-birmingham with live West Midlands security jobs
  * injected into the static HTML shell via HTMLRewriter.
  *
- * Job source: public_active_jobs view, filtered by West Midlands postcodes
- * (B, CV, DY, WS, WV — covers Birmingham, Solihull, Coventry, Wolverhampton,
- * Walsall and Dudley). Cards link to /vacancies/{id}.
+ * Job source: public_active_jobs view. Jobs are matched by postcode AREA
+ * (the letters before the first digit, e.g. "B90 4AB" → "B", "WV1" → "WV").
+ * West Midlands areas: B, CV, DY, WS, WV.
  *
  * Resilient: on Supabase error, serves the shell with the default empty-state
  * block already in the HTML. Never returns 5xx.
  */
+
+const BIRMINGHAM_AREAS = new Set(['B', 'CV', 'DY', 'WS', 'WV']);
+
+/** Extract postcode area — letters before the first digit, uppercased. */
+function getPostcodeArea(postcode) {
+  if (!postcode) return null;
+  const m = String(postcode).trim().toUpperCase().match(/^([A-Z]+)\d/);
+  return m ? m[1] : null;
+}
 
 function esc(s) {
   return String(s ?? '')
@@ -74,11 +83,6 @@ export async function onRequestGet(context) {
   if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
     try {
       const url = new URL(`${env.SUPABASE_URL}/rest/v1/public_active_jobs`);
-      // URLSearchParams encodes % → %25; PostgREST decodes %25 → % for ILIKE
-      url.searchParams.set(
-        'or',
-        '(postcode.ilike.B%,postcode.ilike.CV%,postcode.ilike.DY%,postcode.ilike.WS%,postcode.ilike.WV%)'
-      );
       url.searchParams.set(
         'select',
         'id,title,company_name,location,postcode,rate_from,rate_to,rate_type,employment_type,licences_required'
@@ -94,7 +98,8 @@ export async function onRequestGet(context) {
       });
 
       if (res.ok) {
-        jobs = await res.json();
+        const all = await res.json();
+        jobs = all.filter(j => BIRMINGHAM_AREAS.has(getPostcodeArea(j.postcode)));
       } else {
         console.error('[birmingham] Supabase', res.status, await res.text());
       }
