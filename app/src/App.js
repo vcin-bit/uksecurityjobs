@@ -343,6 +343,10 @@ function StepSIA({ data, onChange, onBack, onNext, isComplete }) {
   };
   const removeLicence = (i) => setLicences(licences.filter((_,idx) => idx!==i));
   const save = () => {
+    if (!licences.some(l => l.number?.trim())) {
+      alert('Add your SIA licence number to continue.');
+      return;
+    }
     const invalidLic = licences.find(l => l.number && l.number.replace(/\s/g,'').length !== 16);
     if (invalidLic) { alert('Please enter a valid 16-digit SIA licence number.'); return; }
     const mapped = licences.map(l => ({
@@ -710,18 +714,6 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
           <span>Your SIA licence address should match your current address. Update it through your <a href="https://services.sia.homeoffice.gov.uk/" target="_blank" rel="noopener noreferrer" className="inline-link">SIA online account</a>.</span>
         </div>
       )}
-
-      {/* Save address progress button */}
-      <div style={{marginTop:'1.25rem',marginBottom:'0.5rem'}}>
-        <button type="button" onClick={()=>onChange({personal:form})} style={{
-          background:'#f0f4ff',color:'#1a52a8',border:'1px solid #bfdbfe',
-          borderRadius:'8px',padding:'0.6rem 1.25rem',fontSize:'0.85rem',
-          fontWeight:600,cursor:'pointer',fontFamily:'inherit'
-        }}>
-          Save progress
-        </button>
-        <span style={{fontSize:'0.78rem',color:'#94a3b8',marginLeft:'0.75rem'}}>Your information is saved — you can continue later.</span>
-      </div>
 
       {/* How long at current address */}
       {form.movedIn && (() => {
@@ -2106,7 +2098,8 @@ function ProfileBuilder() {
         // Infer which steps are already complete from API data
         const completed = new Set();
         if (licences?.length) completed.add('licences');
-        if (personal?.phone || personal?.first_name) completed.add('personal');
+        if (personal?.phone && personal?.first_name && personal?.postcode &&
+            personal?.right_to_work_proof && personal?.years_experience) completed.add('personal');
         if (driving) completed.add('driving');
         if (sectors) completed.add('sectors');
         if (qualifications) completed.add('qualifications');
@@ -2352,6 +2345,13 @@ function ProfileBuilder() {
   const goToSection = (i) => { setForceEditKey(sectionKeys[i]||null); setStep(sectionToStep[i]||1); };
 
   const stepContent = (() => {
+    // Render-level licence guard — covers ?step=N URL, ProgressRings and StepComplete
+    // navigation bypasses. Candidates who just saved a licence are safe: update()
+    // schedules both setCompletedSteps and setStep in the same React 18 batch, so
+    // completedSteps already contains 'licences' on the first post-save render.
+    if (step > 1 && !completedSteps.has('licences')) {
+      return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepSIA data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('licences') && forceEditKey !== 'licences'}/></>;
+    }
     if(step === 0) return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepWelcome onNext={next} name={user?.firstName || 'there'}/></>;
     if(step === 1) return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepSIA data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('licences') && forceEditKey !== 'licences'}/></>;
     if(step === 2) return <><ProgressRings sections={sections} onGoToStep={goToSection}/><StepPersonal data={profileData} onChange={update} onBack={back} onNext={gatedNext} isComplete={completedSteps.has('personal') && forceEditKey !== 'personal'}/></>;
