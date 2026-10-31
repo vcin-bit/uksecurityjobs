@@ -314,13 +314,16 @@ router.patch('/me/gdpr', async (req, res) => {
   }
 });
 
+// Consent wording version for shift-alert opt-in. Bump when copy changes.
+const SHIFT_ALERTS_WORDING_VERSION = 'shift-alerts-v1';
+
 // GET /api/candidates/me/personal — get personal details
 router.get('/me/personal', async (req, res) => {
   try {
     const db = getClientForUser(req.token);
     const { data: candidate } = await db
       .from('candidates')
-      .select('id')
+      .select('id, shift_alerts_opt_in')
       .eq('clerk_user_id', req.userId)
       .single();
 
@@ -345,7 +348,7 @@ router.get('/me/personal', async (req, res) => {
       ipAddress: req.ip
     });
 
-    res.json({ personal });
+    res.json({ personal, shift_alerts_opt_in: candidate.shift_alerts_opt_in });
   } catch (err) {
     console.error('GET /candidates/me/personal error:', err);
     res.status(500).json({ error: 'Failed to fetch personal details' });
@@ -358,7 +361,7 @@ router.put('/me/personal', async (req, res) => {
     const db = getClientForUser(req.token);
     const { data: candidate } = await db
       .from('candidates')
-      .select('id')
+      .select('id, shift_alerts_opt_in')
       .eq('clerk_user_id', req.userId)
       .single();
 
@@ -367,14 +370,43 @@ router.put('/me/personal', async (req, res) => {
     const {
       first_name, last_name, date_of_birth, phone,
       address_line1, address_line2, city, county, postcode, move_in_date,
-      sia_address_match, dvla_address_match
+      sia_address_match, dvla_address_match,
+      right_to_work_proof, years_experience, shift_alerts_opt_in,
+      // right_to_work_status, gender, visa_type, visa_expiry — intentionally omitted; ignored.
     } = req.body;
+
+    // ── Validate right_to_work_proof (optional — omit to leave existing value unchanged) ──
+    const VALID_RTW_PROOF = ['british_irish_passport', 'share_code'];
+    if (right_to_work_proof !== undefined) {
+      if (right_to_work_proof === 'no_right_to_work') {
+        return res.status(422).json({
+          error: 'Candidates without the right to work in the UK cannot register.',
+          code:  'no_right_to_work',
+        });
+      }
+      if (!VALID_RTW_PROOF.includes(right_to_work_proof)) {
+        return res.status(422).json({ error: 'Invalid right_to_work_proof value', code: 'rtw_proof_invalid' });
+      }
+    }
+
+    // ── Validate years_experience (optional — omit to leave existing value unchanged) ──
+    const VALID_YEARS_EXP = ['under_1', '1_to_3', '3_to_5', '5_plus'];
+    if (years_experience !== undefined && !VALID_YEARS_EXP.includes(years_experience)) {
+      return res.status(422).json({ error: 'Invalid years_experience value', code: 'years_experience_invalid' });
+    }
+
+    // ── Validate shift_alerts_opt_in ─────────────────────────────────────────
+    if (shift_alerts_opt_in !== undefined && typeof shift_alerts_opt_in !== 'boolean') {
+      return res.status(422).json({ error: 'shift_alerts_opt_in must be a boolean', code: 'shift_alerts_invalid' });
+    }
 
     const payload = {
       candidate_id: candidate.id,
       first_name, last_name, date_of_birth, phone,
       address_line1, address_line2, city, county, postcode, move_in_date,
       sia_address_match, dvla_address_match,
+      ...(right_to_work_proof !== undefined && { right_to_work_proof }),
+      ...(years_experience    !== undefined && { years_experience }),
     };
 
     const { data: personal, error } = await db
@@ -392,6 +424,40 @@ router.put('/me/personal', async (req, res) => {
       performedBy: req.userId,
       ipAddress: req.ip
     });
+
+    // ── Shift alerts opt-in (after personal_details upsert has succeeded) ────
+    // Optional field. Omitting it leaves shift_alerts_opt_in unchanged.
+    if (shift_alerts_opt_in !== undefined) {
+      const alertsUpdate = shift_alerts_opt_in === true
+        ? {
+            shift_alerts_opt_in:          true,
+            shift_alerts_opt_in_at:       new Date().toISOString(),
+            shift_alerts_wording_version: SHIFT_ALERTS_WORDING_VERSION,
+          }
+        : {
+            shift_alerts_opt_in:          false,
+            shift_alerts_opt_in_at:       null,
+            shift_alerts_wording_version: null,
+          };
+
+      const { error: alertsErr } = await db
+        .from('candidates')
+        .update(alertsUpdate)
+        .eq('id', candidate.id);
+
+      if (alertsErr) throw alertsErr;
+
+      // Audit log only when the value actually changes.
+      if (candidate.shift_alerts_opt_in !== shift_alerts_opt_in) {
+        await auditLog({
+          tableName:   'candidates',
+          recordId:    candidate.id,
+          action:      shift_alerts_opt_in ? 'shift_alerts_opted_in' : 'shift_alerts_opted_out',
+          performedBy: req.userId,
+          ipAddress:   req.ip,
+        });
+      }
+    }
 
     refreshBadge(db, candidate.id).catch(e => console.error('refreshBadge /personal:', e));
     res.json({ success: true });
