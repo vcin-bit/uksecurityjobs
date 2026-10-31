@@ -4094,19 +4094,6 @@ function LogoUpload({ currentUrl, getToken, onUploaded }) {
 }
 
 // ── EMPLOYER DASHBOARD ──
-function RtwBadge({ status }) {
-  const map = {
-    uk_irish_citizen: { label: 'UK/Irish Citizen', color: '#15803d', bg: '#dcfce7' },
-    settled_status: { label: 'ILR/Settled Status', color: '#15803d', bg: '#dcfce7' },
-    pre_settled: { label: 'Pre-Settled Status', color: '#854d0e', bg: '#fef9c3' },
-    skilled_worker_visa: { label: 'Skilled Worker Visa', color: '#1d4ed8', bg: '#dbeafe' },
-    student_visa: { label: 'Student Visa (20hr limit)', color: '#dc2626', bg: '#fee2e2' },
-    other_visa: { label: 'Other Visa', color: '#854d0e', bg: '#fef9c3' },
-  };
-  const s = map[status] || { label: 'Not declared', color: '#94a3b8', bg: '#f1f5f9' };
-  return <span style={{fontSize:'0.7rem',fontWeight:700,padding:'0.2rem 0.6rem',borderRadius:'999px',background:s.bg,color:s.color}}>{s.label}</span>;
-}
-
 function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken, onClose, onStatusUpdate }) {
   const [candidate, setCandidate] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
@@ -4239,13 +4226,7 @@ function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken,
               <>
                 <div style={{background:'#f8fafc',borderRadius:'10px',padding:'1rem',marginBottom:'1rem',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
                   <div><div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#94a3b8',marginBottom:'0.2rem'}}>Phone</div><div style={{fontSize:'0.88rem',fontWeight:600,color:'#0b1222'}}>{p.phone||'—'}</div></div>
-                  <div><div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#94a3b8',marginBottom:'0.2rem'}}>Right to Work</div><RtwBadge status={p.right_to_work_status}/></div>
-                  {p.right_to_work_status==='student_visa' && (
-                    <div style={{gridColumn:'1/-1',background:'#fee2e2',borderRadius:'8px',padding:'0.75rem',fontSize:'0.78rem',color:'#7f1d1d'}}>
-                      <strong>Student Visa:</strong> Maximum 20 hours per week during term time. Verify documents before engagement.
-                    </div>
-                  )}
-                  {p.visa_expiry && <div><div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#94a3b8',marginBottom:'0.2rem'}}>Visa Expiry</div><div style={{fontSize:'0.88rem',color:'#0b1222'}}>{new Date(p.visa_expiry).toLocaleDateString('en-GB')}</div></div>}
+                  <div><div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#94a3b8',marginBottom:'0.2rem'}}>Experience</div><div style={{fontSize:'0.88rem',fontWeight:600,color:'#0b1222'}}>{{ under_1:'Under 1 year', '1_to_3':'1 to 3 years', '3_to_5':'3 to 5 years', '5_plus':'5 years or more' }[p.years_experience] || 'Not given'}</div></div>
                 </div>
 
                 {licences.length > 0 && (
@@ -4478,7 +4459,7 @@ function ApplicantModal({ applicationId, candidateId, jobId, jobTitle, getToken,
                   <div style={{background:'#f8fafc',borderRadius:'8px',padding:'1rem',border:'1px solid #e2e8f0',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem',fontSize:'0.85rem'}}>
                     <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Full name</span><div style={{fontWeight:700,color:'#0b1222'}}>{p.first_name||'—'} {p.last_name||''}</div></div>
                     <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Date of birth</span><div style={{fontWeight:600,color:'#0b1222'}}>{p.date_of_birth ? new Date(p.date_of_birth).toLocaleDateString('en-GB') : '—'}</div></div>
-                    <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Right to work</span><div><RtwBadge status={p.right_to_work_status}/></div></div>
+                    <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Right to work</span><div style={{fontWeight:600,color:'#0b1222',marginTop:'0.15rem',fontSize:'0.85rem'}}>Check before they start (passport or gov.uk share code).</div></div>
                     <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>Phone</span><div style={{fontWeight:600,color:'#0b1222'}}>{p.phone||'—'}</div></div>
                     <div><span style={{color:'#94a3b8',fontSize:'0.75rem'}}>SIA address match</span><div style={{fontWeight:600,color:p.sia_address_match?'#15803d':'#dc2626'}}>{p.sia_address_match?'Yes — declared match':'Not confirmed'}</div></div>
                   </div>

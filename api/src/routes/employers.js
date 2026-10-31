@@ -362,7 +362,7 @@ router.get('/candidate/:id', requireVerifiedEmployer, async (req, res) => {
     ] = await Promise.all([
       // Personal — no DOB, no full address, no email
       supabase.from('personal_details').select(
-        'first_name, last_name, phone'
+        'first_name, last_name, phone, years_experience'
       ).eq('candidate_id', req.params.id).single(),
 
       // Licences — type, expiry and verified status only. No licence number.
