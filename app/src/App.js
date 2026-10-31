@@ -428,11 +428,9 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
     dobDay: raw?.date_of_birth ? raw.date_of_birth.split('-')[2] : raw?.dob ? raw.dob.split('-')[2] : '',
     dobMonth: raw?.date_of_birth ? raw.date_of_birth.split('-')[1] : raw?.dob ? raw.dob.split('-')[1] : '',
     dobYear: raw?.date_of_birth ? raw.date_of_birth.split('-')[0] : raw?.dob ? raw.dob.split('-')[0] : '',
-    gender: raw?.gender || '',
-    right_to_work_status: raw?.right_to_work_status || '',
-    visa_type: raw?.visa_type || '',
-    visa_expiry: raw?.visa_expiry || '',
-    student_visa_hours: raw?.student_visa_hours || '',
+    right_to_work_proof: raw?.right_to_work_proof || '',
+    years_experience: raw?.years_experience || '',
+    shift_alerts_opt_in: raw?.shift_alerts_opt_in ?? false,
     address1: raw?.address_line1 || raw?.address1 || '',
     address2: raw?.address_line2 || raw?.address2 || '',
     town: raw?.city || raw?.town || '',
@@ -567,14 +565,16 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
   if (!form.lastName?.trim()) missingFields.push('Last name');
   if (!form.phone?.trim()) missingFields.push('Phone number');
   if (!form.dobDay || !form.dobMonth || !form.dobYear) missingFields.push('Date of birth');
-  if (!form.right_to_work_status) missingFields.push('Right to work status');
+  if (!form.right_to_work_proof) missingFields.push('How will you prove your right to work?');
+  if (!form.years_experience) missingFields.push('Years working in security');
   if (!form.address1?.trim()) missingFields.push('Address line 1');
   if (!form.town?.trim()) missingFields.push('Town / City');
   if (!form.postcode?.trim()) missingFields.push('Postcode');
   if (!movedInDate) missingFields.push('Month moved in');
   if (!form.siaAddress) missingFields.push('SIA licence address confirmation');
 
-  const canSave = missingFields.length === 0 && !hasUnexplainedGaps;
+  const blockedByRtw = form.right_to_work_proof === 'no_right_to_work';
+  const canSave = missingFields.length === 0 && !hasUnexplainedGaps && !blockedByRtw;
 
   const save = () => {
     if (!canSave) return;
@@ -591,7 +591,8 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
           { label:'Name', value: [d.first_name, d.last_name].filter(Boolean).join(' ') },
           { label:'Phone', value: d.phone || '' },
           { label:'Date of Birth', value: d.date_of_birth || '' },
-          { label:'Right to Work', value: d.right_to_work_status || '' },
+          { label:'Right to Work', value: { british_irish_passport:'British or Irish passport', share_code:'Share code (gov.uk)' }[d.right_to_work_proof] || '' },
+          { label:'Experience', value: { under_1:'Under 1 year', '1_to_3':'1–3 years', '3_to_5':'3–5 years', '5_plus':'5+ years' }[d.years_experience] || '' },
           { label:'Address', value: [d.address_line1, d.city, d.postcode].filter(Boolean).join(', ') },
           { label:'SIA Address', value: d.sia_address_match === true ? 'You confirmed it matches' : d.sia_address_match === false ? 'You said it needs updating' : '' },
         ]}
@@ -634,56 +635,20 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
           </div>
         </Field>
       </div>
-      <Field label="Gender" hint="Optional — equal opportunities monitoring only">
-        <Select value={form.gender} onChange={v=>u('gender',v)}>
-          <option value="">Prefer not to say</option>
-          <option>Male</option><option>Female</option><option>Non-binary</option><option>Other</option>
-        </Select>
-      </Field>
-
       <div className="divider"></div>
       <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.25rem'}}>Right to Work in the UK</div>
       <div style={{background:'#fef9c3',border:'1px solid #fde047',borderRadius:'8px',padding:'0.875rem 1rem',marginBottom:'1rem',fontSize:'0.8rem',color:'#854d0e',lineHeight:1.65}}>
         <strong>Important:</strong> Employers are legally required to verify your right to work using original documents before you start work. Providing false information here is a criminal offence.
       </div>
-      <Field label="Right to Work Status *">
-        <Select value={form.right_to_work_status} onChange={v=>u('right_to_work_status',v)}>
-          <option value="">Select your status</option>
-          <option value="uk_irish_citizen">UK or Irish Citizen</option>
-          <option value="settled_status">EU Settled Status / Indefinite Leave to Remain</option>
-          <option value="pre_settled">EU Pre-Settled Status</option>
-          <option value="skilled_worker_visa">Skilled Worker Visa</option>
-          <option value="student_visa">Student Visa</option>
-          <option value="other_visa">Other Visa / Leave to Remain</option>
-          <option value="no_right_to_work">I do not have the right to work in the UK</option>
-        </Select>
+      <Field label="How will you prove your right to work? *">
+        <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+          <Radio name="right_to_work_proof" value="british_irish_passport" label="British or Irish passport" checked={form.right_to_work_proof==='british_irish_passport'} onChange={v=>u('right_to_work_proof',v)}/>
+          <Radio name="right_to_work_proof" value="share_code" label="Share code from gov.uk" checked={form.right_to_work_proof==='share_code'} onChange={v=>u('right_to_work_proof',v)}/>
+          <Radio name="right_to_work_proof" value="no_right_to_work" label="I don't have the right to work in the UK" checked={form.right_to_work_proof==='no_right_to_work'} onChange={v=>u('right_to_work_proof',v)}/>
+        </div>
       </Field>
 
-      {form.right_to_work_status === 'student_visa' && (
-        <div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'1rem',marginTop:'0.5rem'}}>
-          <div style={{fontWeight:700,fontSize:'0.82rem',color:'#dc2626',marginBottom:'0.5rem'}}>Student Visa — Working Hour Restrictions</div>
-          <div style={{fontSize:'0.8rem',color:'#7f1d1d',lineHeight:1.7}}>
-            Student visa holders may only work <strong>up to 20 hours per week during term time</strong>. Working more than your permitted hours is a breach of your visa conditions and may result in deportation and a ban from the UK. Employers who knowingly employ you beyond your permitted hours face fines of up to £60,000 per worker.<br/><br/>
-            Your profile will clearly show your student visa status and hour restrictions to any employer who views it.
-          </div>
-          <Field label="Visa Expiry Date *" style={{marginTop:'0.875rem'}}>
-            <Input type="date" value={form.visa_expiry} onChange={v=>u('visa_expiry',v)}/>
-          </Field>
-        </div>
-      )}
-
-      {(form.right_to_work_status === 'skilled_worker_visa' || form.right_to_work_status === 'pre_settled' || form.right_to_work_status === 'other_visa') && (
-        <div style={{marginTop:'0.5rem'}}>
-          <Field label="Visa / Leave Type">
-            <Input type="text" placeholder="e.g. Skilled Worker Visa, Spouse Visa" value={form.visa_type} onChange={v=>u('visa_type',fmt.sentenceCase(v))}/>
-          </Field>
-          <Field label="Visa Expiry Date">
-            <Input type="date" value={form.visa_expiry} onChange={v=>u('visa_expiry',v)}/>
-          </Field>
-        </div>
-      )}
-
-      {form.right_to_work_status === 'no_right_to_work' && (
+      {form.right_to_work_proof === 'no_right_to_work' && (
         <div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'8px',padding:'1rem',marginTop:'0.5rem'}}>
           <div style={{fontWeight:700,fontSize:'0.82rem',color:'#dc2626',marginBottom:'0.5rem'}}>Unable to Register</div>
           <div style={{fontSize:'0.8rem',color:'#7f1d1d',lineHeight:1.7}}>
@@ -691,6 +656,23 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
           </div>
         </div>
       )}
+
+      <Field label="Years working in security *">
+        <Select value={form.years_experience} onChange={v=>u('years_experience',v)}>
+          <option value="">Select</option>
+          <option value="under_1">Under 1 year</option>
+          <option value="1_to_3">1 to 3 years</option>
+          <option value="3_to_5">3 to 5 years</option>
+          <option value="5_plus">5 years or more</option>
+        </Select>
+      </Field>
+
+      <div style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',padding:'0.875rem 1rem',background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',marginTop:'0.5rem',marginBottom:'0.5rem'}}>
+        <input type="checkbox" id="shift_alerts_opt_in" checked={form.shift_alerts_opt_in} onChange={e=>u('shift_alerts_opt_in',e.target.checked)} style={{marginTop:'2px',width:'16px',height:'16px',cursor:'pointer',accentColor:'#1a52a8'}}/>
+        <label htmlFor="shift_alerts_opt_in" style={{fontSize:'0.85rem',color:'#0b1222',lineHeight:1.5,cursor:'pointer'}}>
+          Send me shift alerts by text and WhatsApp. I can stop any time by replying STOP.
+        </label>
+      </div>
 
       <div className="divider"></div>
       <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'0.25rem'}}>Current Address</div>
@@ -2111,10 +2093,14 @@ function ProfileBuilder() {
         const addresses = full.addresses || null;
         const interviewAnswers = full.candidate?.interview_answers || null;
 
-        setProfileData({ licences, personal: personal || {
-          // Pre-populate from Clerk on first registration so name is not asked twice
-          first_name: user?.firstName || '',
-          last_name: user?.lastName || '',
+        setProfileData({ licences, personal: {
+          ...(personal || {
+            // Pre-populate from Clerk on first registration so name is not asked twice
+            first_name: user?.firstName || '',
+            last_name: user?.lastName || '',
+          }),
+          // A guard is only opted in if they tick it themselves, or have already opted in.
+          shift_alerts_opt_in: Boolean(full.candidate?.shift_alerts_opt_in),
         }, driving, sectors, qualifications, background, employment, photo: null, addresses, interview: interviewAnswers });
 
         // Infer which steps are already complete from API data
@@ -2192,6 +2178,9 @@ function ProfileBuilder() {
           move_in_date: movedIn || null,
           sia_address_match: p.siaAddress === 'yes' || p.sia_address_match === true,
           dvla_address_match: p.dvlaAddress === 'yes' || p.dvla_address_match === true,
+          ...(p.right_to_work_proof && { right_to_work_proof: p.right_to_work_proof }),
+          ...(p.years_experience    && { years_experience:    p.years_experience }),
+          ...(p.shift_alerts_opt_in !== undefined && { shift_alerts_opt_in: Boolean(p.shift_alerts_opt_in) }),
         }, getToken); } catch(e) { console.error("Failed to save personal details:", e.message); }
       }
       if (d.licences) {
