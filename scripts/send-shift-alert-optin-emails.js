@@ -236,6 +236,9 @@ async function main() {
       console.error(`  FAILED ${candidate.id.slice(0, 8)}:`, err.message);
       failed++;
     }
+
+    // Pace sends — ~1 s gap to avoid SendGrid rate limits.
+    await new Promise(r => setTimeout(r, 1000));
   }
 
   console.log(`\nDone — sent: ${sent}, failed: ${failed}`);
