@@ -5,6 +5,12 @@ function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// Trim whitespace and HTML-escape a display name.  Returns null when input is
+// falsy so callers can do: safeName(firstName) || 'there'
+function safeName(str) {
+  return str ? escHtml(String(str).trim()) : null;
+}
+
 const FROM = {
   email: 'admin@uksecurityjobs.co.uk',
   name: 'UKSecurityJobs'
@@ -28,7 +34,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 h1{font-size:1.25rem;font-weight:800;color:#0b1222;margin-bottom:0.75rem;line-height:1.3;}
 p{font-size:0.92rem;color:#4a5568;line-height:1.75;margin-bottom:1rem;}
 p:last-child{margin-bottom:0;}
-.btn{display:inline-block;background:#1a52a8;color:#fff;font-size:0.92rem;font-weight:700;padding:0.75rem 2rem;border-radius:8px;text-decoration:none;margin:1.25rem 0;}
+.btn{display:inline-block;background:#1a52a8;color:#ffffff !important;font-size:0.92rem;font-weight:700;padding:0.75rem 2rem;border-radius:8px;text-decoration:none !important;margin:1.25rem 0;}
 .divider{border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0;}
 .detail-row{display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #f1f5f9;font-size:0.85rem;}
 .detail-row:last-child{border-bottom:none;}
@@ -54,10 +60,18 @@ p:last-child{margin-bottom:0;}
 }
 
 // ── SEND HELPER ──
+// Click and open tracking are disabled globally — tracked links rewrite to
+// sendgrid.net which triggers spam filters until link branding is configured.
 async function send(to, subject, html) {
   try {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    await sgMail.send({ from: FROM, to, subject, html });
+    await sgMail.send({
+      from: FROM, to, subject, html,
+      trackingSettings: {
+        clickTracking: { enable: false, enableText: false },
+        openTracking:  { enable: false },
+      },
+    });
     console.log(`Email sent: ${subject} → ${to}`);
     return true;
   } catch (err) {
@@ -70,13 +84,13 @@ async function send(to, subject, html) {
 async function sendSiaVerified({ toEmail, firstName, licenceType }) {
   const html = baseTemplate(`
     <h1>Your SIA Licence Has Been Verified</h1>
-    <p>Hi ${firstName},</p>
+    <p>Hi ${safeName(firstName) || 'there'},</p>
     <p>Your <strong>${licenceType}</strong> SIA licence has been verified by our team and your profile is now live to verified security employers on UKSecurityJobs.</p>
     <p>You can now apply for any matching role on the platform with a single click — no more filling in application forms.</p>
-    <a href="https://app.uksecurityjobs.co.uk/jobs" class="btn">View Security Jobs →</a>
+    <a href="https://app.uksecurityjobs.co.uk/jobs" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">View Security Jobs →</span></a>
     <hr class="divider"/>
     <p>Make sure your profile is 100% complete to unlock the best roles. A complete profile with full employment history and references is what employers are looking for.</p>
-    <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn" style="background:#0b1222;">Complete My Profile →</a>
+    <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn" style="background:#0b1222;color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Complete My Profile →</span></a>
   `);
   return send(toEmail, 'Your SIA licence has been verified — UKSecurityJobs', html);
 }
@@ -85,7 +99,7 @@ async function sendSiaVerified({ toEmail, firstName, licenceType }) {
 async function sendApplicationConfirmation({ toEmail, firstName, jobTitle, companyName, location }) {
   const html = baseTemplate(`
     <h1>Application Submitted</h1>
-    <p>Hi ${firstName},</p>
+    <p>Hi ${safeName(firstName) || 'there'},</p>
     <p>Your application for the following role has been submitted successfully:</p>
     <div style="background:#f8fafc;border-radius:8px;padding:1rem;margin:1rem 0;">
       <div class="detail-row"><span class="detail-label">Role</span><span class="detail-value">${jobTitle}</span></div>
@@ -93,7 +107,7 @@ async function sendApplicationConfirmation({ toEmail, firstName, jobTitle, compa
       <div class="detail-row"><span class="detail-label">Location</span><span class="detail-value">${location}</span></div>
     </div>
     <p>Your full profile — including employment history, licence details and references — has been shared with the employer. You will hear back if you are shortlisted.</p>
-    <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn">View My Applications →</a>
+    <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">View My Applications →</span></a>
     <div class="notice"><strong>Interview reminder:</strong> If you are invited to interview and cannot attend, you must notify the employer in advance. No-shows without prior notice result in a platform ban.</div>
   `);
   return send(toEmail, `Application submitted — ${jobTitle} at ${companyName}`, html);
@@ -105,7 +119,7 @@ async function sendInterviewScheduled({ toEmail, firstName, jobTitle, companyNam
   const formatLabel = { in_person: 'In person', video: 'Video call', phone: 'Phone call' }[interviewFormat] || interviewFormat || 'To be confirmed';
   const html = baseTemplate(`
     <h1>Interview Confirmed</h1>
-    <p>Hi ${firstName},</p>
+    <p>Hi ${safeName(firstName) || 'there'},</p>
     <p>An interview has been arranged for your application:</p>
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:1rem;margin:1rem 0;">
       <div class="detail-row"><span class="detail-label">Role</span><span class="detail-value">${jobTitle}</span></div>
@@ -143,7 +157,7 @@ async function sendShortlisted({ toEmail, firstName, jobTitle, companyName, prof
 
   const html = baseTemplate(`
     <h1>You have been shortlisted</h1>
-    <p>Hi ${firstName},</p>
+    <p>Hi ${safeName(firstName) || 'there'},</p>
     <p>Good news — <strong>${companyName}</strong> has shortlisted you for <strong>${jobTitle}</strong>.</p>
     <p>They will be in touch shortly to arrange an interview. When they do, you will receive time slot options by email — select your preferred time immediately. Do not leave it.</p>
 
@@ -161,7 +175,7 @@ async function sendShortlisted({ toEmail, firstName, jobTitle, companyName, prof
 
     <div class="notice"><strong>Professional conduct:</strong> Once you confirm an interview slot, you are making a firm commitment to attend. Failure to attend without at least 24 hours notice will result in a no-show recorded against your profile and may lead to suspension.</div>
 
-    <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn">View My Applications →</a>
+    <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">View My Applications →</span></a>
   `);
   return send(toEmail, `You have been shortlisted — ${jobTitle} at ${companyName}`, html);
 }
@@ -170,11 +184,11 @@ async function sendShortlisted({ toEmail, firstName, jobTitle, companyName, prof
 async function sendApplicationUnsuccessful({ toEmail, firstName, jobTitle, companyName }) {
   const html = baseTemplate(`
     <h1>Application Update</h1>
-    <p>Hi ${firstName},</p>
+    <p>Hi ${safeName(firstName) || 'there'},</p>
     <p>Thank you for applying for <strong>${jobTitle}</strong> at <strong>${companyName}</strong>.</p>
     <p>On this occasion your application has not been taken forward. This is not a reflection of your suitability for security work — employers have specific requirements for each role and it is often simply a question of availability, location or experience.</p>
     <p>Your profile remains live and active. New security vacancies are added regularly — keep your availability status up to date and you will continue to be matched with suitable roles.</p>
-    <a href="https://app.uksecurityjobs.co.uk/jobs" class="btn">Browse Current Vacancies →</a>
+    <a href="https://app.uksecurityjobs.co.uk/jobs" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Browse Current Vacancies →</span></a>
   `);
   return send(toEmail, `Application update — ${jobTitle} at ${companyName}`, html);
 }
@@ -183,10 +197,10 @@ async function sendApplicationUnsuccessful({ toEmail, firstName, jobTitle, compa
 async function sendNewApplicant({ toEmail, companyName, jobTitle, candidateFirstName, applicationId }) {
   const html = baseTemplate(`
     <h1>New Application Received</h1>
-    <p>Hi ${companyName},</p>
+    <p>Hi ${safeName(companyName) || 'there'},</p>
     <p>A new application has been received for <strong>${jobTitle}</strong>.</p>
     <p>The candidate has a verified SIA licence and a complete BS7858-ready profile — employment history, address history and reference contacts are all included.</p>
-    <a href="https://app.uksecurityjobs.co.uk/employer" class="btn">View Application →</a>
+    <a href="https://app.uksecurityjobs.co.uk/employer" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">View Application →</span></a>
     <div class="notice"><strong>Right to Work reminder:</strong> You must verify original right to work documents before this candidate starts work. UKSecurityJobs candidate declarations do not constitute a statutory right to work check.</div>
   `);
   return send(toEmail, `New application for ${jobTitle} — UKSecurityJobs`, html);
@@ -196,10 +210,10 @@ async function sendNewApplicant({ toEmail, companyName, jobTitle, candidateFirst
 async function sendEmployerWelcome({ toEmail, companyName, contactName }) {
   const html = baseTemplate(`
     <h1>Company Registration Confirmed</h1>
-    <p>Hi ${contactName},</p>
+    <p>Hi ${safeName(contactName) || 'there'},</p>
     <p><strong>${companyName}</strong> has been registered on UKSecurityJobs. You can now post security vacancies to our verified pool of SIA-licensed, BS7858-ready candidates.</p>
     <p>Every candidate who applies has a verified SIA licence and a complete profile — no unsuitable applicants, no unlicensed candidates, no time wasters.</p>
-    <a href="https://app.uksecurityjobs.co.uk/employer" class="btn">Post Your First Vacancy →</a>
+    <a href="https://app.uksecurityjobs.co.uk/employer" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Post Your First Vacancy →</span></a>
     <div class="notice"><strong>Right to Work:</strong> You remain legally responsible for verifying right to work for every candidate before they start work. Use the <a href="https://www.gov.uk/check-job-applicant-right-to-work" style="color:#0369a1;">Home Office online service</a> for share code verifications.</div>
   `);
   return send(toEmail, 'Company registration confirmed — UKSecurityJobs', html);
@@ -215,7 +229,7 @@ async function sendAdminSiaRequest({ candidateName, licenceType, licenceNumber }
       <div class="detail-row"><span class="detail-label">Licence Type</span><span class="detail-value">${licenceType}</span></div>
       <div class="detail-row"><span class="detail-label">Licence Number</span><span class="detail-value">${licenceNumber}</span></div>
     </div>
-    <a href="https://www.uksecurityjobs.co.uk/admin.html" class="btn">Go to Admin Panel →</a>
+    <a href="https://www.uksecurityjobs.co.uk/admin.html" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Go to Admin Panel →</span></a>
   `);
   return send(adminEmail, `SIA verification required — ${candidateName}`, html);
 }
@@ -231,12 +245,12 @@ async function sendNudge24h({ toEmail, firstName, blocking, badge }) {
     const list = blocking.map(m => `<li style="margin-bottom:0.35rem;">${m}</li>`).join('');
     subject = 'Finish your profile to start applying — UKSecurityJobs';
     content = `
-      <h1>You're almost ready to apply, ${firstName}</h1>
-      <p>Hi ${firstName},</p>
+      <h1>You're almost ready to apply, ${safeName(firstName) || 'there'}</h1>
+      <p>Hi ${safeName(firstName) || 'there'},</p>
       <p>You started building your profile yesterday. A couple of things still need to be in place before you can apply for roles.</p>
       <p><strong>Still needed to apply:</strong></p>
       <ul style="font-size:0.9rem;color:#4a5568;line-height:1.8;margin:0.5rem 0 1.25rem 1.25rem;">${list}</ul>
-      <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn">Continue My Profile →</a>
+      <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Continue My Profile →</span></a>
       <hr class="divider"/>
       <p style="font-size:0.85rem;color:#64748b;">Once these are in place, you can apply to any role with a single click — no forms to fill in.</p>
     `;
@@ -245,13 +259,13 @@ async function sendNudge24h({ toEmail, firstName, blocking, badge }) {
     const list = badge.map(m => `<li style="margin-bottom:0.35rem;">${m}</li>`).join('');
     subject = 'You can apply now — complete your profile to earn your badge';
     content = `
-      <h1>You can apply now, ${firstName}</h1>
-      <p>Hi ${firstName},</p>
+      <h1>You can apply now, ${safeName(firstName) || 'there'}</h1>
+      <p>Hi ${safeName(firstName) || 'there'},</p>
       <p>Your SIA licence is verified and your profile is ready — you can apply for roles on UKSecurityJobs right now.</p>
       <p>To earn the <strong>BS7858-ready badge</strong> — which shows employers you are ready for security clearance checks — you still need to add:</p>
       <ul style="font-size:0.9rem;color:#4a5568;line-height:1.8;margin:0.5rem 0 1.25rem 1.25rem;">${list}</ul>
-      <a href="https://app.uksecurityjobs.co.uk/jobs" class="btn">Browse Security Jobs →</a>
-      <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn" style="background:#0b1222;">Add Remaining Details →</a>
+      <a href="https://app.uksecurityjobs.co.uk/jobs" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Browse Security Jobs →</span></a>
+      <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn" style="background:#0b1222;color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Add Remaining Details →</span></a>
       <hr class="divider"/>
       <p style="font-size:0.85rem;color:#64748b;">Employers running BS7858 background checks look for a full five-year address and employment history, plus reference contacts.</p>
     `;
@@ -269,11 +283,11 @@ async function sendNudge72h({ toEmail, firstName, blocking, badge }) {
     const list = blocking.map(m => `<li style="margin-bottom:0.35rem;">${m}</li>`).join('');
     subject = 'New roles available — your profile needs attention';
     content = `
-      <h1>New roles are live, ${firstName}</h1>
-      <p>Hi ${firstName},</p>
+      <h1>New roles are live, ${safeName(firstName) || 'there'}</h1>
+      <p>Hi ${safeName(firstName) || 'there'},</p>
       <p>Security vacancies are being added to UKSecurityJobs. To apply, you need to complete the following:</p>
       <ul style="font-size:0.9rem;color:#4a5568;line-height:1.8;margin:0.5rem 0 1.25rem 1.25rem;">${list}</ul>
-      <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn">Finish My Profile →</a>
+      <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Finish My Profile →</span></a>
       <hr class="divider"/>
       <div class="notice"><strong>Verified candidates apply with a single click.</strong> Once your profile is in order, every role on the platform is one click away — no forms to fill in.</div>
     `;
@@ -282,13 +296,13 @@ async function sendNudge72h({ toEmail, firstName, blocking, badge }) {
     const list = badge.map(m => `<li style="margin-bottom:0.35rem;">${m}</li>`).join('');
     subject = 'New roles available — add your history to earn the BS7858 badge';
     content = `
-      <h1>New roles are live and you can apply, ${firstName}</h1>
-      <p>Hi ${firstName},</p>
+      <h1>New roles are live and you can apply, ${safeName(firstName) || 'there'}</h1>
+      <p>Hi ${safeName(firstName) || 'there'},</p>
       <p>Security vacancies are being added to UKSecurityJobs and you are already set up to apply. Your SIA licence is verified and your basic details are in place.</p>
       <p>To earn the <strong>BS7858-ready badge</strong> — prioritised by employers running security clearance checks — you still need to add:</p>
       <ul style="font-size:0.9rem;color:#4a5568;line-height:1.8;margin:0.5rem 0 1.25rem 1.25rem;">${list}</ul>
-      <a href="https://app.uksecurityjobs.co.uk/jobs" class="btn">Browse Security Jobs →</a>
-      <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn" style="background:#0b1222;">Add Remaining Details →</a>
+      <a href="https://app.uksecurityjobs.co.uk/jobs" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Browse Security Jobs →</span></a>
+      <a href="https://app.uksecurityjobs.co.uk/dashboard" class="btn" style="background:#0b1222;color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Add Remaining Details →</span></a>
       <hr class="divider"/>
       <div class="notice"><strong>BS7858-ready candidates are prioritised by employers running background checks.</strong> Adding your history now means you will be at the front of the queue when relevant roles go live.</div>
     `;
@@ -299,18 +313,17 @@ async function sendNudge72h({ toEmail, firstName, blocking, badge }) {
 
 // ── 10. FINAL WARNING — NO SIA LICENCE ──
 async function sendFinalWarningEmail({ toEmail, firstName, deadlineDate }) {
-  const safeName = escHtml(firstName);
   const deadline = new Date(deadlineDate).toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
   const html = baseTemplate(`
     <h1>Add your SIA licence or your account will be closed</h1>
-    <p>Hi ${safeName},</p>
+    <p>Hi ${safeName(firstName) || 'there'},</p>
     <p>You registered on UKSecurityJobs but have not yet added an SIA licence to your profile.</p>
     <p>UKSecurityJobs is a verified platform — every candidate must hold a valid SIA licence. Without one, we cannot make your profile visible to employers.</p>
     <p><strong>If no SIA licence is added by ${deadline}, your account and all associated data will be permanently deleted.</strong></p>
     <p>It takes two minutes. Add your licence, complete your profile, and you can join the talent pool — and let work come to you.</p>
-    <a href="https://app.uksecurityjobs.co.uk/profile" class="btn">Add My SIA Licence ›</a>
+    <a href="https://app.uksecurityjobs.co.uk/profile" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Add My SIA Licence ›</span></a>
     <hr class="divider"/>
     <p style="font-size:0.85rem;color:#64748b;">If you believe this is an error or need help adding your licence, reply to this email or contact <a href="mailto:admin@uksecurityjobs.co.uk" style="color:#1a52a8;">admin@uksecurityjobs.co.uk</a>.</p>
     <p style="font-size:0.85rem;color:#64748b;">If you no longer wish to use UKSecurityJobs, you can ignore this email — your account will be closed automatically on the date above.</p>
@@ -319,16 +332,15 @@ async function sendFinalWarningEmail({ toEmail, firstName, deadlineDate }) {
 }
 
 // ── 11. TALENT POOL INVITE (CANDIDATE) ──
-// candidateFirstName and employerName are HTML-escaped before insertion.
+// candidateFirstName and employerName are HTML-escaped via safeName/escHtml before insertion.
 async function sendPoolInvite({ toEmail, candidateFirstName, employerName, token }) {
-  const acceptUrl = `https://app.uksecurityjobs.co.uk/invite/${token}`;
-  const safeName     = escHtml(candidateFirstName);
+  const acceptUrl    = `https://app.uksecurityjobs.co.uk/invite/${token}`;
   const safeEmployer = escHtml(employerName);
   const html = baseTemplate(`
     <h1>You have been invited to a talent pool</h1>
-    <p>Hi ${safeName},</p>
+    <p>Hi ${safeName(candidateFirstName) || 'there'},</p>
     <p><strong>${safeEmployer}</strong> ${POOL_INVITE_EMAIL_PARA}</p>
-    <a href="${acceptUrl}" class="btn">View Invitation →</a>
+    <a href="${acceptUrl}" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">View Invitation →</span></a>
     <hr class="divider"/>
     <p style="font-size:0.82rem;color:#64748b;">If you did not expect this email, you can safely ignore it. No action is required unless you want to accept.</p>
   `);
@@ -357,7 +369,6 @@ function formatShiftRange(startUtc, endUtc) {
 }
 
 async function sendPoolCallout({ toEmail, candidateFirstName, employerName, shiftRange, siteTown, jobSummary, rate, respondUrl }) {
-  const safeName  = escHtml(candidateFirstName);
   const safeEmp   = escHtml(employerName);
   const safeSite  = escHtml(siteTown);
   const safeJob   = escHtml(jobSummary);
@@ -365,7 +376,7 @@ async function sendPoolCallout({ toEmail, candidateFirstName, employerName, shif
   const rateRow   = rate ? `<div class="detail-row"><span class="detail-label">Rate</span><span class="detail-value">${escHtml(rate)}</span></div>` : '';
   const html = baseTemplate(`
     <h1>Shift callout from ${safeEmp}</h1>
-    <p>Hi ${safeName},</p>
+    <p>Hi ${safeName(candidateFirstName) || 'there'},</p>
     <p><strong>${safeEmp}</strong> ${POOL_CALLOUT_EMAIL_INTRO}</p>
     <div style="background:#f8fafc;border-radius:8px;padding:1rem;margin:1rem 0;">
       <div class="detail-row"><span class="detail-label">Shift</span><span class="detail-value">${safeRange}</span></div>
@@ -373,7 +384,7 @@ async function sendPoolCallout({ toEmail, candidateFirstName, employerName, shif
       <div class="detail-row"><span class="detail-label">Role</span><span class="detail-value">${safeJob}</span></div>
       ${rateRow}
     </div>
-    <a href="${respondUrl}" class="btn">Respond to Callout →</a>
+    <a href="${respondUrl}" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Respond to Callout →</span></a>
     <hr class="divider"/>
     <p style="font-size:0.82rem;color:#64748b;">This link expires when the shift starts. You can change your response at any time before then.</p>
   `);
@@ -402,19 +413,17 @@ async function isOptedOut(db, email) {
  *
  * @param {object} opts
  * @param {string} opts.to          — candidate email
- * @param {string} opts.firstName   — candidate first name (or 'there')
+ * @param {string} opts.firstName   — candidate first name (or null)
  * @param {string} opts.optInUrl    — https://app.uksecurityjobs.co.uk/shift-alerts/:token
  * @param {string} opts.unsubUrl    — https://app.uksecurityjobs.co.uk/unsubscribe/:token
  */
 async function sendShiftAlertOptIn({ to, firstName, optInUrl, unsubUrl }) {
-  const name     = firstName ? escHtml(firstName) : null;
-  const greeting = name ? `Hi ${name},` : 'Hi there,';
   const html = baseTemplate(`
     <h1>Want shifts near you?</h1>
-    <p>${greeting}</p>
+    <p>Hi ${safeName(firstName) || 'there'},</p>
     <p>We're starting shift alerts on UKSecurityJobs. When a security company needs cover near you, we'll let you know, and you tap to say you want it.</p>
     <p>Guards who switch this on hear about shifts first.</p>
-    <a href="${optInUrl}" class="btn">Yes, send me shifts</a>
+    <a href="${optInUrl}" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Yes, send me shifts</span></a>
     <hr class="divider"/>
     <p style="font-size:0.82rem;color:#64748b;">We'll only contact you about real shifts. No newsletters.</p>
     <p style="font-size:0.75rem;color:#94a3b8;margin-top:1rem;"><a href="${unsubUrl}" style="color:#94a3b8;">Unsubscribe from UKSecurityJobs emails</a></p>
@@ -427,6 +436,7 @@ module.exports = {
   isOptedOut,
   send,
   escHtml,
+  safeName,
   sendSiaVerified,
   sendApplicationConfirmation,
   sendInterviewScheduled,

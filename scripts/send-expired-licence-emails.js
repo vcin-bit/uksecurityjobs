@@ -80,7 +80,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 h1{font-size:1.25rem;font-weight:800;color:#0b1222;margin-bottom:0.75rem;line-height:1.3;}
 p{font-size:0.92rem;color:#4a5568;line-height:1.75;margin-bottom:1rem;}
 p:last-child{margin-bottom:0;}
-.btn{display:inline-block;background:#1a52a8;color:#fff;font-size:0.92rem;font-weight:700;padding:0.75rem 2rem;border-radius:8px;text-decoration:none;margin:1.25rem 0;}
+.btn{display:inline-block;background:#1a52a8;color:#ffffff !important;font-size:0.92rem;font-weight:700;padding:0.75rem 2rem;border-radius:8px;text-decoration:none !important;margin:1.25rem 0;}
 .divider{border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0;}
 .footer{text-align:center;padding:1.5rem 0;font-size:0.75rem;color:#94a3b8;line-height:1.7;}
 .footer a{color:#94a3b8;}
@@ -108,7 +108,7 @@ function buildBlockingHtml({ firstName, licenceType, expiryDate, unsubUrl }) {
     <p>Your <strong>${esc(licenceType)}</strong> SIA licence expired on <strong>${expStr}</strong>.</p>
     <p>Until you add a valid, renewed licence to your profile, you will not be able to apply for security roles on UKSecurityJobs.</p>
     <p>Renew through the <a href="https://www.sia.homeoffice.gov.uk" style="color:#1a52a8;">SIA website</a>, then add your new licence number to your profile. Once our team verifies it, your profile will be live again.</p>
-    <a href="https://app.uksecurityjobs.co.uk/profile" class="btn">Add My Renewed Licence →</a>
+    <a href="https://app.uksecurityjobs.co.uk/profile" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Add My Renewed Licence →</span></a>
     <hr class="divider"/>
     <p style="font-size:0.82rem;color:#64748b;">If you believe this is an error, reply to this email or contact <a href="mailto:admin@uksecurityjobs.co.uk" style="color:#1a52a8;">admin@uksecurityjobs.co.uk</a>.</p>
     <p style="font-size:0.75rem;color:#94a3b8;margin-top:1rem;"><a href="${unsubUrl}" style="color:#94a3b8;">Unsubscribe from licence reminders</a></p>
@@ -123,7 +123,7 @@ function buildInformationalHtml({ firstName, licenceType, expiryDate, unsubUrl }
     <p>Your <strong>${esc(licenceType)}</strong> SIA licence expired on <strong>${expStr}</strong>.</p>
     <p>You still hold a valid in-date licence so you can continue applying for roles — but we recommend renewing the expired licence to keep your profile fully current.</p>
     <p>Renew through the <a href="https://www.sia.homeoffice.gov.uk" style="color:#1a52a8;">SIA website</a>, then add the new licence number to your UKSecurityJobs profile.</p>
-    <a href="https://app.uksecurityjobs.co.uk/profile" class="btn">Update My Licences →</a>
+    <a href="https://app.uksecurityjobs.co.uk/profile" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">Update My Licences →</span></a>
     <hr class="divider"/>
     <p style="font-size:0.82rem;color:#64748b;">If you have already renewed this licence, log in and update the licence number on your profile.</p>
     <p style="font-size:0.75rem;color:#94a3b8;margin-top:1rem;"><a href="${unsubUrl}" style="color:#94a3b8;">Unsubscribe from licence reminders</a></p>
@@ -315,7 +315,13 @@ async function main() {
         ? 'Your SIA licence has expired — renew to keep applying on UKSecurityJobs'
         : 'One of your SIA licences has expired — UKSecurityJobs';
 
-      await sgMail.send({ from: FROM, to: row.candidate.email, subject, html });
+      await sgMail.send({
+        from: FROM, to: row.candidate.email, subject, html,
+        trackingSettings: {
+          clickTracking: { enable: false, enableText: false },
+          openTracking:  { enable: false },
+        },
+      });
 
       const { error: insertErr } = await supabase
         .from('licence_reminders')
