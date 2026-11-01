@@ -112,10 +112,10 @@ router.post('/optin/:token', async (req, res) => {
   await auditLog({
     tableName:   'candidates',
     recordId:    row.candidate_id,
-    action:      'shift_alerts_opted_in',
-    performedBy: null,
+    action:      'UPDATE',
+    performedBy: 'email_link',
     ipAddress:   req.ip,
-    changes:     { source: 'email_link' },
+    changes:     { event: 'shift_alerts_opted_in', source: 'email_link' },
   });
 
   return res.json({ ok: true, alreadyOptedIn: false });
