@@ -6932,6 +6932,244 @@ function UnsubscribePage() {
   );
 }
 
+// ── /shift-response/:token ────────────────────────────────────────────────────
+function shiftDateLabel(startUtc) {
+  const opts = { timeZone: 'Europe/London' };
+  const today    = new Date().toLocaleDateString('en-GB', opts);
+  const shiftDay = new Date(startUtc).toLocaleDateString('en-GB', opts);
+  if (shiftDay === today) return 'Tonight';
+  const tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
+  if (shiftDay === tmr.toLocaleDateString('en-GB', opts)) return 'Tomorrow';
+  return new Date(startUtc).toLocaleString('en-GB', { timeZone: 'Europe/London', weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+const PAY_TERM_LABEL = { next_day: 'Next day', weekly: 'Weekly', monthly: 'Monthly' };
+
+function ShiftResponsePage() {
+  const { token } = useParams();
+  const API = 'https://uksecurityjobs-api.onrender.com';
+  const [shift, setShift]       = React.useState(null);
+  const [state, setState]       = React.useState('loading'); // loading|ready|answered|filled|cancelled|expired|invalid
+  const [response, setResponse] = React.useState(null);
+  const [saving, setSaving]     = React.useState(false);
+
+  React.useEffect(() => {
+    fetch(`${API}/api/shift-response/${token}`)
+      .then(r => { if (r.status === 404) { setState('invalid'); return null; } return r.json(); })
+      .then(data => {
+        if (!data) return;
+        setShift(data);
+        if (data.expired)                                  setState('expired');
+        else if (data.shift_status === 'filled')           setState('filled');
+        else if (data.shift_status === 'cancelled')        setState('cancelled');
+        else if (data.response && data.response !== 'none') { setState('answered'); setResponse(data.response); }
+        else                                               setState('ready');
+      })
+      .catch(() => setState('invalid'));
+  }, [token]);
+
+  const handleRespond = async (r) => {
+    setSaving(true);
+    try {
+      const res  = await fetch(`${API}/api/shift-response/${token}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ response: r }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.code === 'token_expired')   { setState('expired');   return; }
+        if (data.code === 'shift_filled')    { setState('filled');    return; }
+        if (data.code === 'shift_cancelled') { setState('cancelled'); return; }
+        return;
+      }
+      setResponse(r);
+      setState('answered');
+    } catch { /* silent */ } finally { setSaving(false); }
+  };
+
+  const navStyle  = { background: '#0b1222', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center' };
+  const logoStyle = { fontWeight: 800, fontSize: '1.1rem', textDecoration: 'none' };
+  const cardWrap  = { maxWidth: 520, margin: '3rem auto', padding: '0 1rem' };
+  const innerBox  = { background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '2rem', fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif' };
+  const h1s       = { fontSize: '1.2rem', fontWeight: 800, color: '#0b1222', marginBottom: '0.25rem', marginTop: 0 };
+  const ps        = { fontSize: '0.88rem', color: '#64748b', marginBottom: '0.75rem' };
+  const row       = { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0.45rem 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.88rem' };
+  const lbl       = { color: '#94a3b8', fontWeight: 600, flexShrink: 0, marginRight: '1rem' };
+  const val       = { fontWeight: 500, color: '#0b1222', textAlign: 'right' };
+
+  const NavBar = () => (
+    <nav style={navStyle}>
+      <a href="https://www.uksecurityjobs.co.uk" style={logoStyle}>
+        <span style={{ color: '#3b82f6' }}>UK</span><span style={{ color: '#fff' }}>Security</span><span style={{ color: '#3b82f6' }}>Jobs</span>
+      </a>
+    </nav>
+  );
+
+  const SimpleCard = ({ title, body }) => (
+    <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
+      <NavBar/>
+      <div style={cardWrap}><div style={innerBox}>
+        <p style={{ fontWeight: 700, color: '#0b1222', marginBottom: '0.5rem', marginTop: 0 }}>{title}</p>
+        <p style={{ ...ps, marginBottom: 0 }}>{body}</p>
+      </div></div>
+    </div>
+  );
+
+  if (state === 'loading')   return <SimpleCard title="Loading…" body=""/>;
+  if (state === 'invalid')   return <SimpleCard title="Link not found" body={<>This link isn't valid. Contact <a href="mailto:admin@uksecurityjobs.co.uk" style={{ color: '#1a52a8' }}>admin@uksecurityjobs.co.uk</a> if you need help.</>}/>;
+  if (state === 'expired')   return <SimpleCard title="Shift has started" body="This link expired when the shift started. No action needed."/>;
+  if (state === 'filled')    return <SimpleCard title="This shift has been filled" body="Thanks for replying."/>;
+  if (state === 'cancelled') return <SimpleCard title="This shift has been cancelled" body="No action needed."/>;
+
+  const durationHours = (new Date(shift.shift_end) - new Date(shift.shift_start)) / 3_600_000;
+  const estPay        = Math.round(shift.rate_per_hour * durationHours);
+  const roleLabel     = shift.licence_types?.length ? shift.licence_types[0] : null;
+  const headingLine   = roleLabel ? `${roleLabel}, ${shift.site_town}` : shift.site_town;
+  const distLine      = shift.distance_miles != null ? `${Number(shift.distance_miles).toFixed(1)} miles from you` : null;
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
+      <NavBar/>
+      <div style={cardWrap}>
+        <div style={innerBox}>
+          <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1a52a8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.2rem', marginTop: 0 }}>
+            {shiftDateLabel(shift.shift_start)}
+          </p>
+          <h1 style={h1s}>{headingLine}</h1>
+          {distLine && <p style={{ ...ps, marginBottom: '1.5rem' }}>{distLine}</p>}
+
+          <div style={{ background: '#f8fafc', borderRadius: 8, padding: '0.25rem 1rem', marginBottom: '1.25rem' }}>
+            <div style={row}>
+              <span style={lbl}>Hours</span>
+              <span style={val}>{fmtShiftRange(shift.shift_start, shift.shift_end)}</span>
+            </div>
+            <div style={row}>
+              <span style={lbl}>Rate</span>
+              <span style={val}>£{shift.rate_per_hour}/hr · est. £{estPay}</span>
+            </div>
+            <div style={row}>
+              <span style={lbl}>Paid</span>
+              <span style={val}>{PAY_TERM_LABEL[shift.pay_terms] || shift.pay_terms}</span>
+            </div>
+            <div style={row}>
+              <span style={lbl}>Licence</span>
+              <span style={{ ...val, textAlign: 'right', maxWidth: '60%' }}>{(shift.licence_types || []).join(', ')}</span>
+            </div>
+            <div style={{ ...row, borderBottom: 'none' }}>
+              <span style={lbl}>Company</span>
+              <span style={val}>{shift.employer_name || 'Confidential'}</span>
+            </div>
+          </div>
+
+          <p style={{ ...ps, marginBottom: '0.75rem' }}>
+            The exact site address, contacts and tasks show once you're booked.
+          </p>
+
+          <div style={{ background: '#fef9c3', border: '1px solid #fde68a', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1.5rem', fontSize: '0.82rem', color: '#92400e', lineHeight: 1.6 }}>
+            Have your passport or share code ready. The company checks your right to work when they call.
+          </div>
+
+          {state === 'answered' ? (
+            <div>
+              <div style={{ textAlign: 'center', padding: '0.75rem', borderRadius: 8, marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.88rem',
+                background: response === 'yes' ? '#dcfce7' : '#f1f5f9',
+                color:      response === 'yes' ? '#15803d' : '#475569' }}>
+                {response === 'yes' ? 'You said yes to this shift' : "You said this shift isn't for you"}
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={() => handleRespond('yes')} disabled={saving || response === 'yes'}
+                  style={{ flex: 1, padding: '0.65rem', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: '0.88rem',
+                    cursor: response === 'yes' ? 'default' : 'pointer', fontFamily: 'inherit',
+                    background: response === 'yes' ? '#dcfce7' : '#15803d',
+                    color:      response === 'yes' ? '#15803d' : '#fff', opacity: saving ? 0.7 : 1 }}>
+                  I want this shift
+                </button>
+                <button onClick={() => handleRespond('no')} disabled={saving || response === 'no'}
+                  style={{ flex: 1, padding: '0.65rem', borderRadius: 8, fontWeight: 700, fontSize: '0.88rem',
+                    cursor: response === 'no' ? 'default' : 'pointer', fontFamily: 'inherit',
+                    background: response === 'no' ? '#f1f5f9' : '#f8fafc',
+                    color: '#475569', border: '1px solid #e2e8f0', opacity: saving ? 0.7 : 1 }}>
+                  Not for me
+                </button>
+              </div>
+              <p style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', marginTop: '0.75rem', marginBottom: 0 }}>
+                You can change your answer while the shift is open.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button onClick={() => handleRespond('yes')} disabled={saving}
+                style={{ flex: 1, padding: '0.75rem', borderRadius: 8, border: 'none', background: '#15803d', color: '#fff',
+                  fontWeight: 700, fontSize: '0.92rem', cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.7 : 1 }}>
+                {saving ? 'Saving…' : 'I want this shift'}
+              </button>
+              <button onClick={() => handleRespond('no')} disabled={saving}
+                style={{ flex: 1, padding: '0.75rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569',
+                  fontWeight: 700, fontSize: '0.92rem', cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.7 : 1 }}>
+                {saving ? 'Saving…' : 'Not for me'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── /stop-shift-alerts/:token ─────────────────────────────────────────────────
+function StopShiftAlertsPage() {
+  const { token } = useParams();
+  const API = 'https://uksecurityjobs-api.onrender.com';
+  const [state, setState] = React.useState('ready'); // ready | busy | done | error
+
+  const handleStop = async () => {
+    setState('busy');
+    try {
+      const r    = await fetch(`${API}/api/shift-response/${token}/stop-alerts`, { method: 'POST' });
+      const data = await r.json();
+      setState(data.ok ? 'done' : 'error');
+    } catch { setState('error'); }
+  };
+
+  const navStyle  = { background: '#0b1222', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center' };
+  const logoStyle = { fontWeight: 800, fontSize: '1.1rem', textDecoration: 'none' };
+  const card      = { maxWidth: 520, margin: '3rem auto', padding: '0 1rem' };
+  const inner     = { background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '2rem', fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif' };
+  const h1s       = { fontSize: '1.2rem', fontWeight: 800, color: '#0b1222', marginBottom: '0.75rem', marginTop: 0 };
+  const ps        = { fontSize: '0.9rem', color: '#4a5568', lineHeight: 1.75, marginBottom: '0.75rem' };
+  const btn       = { background: '#0b1222', color: '#fff', fontWeight: 700, fontSize: '0.92rem', padding: '0.75rem 2rem', borderRadius: 8, border: 'none', cursor: 'pointer' };
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
+      <nav style={navStyle}>
+        <a href="https://www.uksecurityjobs.co.uk" style={logoStyle}>
+          <span style={{ color: '#3b82f6' }}>UK</span><span style={{ color: '#fff' }}>Security</span><span style={{ color: '#3b82f6' }}>Jobs</span>
+        </a>
+      </nav>
+      <div style={card}><div style={inner}>
+        {state === 'ready' && (<>
+          <h1 style={h1s}>Stop shift alerts?</h1>
+          <p style={ps}>You won't receive any more shift alerts by email.</p>
+          <button style={btn} onClick={handleStop}>Stop alerts</button>
+        </>)}
+        {state === 'busy' && <p style={{ ...ps, marginBottom: 0 }}>Saving…</p>}
+        {state === 'done' && (<>
+          <h1 style={h1s}>Done</h1>
+          <p style={ps}>You won't get shift alerts any more.</p>
+          <p style={{ ...ps, marginBottom: 0 }}>
+            You can turn them back on from your{' '}
+            <a href="https://app.uksecurityjobs.co.uk/profile" style={{ color: '#1a52a8', fontWeight: 600 }}>profile settings</a>.
+          </p>
+        </>)}
+        {state === 'error' && (<>
+          <h1 style={h1s}>Something went wrong</h1>
+          <p style={{ ...ps, marginBottom: 0 }}>Contact <a href="mailto:admin@uksecurityjobs.co.uk" style={{ color: '#1a52a8' }}>admin@uksecurityjobs.co.uk</a> if you need help.</p>
+        </>)}
+      </div></div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }) {
   const { isLoaded, isSignedIn } = useUser();
   const location = useLocation();
@@ -6962,6 +7200,8 @@ export default function App() {
           <Route path="/callout/:token" element={<CalloutResponsePage/>}/>
           <Route path="/shift-alerts/:token" element={<ShiftAlertOptInPage/>}/>
           <Route path="/unsubscribe/:token" element={<UnsubscribePage/>}/>
+          <Route path="/shift-response/:token" element={<ShiftResponsePage/>}/>
+          <Route path="/stop-shift-alerts/:token" element={<StopShiftAlertsPage/>}/>
           <Route path="*" element={<Navigate to="/dashboard" replace/>}/>
         </Routes>
       </BrowserRouter>
