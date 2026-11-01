@@ -216,10 +216,21 @@ router.post('/', async (req, res) => {
         licenceMap[l.candidate_id].add(l.licence_type);
       }
 
-      const requiredSet = new Set(licence_types);
+      // Coverage rule: a guard qualifies if any of their licences covers any required type.
+      // DS and CP officers hold a superset of Security Guard powers; CP covers DS requirements.
+      const LICENCE_COVERAGE = {
+        'Security Guard':   new Set(['Security Guard', 'Door Supervisor', 'Close Protection']),
+        'Door Supervisor':  new Set(['Door Supervisor', 'Close Protection']),
+        'CCTV Operator':    new Set(['CCTV Operator']),
+        'Close Protection': new Set(['Close Protection']),
+      };
       eligibleGuards = (nearby || []).filter(g => {
         const gl = licenceMap[g.candidate_id];
-        return gl && [...requiredSet].some(lt => gl.has(lt));
+        if (!gl) return false;
+        return licence_types.some(lt => {
+          const covers = LICENCE_COVERAGE[lt];
+          return covers && [...gl].some(guardLicence => covers.has(guardLicence));
+        });
       });
     }
 
