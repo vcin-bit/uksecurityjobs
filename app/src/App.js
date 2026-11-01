@@ -5370,6 +5370,446 @@ function TalentPoolTab({ getToken }) {
   );
 }
 
+// ── SHIFTS TAB ────────────────────────────────────────────────────────────────
+function ShiftsTab({ getToken }) {
+  const LICENCE_OPTS  = ['Security Guard','Door Supervisor','CCTV Operator','Close Protection'];
+  const PAY_OPTS      = [['next_day','Next day'],['weekly','Weekly'],['monthly','Monthly']];
+  const RADIUS_OPTS   = [5,10,15,20,30];
+  const emptyForm     = {site_postcode:'',shift_date:'',shift_start_time:'',shift_end_time:'',licence_types:[],rate_per_hour:'',pay_terms:'',radius_miles:15,notes:''};
+  const emptyConfirm  = {site_name:'',site_address:'',report_to:'',escalation_contacts:'',site_tasks:''};
+
+  // List
+  const [shifts,      setShifts]      = React.useState([]);
+  const [loadingList, setLoadingList] = React.useState(true);
+  const [showForm,    setShowForm]    = React.useState(false);
+  const [form,        setForm]        = React.useState(emptyForm);
+  const [posting,     setPosting]     = React.useState(false);
+  const [postMsg,     setPostMsg]     = React.useState(null); // {ok, text}
+
+  // Detail
+  const [detailId,         setDetailId]         = React.useState(null);
+  const [detail,           setDetail]           = React.useState(null);
+  const [detailLoading,    setDetailLoading]    = React.useState(false);
+  const [overrideToList,   setOverrideToList]   = React.useState(false);
+
+  // Confirm
+  const [confirmForm,  setConfirmForm]  = React.useState(emptyConfirm);
+  const [rtwCheck,     setRtwCheck]     = React.useState(false);
+  const [badgeCheck,   setBadgeCheck]   = React.useState(false);
+  const [confirming,   setConfirming]   = React.useState(false);
+  const [confirmError, setConfirmError] = React.useState(null);
+  const [siteSent,     setSiteSent]     = React.useState(null);
+
+  // Choose / cancel
+  const [choosing,       setChoosing]       = React.useState(null);
+  const [cancelConfirm,  setCancelConfirm]  = React.useState(false);
+  const [cancelling,     setCancelling]     = React.useState(false);
+
+  React.useEffect(() => { loadList(); }, []);
+
+  async function loadList() {
+    setLoadingList(true);
+    try {
+      const d = await apiRequest('/api/shifts', 'GET', null, getToken);
+      setShifts(d.shifts || []);
+    } catch(e) { console.error(e); }
+    setLoadingList(false);
+  }
+
+  async function openDetail(id) {
+    setDetailId(id); setDetail(null); setDetailLoading(true);
+    setConfirmForm(emptyConfirm); setRtwCheck(false); setBadgeCheck(false);
+    setConfirmError(null); setCancelConfirm(false); setSiteSent(null); setOverrideToList(false);
+    try {
+      const d = await apiRequest(`/api/shifts/${id}`, 'GET', null, getToken);
+      setDetail(d);
+    } catch(e) { console.error(e); }
+    setDetailLoading(false);
+  }
+
+  async function handlePost(e) {
+    e.preventDefault(); setPosting(true); setPostMsg(null);
+    try {
+      const d = await apiRequest('/api/shifts', 'POST', {
+        ...form, rate_per_hour: Number(form.rate_per_hour), radius_miles: Number(form.radius_miles),
+      }, getToken);
+      setPostMsg({ ok:true, text:`Alert sent to ${d.recipients_count} guard${d.recipients_count!==1?'s':''}.` });
+      setForm(emptyForm); setShowForm(false); loadList();
+    } catch(e) {
+      const MAP = {
+        postcode_not_found:"That postcode wasn't found — please check it.",
+        shift_start_past:'The shift start is in the past. Choose a future date and time.',
+        rate_limit:'You can post at most 10 shifts in 24 hours.',
+        missing_times:'Please fill in date, start time and finish time.',
+        missing_postcode:'Please enter the site postcode.',
+        missing_licence_types:'Choose at least one licence type.',
+        invalid_rate:'Enter a valid rate per hour.',
+        shift_end_before_start:'Finish time must be after start.',
+      };
+      setPostMsg({ ok:false, text: MAP[e.code] || e.message || 'Something went wrong.' });
+    }
+    setPosting(false);
+  }
+
+  async function handleChoose(candidateId) {
+    setChoosing(candidateId);
+    try {
+      await apiRequest(`/api/shifts/${detailId}/choose`, 'POST', { candidate_id: candidateId }, getToken);
+      const d = await apiRequest(`/api/shifts/${detailId}`, 'GET', null, getToken);
+      setDetail(d); setOverrideToList(false); setRtwCheck(false); setBadgeCheck(false); setConfirmError(null);
+    } catch(e) { console.error(e); }
+    setChoosing(null);
+  }
+
+  async function handleConfirm(e) {
+    e.preventDefault(); setConfirming(true); setConfirmError(null);
+    try {
+      await apiRequest(`/api/shifts/${detailId}/confirm`, 'POST', confirmForm, getToken);
+      setSiteSent(confirmForm); loadList();
+      const d = await apiRequest(`/api/shifts/${detailId}`, 'GET', null, getToken);
+      setDetail(d);
+    } catch(e) {
+      setConfirmError(e.code==='missing_fields'?'Site address and report to are required.': e.message||'Failed to confirm. Please try again.');
+    }
+    setConfirming(false);
+  }
+
+  async function handleCancel() {
+    setCancelling(true);
+    try {
+      await apiRequest(`/api/shifts/${detailId}/cancel`, 'POST', {}, getToken);
+      loadList();
+      const d = await apiRequest(`/api/shifts/${detailId}`, 'GET', null, getToken);
+      setDetail(d); setCancelConfirm(false);
+    } catch(e) { console.error(e); }
+    setCancelling(false);
+  }
+
+  // ── Shared styles ──────────────────────────────────────────────────────────
+  const inp   = {width:'100%',padding:'0.6rem 0.75rem',borderRadius:6,border:'1px solid #cbd5e1',fontSize:'0.9rem',fontFamily:'inherit',color:'#0b1222',background:'#fff',boxSizing:'border-box'};
+  const lbl   = {fontSize:'0.82rem',fontWeight:700,color:'#475569',display:'block',marginBottom:'0.25rem'};
+  const mb    = n => ({marginBottom:n});
+  const row2  = {display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'};
+  const card  = {background:'#f8fafc',borderRadius:10,border:'1px solid #e2e8f0',padding:'1rem 1.25rem',marginBottom:'0.75rem'};
+  const btnP  = {background:'#1a52a8',color:'#fff',fontWeight:700,fontSize:'0.9rem',padding:'0.7rem 1.5rem',borderRadius:8,border:'none',cursor:'pointer',fontFamily:'inherit'};
+  const btnSm = {background:'#f1f5f9',color:'#475569',fontWeight:600,fontSize:'0.82rem',padding:'0.4rem 0.85rem',borderRadius:6,border:'1px solid #e2e8f0',cursor:'pointer',fontFamily:'inherit'};
+  const btnG  = {background:'#15803d',color:'#fff',fontWeight:700,fontSize:'0.88rem',padding:'0.45rem 0.9rem',borderRadius:7,border:'none',cursor:'pointer',fontFamily:'inherit'};
+  const btnR  = {background:'#fef2f2',color:'#b91c1c',fontWeight:700,fontSize:'0.82rem',padding:'0.4rem 0.85rem',borderRadius:6,border:'1px solid #fecaca',cursor:'pointer',fontFamily:'inherit'};
+
+  function statusBadge(status) {
+    const CFG = {open:{bg:'#dcfce7',c:'#15803d',t:'Open'},filled:{bg:'#eff6ff',c:'#1d4ed8',t:'Filled'},cancelled:{bg:'#f1f5f9',c:'#64748b',t:'Cancelled'},expired:{bg:'#f1f5f9',c:'#94a3b8',t:'Expired'}};
+    const x = CFG[status]||CFG.expired;
+    return <span style={{fontSize:'0.7rem',fontWeight:700,padding:'0.2rem 0.55rem',borderRadius:'999px',background:x.bg,color:x.c}}>{x.t}</span>;
+  }
+
+  function shiftLabel(s) {
+    const toL = (d,o) => new Date(d).toLocaleString('en-GB',{timeZone:'Europe/London',...o});
+    const day   = toL(s.shift_start,{weekday:'short',day:'numeric',month:'short'});
+    const start = toL(s.shift_start,{hour:'2-digit',minute:'2-digit',hour12:false});
+    const end   = toL(s.shift_end,  {hour:'2-digit',minute:'2-digit',hour12:false});
+    return {day, times:`${start}–${end}`};
+  }
+
+  const isOvernight = form.shift_end_time && form.shift_start_time && form.shift_end_time < form.shift_start_time;
+
+  // ── DETAIL VIEW ────────────────────────────────────────────────────────────
+  if (detailId !== null) {
+    const sh     = detail?.shift;
+    const chosen = detail?.yes_responders?.find(r => r.is_chosen);
+    const isOpen = sh?.status === 'open';
+    const isFilled = sh?.status === 'filled';
+    const fl = sh ? shiftLabel(sh) : {};
+    const showResponders = isOpen && (!chosen || overrideToList);
+
+    return (
+      <div>
+        <button style={{...btnSm,...mb('1rem')}} onClick={()=>{setDetailId(null);setDetail(null);}}>← Back to shifts</button>
+
+        {detailLoading||!sh ? (
+          <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8'}}>Loading…</div>
+        ) : (<>
+          {/* Header */}
+          <div className="dash-card" style={mb('1rem')}>
+            <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexWrap:'wrap',gap:'0.5rem'}}>
+              <div>
+                <div style={{fontWeight:800,fontSize:'1rem',color:'#0b1222'}}>{sh.site_town}</div>
+                <div style={{fontSize:'0.85rem',color:'#64748b',marginTop:'0.15rem'}}>{fl.day} · {fl.times}</div>
+                <div style={{fontSize:'0.82rem',color:'#64748b',marginTop:'0.1rem'}}>£{sh.rate_per_hour}/hr · {(sh.licence_types||[]).join(', ')}</div>
+              </div>
+              <div style={{display:'flex',gap:'0.5rem',alignItems:'center',flexWrap:'wrap'}}>
+                {statusBadge(sh.status)}
+                {isOpen && !cancelConfirm && (
+                  <button style={btnR} onClick={()=>setCancelConfirm(true)}>Cancel shift</button>
+                )}
+              </div>
+            </div>
+            {cancelConfirm && isOpen && (
+              <div style={{marginTop:'1rem',padding:'0.75rem',background:'#fef2f2',border:'1px solid #fecaca',borderRadius:8}}>
+                <div style={{fontSize:'0.88rem',color:'#b91c1c',fontWeight:700,...mb('0.4rem')}}>Cancel this shift?</div>
+                <div style={{fontSize:'0.82rem',color:'#64748b',...mb('0.75rem')}}>Guards who said yes will be notified.</div>
+                <div style={{display:'flex',gap:'0.5rem'}}>
+                  <button style={{...btnR,background:'#b91c1c',color:'#fff'}} onClick={handleCancel} disabled={cancelling}>{cancelling?'Cancelling…':'Yes, cancel it'}</button>
+                  <button style={btnSm} onClick={()=>setCancelConfirm(false)}>Keep it</button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Response counts */}
+          {detail.responses && (
+            <div style={{display:'flex',gap:'1.5rem',fontSize:'0.82rem',color:'#64748b',...mb('1rem')}}>
+              <span><strong style={{color:'#15803d'}}>{detail.responses.yes}</strong> want it</span>
+              <span><strong style={{color:'#64748b'}}>{detail.responses.no}</strong> no</span>
+              <span><strong style={{color:'#94a3b8'}}>{detail.responses.none}</strong> no reply</span>
+            </div>
+          )}
+
+          {/* No replies yet */}
+          {isOpen && !chosen && (detail.yes_responders||[]).length===0 && (
+            <div style={{...card,textAlign:'center',color:'#94a3b8',fontSize:'0.88rem'}}>No replies yet. Guards usually reply within an hour.</div>
+          )}
+
+          {/* Responders list (no choice yet, or overriding) */}
+          {showResponders && (detail.yes_responders||[]).length>0 && (
+            <div>
+              {overrideToList && chosen && (
+                <button style={{...btnSm,...mb('0.75rem')}} onClick={()=>setOverrideToList(false)}>← Back to {chosen.full_name?.split(' ')[0]}</button>
+              )}
+              <div style={{fontWeight:700,fontSize:'0.85rem',color:'#475569',...mb('0.5rem')}}>
+                {detail.yes_responders.length} guard{detail.yes_responders.length!==1?'s':''} want this shift
+              </div>
+              {detail.yes_responders.map(r => (
+                <div key={r.candidate_id} style={card}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'0.75rem'}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222',display:'flex',alignItems:'center',gap:'0.4rem',flexWrap:'wrap'}}>
+                        {r.name}
+                        {r.bs7858_ready && <span style={{fontSize:'0.68rem',fontWeight:700,padding:'0.15rem 0.4rem',borderRadius:'999px',background:'#f0fdf4',color:'#15803d',border:'1px solid #bbf7d0'}}>BS7858 Ready</span>}
+                        {r.is_chosen && !overrideToList && <span style={{fontSize:'0.68rem',fontWeight:700,padding:'0.15rem 0.4rem',borderRadius:'999px',background:'#eff6ff',color:'#1d4ed8'}}>Selected</span>}
+                      </div>
+                      <div style={{fontSize:'0.8rem',color:'#64748b',marginTop:'0.2rem'}}>
+                        {(r.covering_licences||[]).join(', ')}{r.years_experience&&` · ${r.years_experience}`}{r.distance_miles!=null&&` · ${r.distance_miles}mi away`}
+                      </div>
+                      <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.15rem'}}>
+                        Replied {r.responded_at?new Date(r.responded_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—'}
+                      </div>
+                    </div>
+                    <button style={{...btnG,flexShrink:0}} onClick={()=>handleChoose(r.candidate_id)} disabled={choosing!==null}>
+                      {choosing===r.candidate_id?'Choosing…':'Choose'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Chosen panel (open shift, not overriding) */}
+          {chosen && isOpen && !overrideToList && (
+            <div>
+              <div style={{fontWeight:700,fontSize:'0.85rem',color:'#475569',...mb('0.5rem')}}>Selected guard</div>
+              <div style={{...card,border:'1px solid #bbf7d0',background:'#f0fdf4',...mb('1rem')}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'0.5rem',flexWrap:'wrap'}}>
+                  <div>
+                    <div style={{fontWeight:800,fontSize:'0.95rem',color:'#0b1222'}}>{chosen.full_name}</div>
+                    <a href={`tel:${chosen.phone}`} style={{fontSize:'0.88rem',color:'#1a52a8',fontWeight:700,display:'block',marginTop:'0.15rem'}}>{chosen.phone}</a>
+                    <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.15rem'}}>
+                      {(chosen.covering_licences||[]).join(', ')}{chosen.licence_expiry&&` · Expires ${new Date(chosen.licence_expiry).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`}
+                    </div>
+                    <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.1rem'}}>{chosen.rtw_proof||'—'}</div>
+                  </div>
+                  <button style={btnSm} onClick={()=>setOverrideToList(true)}>Choose someone else</button>
+                </div>
+              </div>
+
+              {/* RTW + badge checkboxes */}
+              <div style={{...card,background:'#fffbeb',border:'1px solid #fde68a',...mb('1rem')}}>
+                <div style={{fontWeight:700,fontSize:'0.85rem',color:'#92400e',...mb('0.75rem')}}>Before they start, you must:</div>
+                <label style={{display:'flex',gap:'0.75rem',alignItems:'flex-start',...mb('0.6rem'),cursor:'pointer'}}>
+                  <input type="checkbox" checked={rtwCheck} onChange={e=>setRtwCheck(e.target.checked)} style={{marginTop:'0.15rem',flexShrink:0}}/>
+                  <span style={{fontSize:'0.85rem',color:'#64748b',lineHeight:1.6}}>
+                    Check right to work: <a href="https://www.gov.uk/view-right-to-work" target="_blank" rel="noreferrer" style={{color:'#1a52a8'}}>share code at gov.uk/view-right-to-work</a>, or see their original passport
+                  </span>
+                </label>
+                <label style={{display:'flex',gap:'0.75rem',alignItems:'flex-start',cursor:'pointer'}}>
+                  <input type="checkbox" checked={badgeCheck} onChange={e=>setBadgeCheck(e.target.checked)} style={{marginTop:'0.15rem',flexShrink:0}}/>
+                  <span style={{fontSize:'0.85rem',color:'#64748b',lineHeight:1.6}}>On arrival, check their face matches the SIA badge</span>
+                </label>
+              </div>
+
+              {/* Confirm form */}
+              <form onSubmit={handleConfirm}>
+                <div style={{fontWeight:700,fontSize:'0.85rem',color:'#475569',...mb('0.75rem')}}>Send site details to guard</div>
+                <div style={mb('0.75rem')}>
+                  <label style={lbl}>Site name</label>
+                  <input style={inp} value={confirmForm.site_name} onChange={e=>setConfirmForm({...confirmForm,site_name:e.target.value})} placeholder="e.g. Merry Hill Shopping Centre"/>
+                </div>
+                <div style={mb('0.75rem')}>
+                  <label style={lbl}>Site address <span style={{color:'#b91c1c'}}>*</span></label>
+                  <input style={inp} required value={confirmForm.site_address} onChange={e=>setConfirmForm({...confirmForm,site_address:e.target.value})} placeholder="Full address"/>
+                </div>
+                <div style={mb('0.75rem')}>
+                  <label style={lbl}>Report to <span style={{color:'#b91c1c'}}>*</span></label>
+                  <input style={inp} required value={confirmForm.report_to} onChange={e=>setConfirmForm({...confirmForm,report_to:e.target.value})} placeholder="Name and/or number on arrival"/>
+                </div>
+                <div style={mb('0.75rem')}>
+                  <label style={lbl}>Escalation contacts</label>
+                  <input style={inp} value={confirmForm.escalation_contacts} onChange={e=>setConfirmForm({...confirmForm,escalation_contacts:e.target.value})} placeholder="Emergency or out-of-hours contacts"/>
+                </div>
+                <div style={mb('1rem')}>
+                  <label style={lbl}>Site tasks</label>
+                  <textarea style={{...inp,resize:'vertical',minHeight:68}} value={confirmForm.site_tasks} onChange={e=>setConfirmForm({...confirmForm,site_tasks:e.target.value})} placeholder="What the guard needs to do"/>
+                </div>
+                {confirmError && <div style={{color:'#b91c1c',fontSize:'0.85rem',...mb('0.75rem')}}>{confirmError}</div>}
+                <button type="submit" style={{...btnP,opacity:(!rtwCheck||!badgeCheck)?0.4:1}} disabled={!rtwCheck||!badgeCheck||confirming}>
+                  {confirming?'Confirming…':'Confirm and send site details'}
+                </button>
+                <div style={{fontSize:'0.78rem',color:'#94a3b8',marginTop:'0.5rem'}}>Everyone else who said yes is told the shift is filled.</div>
+              </form>
+            </div>
+          )}
+
+          {/* Filled state */}
+          {isFilled && chosen && (
+            <div>
+              <div style={{fontWeight:700,fontSize:'0.85rem',color:'#475569',...mb('0.5rem')}}>Booked guard</div>
+              <div style={{...card,border:'1px solid #bbf7d0',background:'#f0fdf4',...mb('1rem')}}>
+                <div style={{fontWeight:800,fontSize:'0.95rem',color:'#0b1222'}}>{chosen.full_name}</div>
+                <a href={`tel:${chosen.phone}`} style={{fontSize:'0.88rem',color:'#1a52a8',fontWeight:700,display:'block',marginTop:'0.15rem'}}>{chosen.phone}</a>
+                <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.15rem'}}>
+                  {(chosen.covering_licences||[]).join(', ')}{chosen.licence_expiry&&` · Expires ${new Date(chosen.licence_expiry).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`}
+                </div>
+                <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.1rem'}}>{chosen.rtw_proof||'—'}</div>
+              </div>
+              {siteSent ? (
+                <div style={card}>
+                  <div style={{fontWeight:700,fontSize:'0.85rem',color:'#475569',...mb('0.5rem')}}>Site details sent</div>
+                  {siteSent.site_name&&<div style={{fontSize:'0.85rem',color:'#0b1222',...mb('0.25rem')}}><strong>Site:</strong> {siteSent.site_name}</div>}
+                  <div style={{fontSize:'0.85rem',color:'#0b1222',...mb('0.25rem')}}><strong>Address:</strong> {siteSent.site_address}</div>
+                  <div style={{fontSize:'0.85rem',color:'#0b1222',...mb('0.25rem')}}><strong>Report to:</strong> {siteSent.report_to}</div>
+                  {siteSent.escalation_contacts&&<div style={{fontSize:'0.85rem',color:'#0b1222',...mb('0.25rem')}}><strong>Escalation:</strong> {siteSent.escalation_contacts}</div>}
+                  {siteSent.site_tasks&&<div style={{fontSize:'0.85rem',color:'#0b1222',...mb('0.25rem')}}><strong>Tasks:</strong> {siteSent.site_tasks}</div>}
+                </div>
+              ) : (
+                <div style={{fontSize:'0.82rem',color:'#64748b'}}>Site details have been sent to {chosen.full_name?.split(' ')[0]} by email.</div>
+              )}
+            </div>
+          )}
+        </>)}
+      </div>
+    );
+  }
+
+  // ── LIST VIEW ──────────────────────────────────────────────────────────────
+  return (
+    <div>
+      {postMsg?.ok && (
+        <div style={{background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:8,padding:'0.75rem 1rem',...mb('1rem'),fontSize:'0.88rem',color:'#15803d',fontWeight:600}}>
+          {postMsg.text}
+        </div>
+      )}
+
+      <div style={mb('1rem')}>
+        <button style={btnP} onClick={()=>{setShowForm(!showForm);setPostMsg(null);}}>
+          {showForm?'Cancel':'Post a shift'}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="dash-card" style={mb('1rem')}>
+          <div style={{fontWeight:700,fontSize:'0.95rem',color:'#0b1222',...mb('1rem')}}>New shift alert</div>
+          <form onSubmit={handlePost}>
+            <div style={mb('0.75rem')}>
+              <label style={lbl}>Site postcode <span style={{color:'#b91c1c'}}>*</span></label>
+              <input style={inp} value={form.site_postcode} onChange={e=>setForm({...form,site_postcode:e.target.value.toUpperCase()})} placeholder="e.g. B1 1BB" required/>
+            </div>
+            <div style={{...row2,...mb('0.75rem')}}>
+              <div>
+                <label style={lbl}>Date <span style={{color:'#b91c1c'}}>*</span></label>
+                <input style={inp} type="date" value={form.shift_date} onChange={e=>setForm({...form,shift_date:e.target.value})} required/>
+              </div>
+              <div>
+                <label style={lbl}>Start <span style={{color:'#b91c1c'}}>*</span></label>
+                <input style={inp} type="time" value={form.shift_start_time} onChange={e=>setForm({...form,shift_start_time:e.target.value})} required/>
+              </div>
+            </div>
+            <div style={mb('0.75rem')}>
+              <label style={lbl}>Finish <span style={{color:'#b91c1c'}}>*</span></label>
+              <input style={inp} type="time" value={form.shift_end_time} onChange={e=>setForm({...form,shift_end_time:e.target.value})} required/>
+              {isOvernight && <div style={{fontSize:'0.78rem',color:'#64748b',marginTop:'0.25rem'}}>Finishes next day</div>}
+            </div>
+            <div style={mb('0.75rem')}>
+              <label style={lbl}>Licence needed <span style={{color:'#b91c1c'}}>*</span></label>
+              <div style={{display:'flex',flexDirection:'column',gap:'0.4rem',marginTop:'0.25rem'}}>
+                {LICENCE_OPTS.map(lt=>(
+                  <label key={lt} style={{display:'flex',gap:'0.5rem',alignItems:'center',cursor:'pointer',fontSize:'0.88rem',color:'#0b1222'}}>
+                    <input type="checkbox" checked={form.licence_types.includes(lt)} onChange={e=>setForm({...form,licence_types:e.target.checked?[...form.licence_types,lt]:form.licence_types.filter(x=>x!==lt)})}/>
+                    {lt}
+                  </label>
+                ))}
+              </div>
+              <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.4rem'}}>Security Guard shifts also go to Door Supervisor and Close Protection holders.</div>
+            </div>
+            <div style={{...row2,...mb('0.75rem')}}>
+              <div>
+                <label style={lbl}>Rate per hour (£) <span style={{color:'#b91c1c'}}>*</span></label>
+                <input style={inp} type="number" min="1" step="0.01" value={form.rate_per_hour} onChange={e=>setForm({...form,rate_per_hour:e.target.value})} placeholder="e.g. 13.50" required/>
+              </div>
+              <div>
+                <label style={lbl}>Paid <span style={{color:'#b91c1c'}}>*</span></label>
+                <select style={inp} value={form.pay_terms} onChange={e=>setForm({...form,pay_terms:e.target.value})} required>
+                  <option value="">Select…</option>
+                  {PAY_OPTS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={mb('0.75rem')}>
+              <label style={lbl}>Alert guards within</label>
+              <select style={inp} value={form.radius_miles} onChange={e=>setForm({...form,radius_miles:Number(e.target.value)})}>
+                {RADIUS_OPTS.map(r=><option key={r} value={r}>{r} miles</option>)}
+              </select>
+            </div>
+            <div style={mb('1rem')}>
+              <label style={lbl}>Notes (optional)</label>
+              <textarea style={{...inp,resize:'vertical',minHeight:60}} value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Anything the guard should know"/>
+            </div>
+            {postMsg?.ok===false && <div style={{color:'#b91c1c',fontSize:'0.85rem',...mb('0.75rem')}}>{postMsg.text}</div>}
+            <button type="submit" style={btnP} disabled={posting}>{posting?'Sending…':'Send shift alert'}</button>
+            <div style={{fontSize:'0.78rem',color:'#94a3b8',marginTop:'0.5rem'}}>You check right to work before confirming a guard.</div>
+          </form>
+        </div>
+      )}
+
+      {loadingList ? (
+        <div style={{textAlign:'center',padding:'2rem',color:'#94a3b8'}}>Loading…</div>
+      ) : shifts.length===0 ? (
+        <div style={{...card,textAlign:'center',color:'#94a3b8',fontSize:'0.88rem'}}>No shifts yet. Post one above.</div>
+      ) : (
+        <div>
+          {shifts.map(shift=>{
+            const fl=shiftLabel(shift);
+            return (
+              <div key={shift.id} style={{...card,cursor:'pointer'}} onClick={()=>openDetail(shift.id)}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'0.75rem'}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:700,fontSize:'0.92rem',color:'#0b1222'}}>{shift.site_town}</div>
+                    <div style={{fontSize:'0.8rem',color:'#64748b',marginTop:'0.15rem'}}>{fl.day} · {fl.times} · £{shift.rate_per_hour}/hr</div>
+                    <div style={{fontSize:'0.75rem',color:'#94a3b8',marginTop:'0.25rem'}}>
+                      <span style={{marginRight:'0.6rem'}}>{shift.responses?.yes||0} want it</span>
+                      <span style={{marginRight:'0.6rem'}}>{shift.responses?.no||0} no</span>
+                      <span>{shift.responses?.none||0} no reply</span>
+                    </div>
+                  </div>
+                  <div style={{flexShrink:0}}>{statusBadge(shift.status)}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function EmployerDashboard() {
   const { user } = useUser();
   const { getToken } = useAuth();
@@ -5595,25 +6035,37 @@ function EmployerDashboard() {
           />
         )}
 
-        {/* Tab switcher — only shown to talent_pool_enabled employers */}
-        {employer.talent_pool_enabled && (
-          <div style={{display:'flex',gap:'0.5rem',marginBottom:'1rem'}}>
-            <button onClick={()=>setPoolTab('jobs')}
-              style={{padding:'0.5rem 1.25rem',borderRadius:'8px',border:'none',background:poolTab==='jobs'?'#0b1222':'#f1f5f9',color:poolTab==='jobs'?'#fff':'#475569',fontWeight:700,fontSize:'0.85rem',cursor:'pointer',fontFamily:'inherit'}}>
-              Jobs
-            </button>
+        {/* Tab switcher — always visible */}
+        <div style={{display:'flex',gap:'0.5rem',marginBottom:'1rem',flexWrap:'wrap'}}>
+          <button onClick={()=>setPoolTab('jobs')}
+            style={{padding:'0.5rem 1.25rem',borderRadius:'8px',border:'none',background:poolTab==='jobs'?'#0b1222':'#f1f5f9',color:poolTab==='jobs'?'#fff':'#475569',fontWeight:700,fontSize:'0.85rem',cursor:'pointer',fontFamily:'inherit'}}>
+            Jobs
+          </button>
+          {employer.talent_pool_enabled && (
             <button onClick={()=>setPoolTab('pool')}
               style={{padding:'0.5rem 1.25rem',borderRadius:'8px',border:'none',background:poolTab==='pool'?'#0b1222':'#f1f5f9',color:poolTab==='pool'?'#fff':'#475569',fontWeight:700,fontSize:'0.85rem',cursor:'pointer',fontFamily:'inherit'}}>
               Talent Pool
             </button>
-          </div>
-        )}
+          )}
+          <button onClick={()=>setPoolTab('shifts')}
+            style={{padding:'0.5rem 1.25rem',borderRadius:'8px',border:'none',background:poolTab==='shifts'?'#0b1222':'#f1f5f9',color:poolTab==='shifts'?'#fff':'#475569',fontWeight:700,fontSize:'0.85rem',cursor:'pointer',fontFamily:'inherit'}}>
+            Shifts
+          </button>
+        </div>
 
         {poolTab === 'pool' && employer.talent_pool_enabled && (
           <TalentPoolTab getToken={getToken}/>
         )}
 
-        {poolTab !== 'pool' && (<>{/* Job listings + applicants */}
+        {poolTab === 'shifts' && (
+          employer.verified
+            ? <ShiftsTab getToken={getToken}/>
+            : <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'10px',padding:'1.5rem',textAlign:'center',color:'#64748b',fontSize:'0.95rem'}}>
+                Shifts are available once your account has been verified. We'll email you when it's approved.
+              </div>
+        )}
+
+        {poolTab === 'jobs' && (<>{/* Job listings + applicants */}
         <div className="dash-card">
           <div style={{fontWeight:700,fontSize:'1rem',color:'#0b1222',marginBottom:'1.25rem'}}>Your Job Postings</div>
           {jobs.length === 0 ? (
