@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase, getClientForUser, encrypt, decrypt, auditLog } = require('../lib/supabase');
+const { geocodePostcode } = require('../lib/postcodes');
 const { createClerkClient } = require('@clerk/backend');
 const { deleteCandidateAccount } = require('../lib/candidateDeletion');
 const adminNotify = require('../lib/adminNotify');
@@ -460,6 +461,36 @@ router.put('/me/personal', async (req, res) => {
     }
 
     refreshBadge(db, candidate.id).catch(e => console.error('refreshBadge /personal:', e));
+
+    // ── Geocode postcode (fire-and-forget — never blocks the save) ────────────
+    // Always writes back: coords on success, nulls on failure/not-found, so a
+    // stale location never survives a postcode change (Amendment C).
+    if (postcode !== undefined) {
+      const normPostcode = postcode ? postcode.trim().toUpperCase() : null;
+      (normPostcode ? geocodePostcode(normPostcode) : Promise.resolve(null))
+        .then(coords => {
+          const locationUpdate = coords
+            ? {
+                postcode_lat:        coords.lat,
+                postcode_lng:        coords.lng,
+                postcode_located_at: new Date().toISOString(),
+              }
+            : {
+                postcode_lat:        null,
+                postcode_lng:        null,
+                postcode_located_at: null,
+              };
+          if (!coords && normPostcode) {
+            console.warn(`[postcodes] null for "${normPostcode}" — clearing stale location`);
+          }
+          return supabase
+            .from('personal_details')
+            .update(locationUpdate)
+            .eq('candidate_id', candidate.id);
+        })
+        .catch(err => console.error('[postcodes] geocode failed:', err.message));
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error('PUT /candidates/me/personal error:', err);
