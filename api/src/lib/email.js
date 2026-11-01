@@ -351,6 +351,12 @@ async function sendPoolInvite({ toEmail, candidateFirstName, employerName, token
 // Formats a UTC shift range in Europe/London time.
 // Same-day:     "Thu 24 Sep, 18:45–22:00"
 // Overnight:    "Thu 24 Sep 18:45 – Fri 25 Sep 13:40"
+function formatShiftDay(startUtc) {
+  return new Date(startUtc).toLocaleString('en-GB', {
+    timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short',
+  });
+}
+
 function formatShiftRange(startUtc, endUtc) {
   const toL = (d, opts) =>
     new Date(d).toLocaleString('en-GB', { timeZone: 'Europe/London', ...opts });
@@ -479,11 +485,16 @@ async function sendShiftAlert({
 }
 
 // ── 14. SHIFT FILLED / CANCELLED NOTICE (GUARD) ──
-async function sendShiftFilledNotice({ toEmail, firstName, siteTown, shiftRange, filled }) {
-  const heading = filled ? 'This shift has been filled' : 'This shift has been cancelled';
-  const body    = filled
-    ? `The shift in <strong>${escHtml(siteTown)}</strong> (${escHtml(shiftRange)}) has been filled. We'll let you know when another shift comes up near you.`
-    : `The shift in <strong>${escHtml(siteTown)}</strong> (${escHtml(shiftRange)}) has been cancelled by the employer.`;
+// shiftDay: short date string e.g. "Thu 24 Sep" (from formatShiftDay).
+async function sendShiftFilledNotice({ toEmail, firstName, siteTown, shiftRange, shiftDay, filled }) {
+  const dayLabel = shiftDay || shiftRange;
+  const subject  = filled
+    ? `Shift filled: ${siteTown}, ${dayLabel}`
+    : `Shift cancelled: ${siteTown}, ${dayLabel}`;
+  const heading  = filled ? 'Shift filled' : 'Shift cancelled';
+  const body     = filled
+    ? `The ${escHtml(siteTown)} shift on ${escHtml(dayLabel)} has been filled. Thanks for replying. More shifts coming soon.`
+    : `The ${escHtml(siteTown)} shift on ${escHtml(dayLabel)} has been cancelled. The company no longer needs cover. Sorry, more shifts coming soon.`;
 
   const html = baseTemplate(`
     <h1>${heading}</h1>
@@ -493,7 +504,47 @@ async function sendShiftFilledNotice({ toEmail, firstName, siteTown, shiftRange,
     <p style="font-size:0.82rem;color:#64748b;">You're still signed up for shift alerts. We'll be in touch when another shift matches your location.</p>
   `);
 
-  return send(toEmail, `${heading} — UKSecurityJobs`, html);
+  return send(toEmail, subject, html);
+}
+
+// ── 15. SHIFT BOOKED CONFIRMATION (CHOSEN GUARD) ──
+async function sendShiftBooked({
+  toEmail, firstName, employerName,
+  siteTown, shiftRange, shiftStartUtc, shiftEndUtc,
+  siteName, siteAddress, reportTo, escalationContacts, siteTasks,
+  ratePerHour, payTerms,
+}) {
+  const toL       = (d, opts) => new Date(d).toLocaleString('en-GB', { timeZone: 'Europe/London', ...opts });
+  const shiftDay  = formatShiftDay(shiftStartUtc);
+  const startTime = toL(shiftStartUtc, { hour: '2-digit', minute: '2-digit', hour12: false });
+  const endTime   = toL(shiftEndUtc,   { hour: '2-digit', minute: '2-digit', hour12: false });
+
+  const PAY_LABELS   = { next_day: 'next day', weekly: 'weekly', monthly: 'monthly' };
+  const payLabel     = PAY_LABELS[payTerms] || escHtml(payTerms);
+  const mapsUrl      = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(siteAddress)}`;
+
+  const siteNameRow     = siteName           ? `<div class="detail-row"><span class="detail-label">Site name</span><span class="detail-value">${escHtml(siteName)}</span></div>` : '';
+  const escalationRow   = escalationContacts ? `<div class="detail-row"><span class="detail-label">Escalation</span><span class="detail-value">${escHtml(escalationContacts)}</span></div>` : '';
+  const tasksRow        = siteTasks          ? `<div class="detail-row"><span class="detail-label">Tasks</span><span class="detail-value">${escHtml(siteTasks)}</span></div>` : '';
+
+  const html = baseTemplate(`
+    <h1>You're booked</h1>
+    <p>Hi ${safeName(firstName) || 'there'},</p>
+    <p>You've been selected for this shift. All the details are below.</p>
+    <div style="background:#f8fafc;border-radius:8px;padding:1rem;margin:1rem 0;">
+      <div class="detail-row"><span class="detail-label">Company</span><span class="detail-value">${escHtml(employerName)}</span></div>
+      <div class="detail-row"><span class="detail-label">When</span><span class="detail-value">${escHtml(shiftRange)}</span></div>
+      ${siteNameRow}
+      <div class="detail-row"><span class="detail-label">Address</span><span class="detail-value"><a href="${mapsUrl}" style="color:#1a52a8;">${escHtml(siteAddress)}</a></span></div>
+      <div class="detail-row"><span class="detail-label">Report to</span><span class="detail-value">${escHtml(reportTo)}</span></div>
+      ${escalationRow}
+      ${tasksRow}
+      <div class="detail-row"><span class="detail-label">Pay</span><span class="detail-value">£${escHtml(String(ratePerHour))} an hour, paid ${payLabel}</span></div>
+    </div>
+    <div class="notice">Bring your SIA badge, and your passport or share code if the company hasn't checked it yet.</div>
+  `);
+
+  return send(toEmail, `You're booked: ${escHtml(siteTown)}, ${shiftDay} ${startTime}–${endTime}`, html);
 }
 
 module.exports = {
@@ -519,4 +570,6 @@ module.exports = {
   sendShiftAlertOptIn,
   sendShiftAlert,
   sendShiftFilledNotice,
+  sendShiftBooked,
+  formatShiftDay,
 };
