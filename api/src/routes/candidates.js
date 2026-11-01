@@ -1151,6 +1151,153 @@ router.post('/me/invites/:token/decline', async (req, res) => {
   }
 });
 
+// ── GET /api/candidates/me/shifts ────────────────────────────────────────────
+// Returns booked shifts (guard is chosen), open shifts near them, and alert status.
+router.get('/me/shifts', async (req, res) => {
+  try {
+    const { data: cand, error: cErr } = await supabase
+      .from('candidates')
+      .select('id, shift_alerts_opt_in')
+      .eq('clerk_user_id', req.userId)
+      .maybeSingle();
+    if (cErr) throw cErr;
+    if (!cand) return res.status(404).json({ error: 'Candidate not found' });
+
+    const now = new Date().toISOString();
+
+    // Booked: guard is the chosen candidate, shift filled, not yet ended
+    const { data: bookedRows, error: bErr } = await supabase
+      .from('shifts')
+      .select(
+        'id, site_town, site_name, site_address, report_to, escalation_contacts, ' +
+        'site_tasks, shift_start, shift_end, rate_per_hour, pay_terms, employer_id'
+      )
+      .eq('chosen_candidate_id', cand.id)
+      .eq('status', 'filled')
+      .gt('shift_end', now)
+      .order('shift_start', { ascending: true });
+    if (bErr) throw bErr;
+
+    // Near you: shifts this guard was alerted about that are still open
+    const { data: srRows, error: srErr } = await supabase
+      .from('shift_responses')
+      .select('shift_id, token, distance_miles, response')
+      .eq('candidate_id', cand.id);
+    if (srErr) throw srErr;
+
+    const srMap = new Map((srRows || []).map(r => [r.shift_id, r]));
+    const shiftIds = (srRows || []).map(r => r.shift_id);
+
+    let nearShifts = [];
+    if (shiftIds.length > 0) {
+      const { data: openShifts, error: osErr } = await supabase
+        .from('shifts')
+        .select('id, site_town, shift_start, shift_end, rate_per_hour, pay_terms, licence_types, employer_id')
+        .in('id', shiftIds)
+        .eq('status', 'open')
+        .gt('shift_start', now)
+        .order('shift_start', { ascending: true });
+      if (osErr) throw osErr;
+      nearShifts = openShifts || [];
+    }
+
+    // Employer names for all shifts
+    const empIds = [...new Set([
+      ...(bookedRows || []).map(s => s.employer_id),
+      ...nearShifts.map(s => s.employer_id),
+    ])];
+    const empMap = {};
+    if (empIds.length > 0) {
+      const { data: emps } = await supabase
+        .from('employers')
+        .select('id, company_name')
+        .in('id', empIds);
+      for (const e of (emps || [])) empMap[e.id] = e.company_name;
+    }
+
+    const booked = (bookedRows || []).map(s => ({
+      id:                  s.id,
+      site_town:           s.site_town,
+      site_name:           s.site_name           || null,
+      site_address:        s.site_address,
+      report_to:           s.report_to,
+      escalation_contacts: s.escalation_contacts || null,
+      site_tasks:          s.site_tasks          || null,
+      shift_start:         s.shift_start,
+      shift_end:           s.shift_end,
+      rate_per_hour:       s.rate_per_hour,
+      pay_terms:           s.pay_terms,
+      employer_name:       empMap[s.employer_id] || null,
+    }));
+
+    const near_you = nearShifts.map(s => {
+      const sr = srMap.get(s.id);
+      return {
+        id:             s.id,
+        site_town:      s.site_town,
+        shift_start:    s.shift_start,
+        shift_end:      s.shift_end,
+        rate_per_hour:  s.rate_per_hour,
+        pay_terms:      s.pay_terms,
+        licence_types:  s.licence_types,
+        distance_miles: sr ? sr.distance_miles : null,
+        response:       sr ? sr.response       : null,
+        token:          sr ? sr.token          : null,
+        employer_name:  empMap[s.employer_id]  || null,
+      };
+    });
+
+    res.json({ booked, near_you, alerts: cand.shift_alerts_opt_in || false });
+  } catch (err) {
+    console.error('GET /api/candidates/me/shifts error:', err);
+    res.status(500).json({ error: 'Failed to load shifts' });
+  }
+});
+
+// ── PATCH /api/candidates/me/shift-alerts ────────────────────────────────────
+// { opt_in: boolean }  — turns shift email/SMS/WhatsApp alerts on or off.
+router.patch('/me/shift-alerts', async (req, res) => {
+  try {
+    const { opt_in } = req.body;
+    if (typeof opt_in !== 'boolean') {
+      return res.status(422).json({ error: 'opt_in must be a boolean' });
+    }
+
+    const { data: cand, error: cErr } = await supabase
+      .from('candidates')
+      .select('id')
+      .eq('clerk_user_id', req.userId)
+      .maybeSingle();
+    if (cErr) throw cErr;
+    if (!cand) return res.status(404).json({ error: 'Candidate not found' });
+
+    const now = new Date().toISOString();
+    const updates = opt_in
+      ? { shift_alerts_opt_in: true,  shift_alerts_opt_in_at: now, shift_alerts_wording_version: 'shift-alerts-v2' }
+      : { shift_alerts_opt_in: false, shift_alerts_opt_in_at: null, shift_alerts_wording_version: null };
+
+    const { error: uErr } = await supabase
+      .from('candidates')
+      .update(updates)
+      .eq('id', cand.id);
+    if (uErr) throw uErr;
+
+    await auditLog({
+      tableName:   'candidates',
+      recordId:    cand.id,
+      action:      'UPDATE',
+      performedBy: req.userId,
+      ipAddress:   req.ip,
+      changes:     { event: opt_in ? 'shift_alerts_opted_in' : 'shift_alerts_opted_out', source: 'app_toggle' },
+    });
+
+    res.json({ ok: true, opt_in });
+  } catch (err) {
+    console.error('PATCH /api/candidates/me/shift-alerts error:', err);
+    res.status(500).json({ error: 'Failed to update alerts' });
+  }
+});
+
 module.exports = router;
 module.exports.canApply = canApply;
 module.exports.isBS7858Ready = isBS7858Ready;
