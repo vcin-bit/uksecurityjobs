@@ -3553,6 +3553,22 @@ function Dashboard() {
           <div className="dash-sub">{!sections[0].complete ? 'Add your SIA licence to start applying for roles.' : 'Complete your full profile to earn the BS7858 Ready badge — badged candidates are seen first and can join the talent pool.'}</div>
         </div>
 
+        {/* MY SHIFTS LINK */}
+        <div style={{marginBottom:'1rem'}}>
+          <button onClick={()=>navigate('/shifts')}
+            style={{width:'100%',padding:'0.85rem 1.25rem',borderRadius:10,background:'#0b1222',color:'#fff',fontWeight:700,fontSize:'0.92rem',border:'none',cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <span style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              My Shifts
+            </span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+
         {/* QUICK CTA — shown when SIA licence not yet verified */}
         {!profileLoading && !sections[0].complete && (
           <div className="dash-card" style={{marginBottom:'1.5rem',background:'#1a52a8',border:'none'}}>
@@ -7622,6 +7638,313 @@ function StopShiftAlertsPage() {
   );
 }
 
+// ── MY SHIFTS PAGE ─────────────────────────────────────────────────────────────
+function MyShiftsPage() {
+  const { getToken } = useAuth();
+  const navigate     = useNavigate();
+
+  const [data, setData]               = React.useState(null);
+  const [loading, setLoading]         = React.useState(true);
+  const [expanded, setExpanded]       = React.useState(null);
+  const [alertsOn, setAlertsOn]       = React.useState(false);
+  const [alertPending, setAlertPending] = React.useState(false);
+  const [alertSaving, setAlertSaving]   = React.useState(false);
+  const [deferPrompt, setDeferPrompt]   = React.useState(null);
+  const [showInstall, setShowInstall]   = React.useState(false);
+  const [isIos, setIsIos]               = React.useState(false);
+
+  React.useEffect(() => {
+    apiRequest('/api/candidates/me/shifts', 'GET', null, getToken)
+      .then(d => { setData(d); setAlertsOn(!!d.alerts); })
+      .catch(() => setData({ booked: [], near_you: [], alerts: false }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // PWA install prompt — show once, only outside standalone mode
+  React.useEffect(() => {
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const standalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone;
+    if (standalone) return;
+    let dismissed = false;
+    try { dismissed = !!localStorage.getItem('uksj_install_dismissed'); } catch(e) {}
+    if (dismissed) return;
+    setIsIos(ios);
+    if (ios) {
+      setShowInstall(true);
+    } else {
+      const handler = (e) => { e.preventDefault(); setDeferPrompt(e); setShowInstall(true); };
+      window.addEventListener('beforeinstallprompt', handler);
+      return () => window.removeEventListener('beforeinstallprompt', handler);
+    }
+  }, []);
+
+  const dismissInstall = () => {
+    setShowInstall(false);
+    try { localStorage.setItem('uksj_install_dismissed', '1'); } catch(e) {}
+  };
+
+  const doInstall = async () => {
+    if (!deferPrompt) return;
+    deferPrompt.prompt();
+    const { outcome } = await deferPrompt.userChoice;
+    if (outcome === 'accepted') dismissInstall();
+    else { setShowInstall(false); setDeferPrompt(null); }
+  };
+
+  const handleAlertToggle = (val) => {
+    if (val && !alertsOn)  { setAlertPending(true); return; }
+    if (!val && alertsOn) {
+      setAlertSaving(true);
+      apiRequest('/api/candidates/me/shift-alerts', 'PATCH', { opt_in: false }, getToken)
+        .then(() => setAlertsOn(false))
+        .catch(() => {})
+        .finally(() => setAlertSaving(false));
+    }
+  };
+
+  const confirmAlerts = () => {
+    setAlertSaving(true);
+    apiRequest('/api/candidates/me/shift-alerts', 'PATCH', { opt_in: true }, getToken)
+      .then(() => { setAlertsOn(true); setAlertPending(false); })
+      .catch(() => setAlertPending(false))
+      .finally(() => setAlertSaving(false));
+  };
+
+  const PAY = { next_day: 'Next day', weekly: 'Weekly', monthly: 'Monthly' };
+
+  const pg       = { minHeight:'100vh', background:'#0E1B2E', paddingBottom:72, fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif" };
+  const topBar   = { background:'#0b1222', padding:'1rem 1.25rem', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid #1e293b' };
+  const logoA    = { fontWeight:800, fontSize:'1rem', textDecoration:'none', color:'#fff' };
+  const sec      = { padding:'1.25rem 1rem 0' };
+  const sTitle   = { fontWeight:800, fontSize:'0.95rem', color:'#fff', marginBottom:'0.75rem', textTransform:'uppercase', letterSpacing:'0.05em' };
+  const bCard    = { background:'linear-gradient(135deg,#1a52a8,#1e3a8a)', borderRadius:12, padding:'1rem 1.1rem', marginBottom:'0.75rem', color:'#fff' };
+  const nCard    = { background:'#fff', borderRadius:12, padding:'1rem 1.1rem', marginBottom:'0.75rem', border:'1px solid #e2e8f0' };
+  const btmNav   = { position:'fixed', bottom:0, left:0, right:0, height:56, background:'#0b1222', display:'flex', borderTop:'1px solid #1e293b' };
+  const navBtn   = (active) => ({ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, cursor:'pointer', color: active?'#3b82f6':'#64748b', fontSize:'0.65rem', fontWeight:700, border:'none', background:'none', fontFamily:'inherit' });
+
+  return (
+    <div style={pg}>
+      {/* Top bar */}
+      <nav style={topBar}>
+        <a href="https://www.uksecurityjobs.co.uk" style={logoA}>
+          <span style={{color:'#3b82f6'}}>UK</span>Security<span style={{color:'#3b82f6'}}>Jobs</span>
+        </a>
+        <span style={{fontSize:'0.8rem',color:'#94a3b8',fontWeight:600}}>My Shifts</span>
+      </nav>
+
+      {/* Install prompt (mockup 11) */}
+      {showInstall && (
+        <div style={{margin:'1rem 1rem 0',background:'#1e293b',border:'1px solid #334155',borderRadius:12,padding:'1rem 1.1rem'}}>
+          <div style={{fontWeight:700,fontSize:'0.92rem',color:'#fff',marginBottom:'0.5rem'}}>
+            Add to your home screen
+          </div>
+          {isIos ? (
+            <div style={{fontSize:'0.83rem',color:'#94a3b8',lineHeight:1.75}}>
+              <div>1. Tap the <strong style={{color:'#fff'}}>Share</strong> button{' '}
+                <svg style={{verticalAlign:'text-bottom'}} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              </div>
+              <div>2. Tap <strong style={{color:'#fff'}}>Add to Home Screen</strong></div>
+              <div>3. Tap <strong style={{color:'#fff'}}>Add</strong></div>
+            </div>
+          ) : (
+            <div style={{fontSize:'0.83rem',color:'#94a3b8',lineHeight:1.7}}>
+              Install the app for one-tap access to your shifts from your home screen.
+            </div>
+          )}
+          <div style={{display:'flex',gap:'0.5rem',marginTop:'0.75rem'}}>
+            {!isIos && deferPrompt && (
+              <button onClick={doInstall} style={{flex:1,padding:'0.55rem',borderRadius:8,background:'#1a52a8',color:'#fff',fontWeight:700,fontSize:'0.82rem',border:'none',cursor:'pointer',fontFamily:'inherit'}}>
+                Install
+              </button>
+            )}
+            <button onClick={dismissInstall} style={{flex:1,padding:'0.55rem',borderRadius:8,background:'transparent',color:'#94a3b8',fontWeight:600,fontSize:'0.82rem',border:'1px solid #334155',cursor:'pointer',fontFamily:'inherit'}}>
+              {isIos ? 'Got it' : 'Not now'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{padding:'3rem 1rem',textAlign:'center',color:'#64748b',fontSize:'0.9rem'}}>Loading your shifts…</div>
+      ) : (
+        <>
+          {/* ── BOOKED SHIFTS ── */}
+          <div style={sec}>
+            <div style={sTitle}>Booked</div>
+            {data.booked.length === 0 ? (
+              <div style={{fontSize:'0.88rem',color:'#64748b',marginBottom:'0.5rem'}}>No upcoming booked shifts.</div>
+            ) : data.booked.map(s => {
+              const open = expanded === s.id;
+              return (
+                <div key={s.id} style={bCard}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.25rem'}}>
+                    <div style={{fontWeight:800,fontSize:'1.05rem'}}>{shiftDateLabel(s.shift_start)}</div>
+                    <div style={{fontSize:'0.73rem',background:'rgba(255,255,255,0.18)',padding:'0.18rem 0.6rem',borderRadius:999,fontWeight:700}}>Booked</div>
+                  </div>
+                  <div style={{fontWeight:700,fontSize:'0.92rem',marginBottom:'0.1rem'}}>{s.site_town}</div>
+                  <div style={{fontSize:'0.82rem',opacity:0.82,marginBottom:'0.3rem'}}>{fmtShiftRange(s.shift_start, s.shift_end)}</div>
+                  <div style={{fontSize:'0.8rem',opacity:0.78,marginBottom:'0.6rem'}}>
+                    {s.employer_name}{s.site_name ? ` · ${s.site_name}` : ''}
+                  </div>
+                  <div style={{fontSize:'0.82rem',opacity:0.82,marginBottom:'0.75rem'}}>
+                    £{s.rate_per_hour}/hr · {PAY[s.pay_terms] || s.pay_terms}
+                  </div>
+                  <button onClick={() => setExpanded(open ? null : s.id)}
+                    style={{background:'rgba(255,255,255,0.15)',color:'#fff',border:'none',borderRadius:8,padding:'0.45rem 0.9rem',fontSize:'0.82rem',fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'inline-flex',alignItems:'center',gap:'0.4rem'}}>
+                    Site details and contacts
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <polyline points={open ? '18 15 12 9 6 15' : '6 9 12 15 18 9'}/>
+                    </svg>
+                  </button>
+                  {open && (
+                    <div style={{marginTop:'0.75rem',paddingTop:'0.75rem',borderTop:'1px solid rgba(255,255,255,0.2)',fontSize:'0.83rem',lineHeight:1.75}}>
+                      {s.site_address && (
+                        <div style={{marginBottom:'0.35rem'}}>
+                          <span style={{opacity:0.7}}>Address: </span>
+                          <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.site_address)}`}
+                            target="_blank" rel="noopener noreferrer"
+                            style={{color:'#93c5fd',fontWeight:600}}>{s.site_address}</a>
+                        </div>
+                      )}
+                      {s.report_to && (
+                        <div style={{marginBottom:'0.35rem'}}>
+                          <span style={{opacity:0.7}}>Report to: </span>{s.report_to}
+                        </div>
+                      )}
+                      {s.escalation_contacts && (
+                        <div style={{marginBottom:'0.35rem'}}>
+                          <span style={{opacity:0.7}}>Escalation: </span>{s.escalation_contacts}
+                        </div>
+                      )}
+                      {s.site_tasks && (
+                        <div>
+                          <span style={{opacity:0.7}}>Tasks: </span>{s.site_tasks}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── SHIFTS NEAR YOU ── */}
+          <div style={sec}>
+            <div style={sTitle}>Shifts near you</div>
+            {data.near_you.length === 0 ? (
+              <div style={{fontSize:'0.88rem',color:'#64748b',marginBottom:'0.5rem'}}>
+                No shifts near you right now. New shifts appear here and by email.
+              </div>
+            ) : data.near_you.map(s => {
+              const yes = s.response === 'yes';
+              const no  = s.response === 'no';
+              return (
+                <div key={s.id} style={nCard}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.2rem'}}>
+                    <div style={{fontWeight:800,fontSize:'0.98rem',color:'#0b1222'}}>{shiftDateLabel(s.shift_start)}</div>
+                    {s.distance_miles != null && (
+                      <div style={{fontSize:'0.75rem',color:'#64748b',fontWeight:600}}>{s.distance_miles} mi</div>
+                    )}
+                  </div>
+                  <div style={{fontWeight:700,fontSize:'0.9rem',color:'#0b1222',marginBottom:'0.1rem'}}>{s.site_town}</div>
+                  <div style={{fontSize:'0.82rem',color:'#475569',marginBottom:'0.2rem'}}>{fmtShiftRange(s.shift_start, s.shift_end)}</div>
+                  {s.employer_name && <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.2rem'}}>{s.employer_name}</div>}
+                  <div style={{fontSize:'0.82rem',color:'#475569',marginBottom:'0.7rem'}}>
+                    £{s.rate_per_hour}/hr · {PAY[s.pay_terms] || s.pay_terms}
+                  </div>
+                  {yes ? (
+                    <div style={{fontSize:'0.85rem',color:'#15803d',fontWeight:700,padding:'0.5rem 0.75rem',background:'#f0fdf4',borderRadius:8,border:'1px solid #bbf7d0'}}>
+                      You said yes. Waiting for the company.
+                    </div>
+                  ) : no ? (
+                    <div style={{fontSize:'0.85rem',color:'#64748b'}}>
+                      You said no.{' '}
+                      <a href={`/shift-response/${s.token}`} style={{color:'#1a52a8',fontWeight:600}}>
+                        Change your answer
+                      </a>
+                    </div>
+                  ) : (
+                    <div style={{display:'flex',gap:'0.5rem'}}>
+                      <a href={`/shift-response/${s.token}`}
+                        style={{flex:1,display:'block',textAlign:'center',padding:'0.55rem',borderRadius:8,background:'#1a52a8',color:'#fff',fontWeight:700,fontSize:'0.85rem',textDecoration:'none'}}>
+                        I want it
+                      </a>
+                      <a href={`/shift-response/${s.token}`}
+                        style={{flex:1,display:'block',textAlign:'center',padding:'0.55rem',borderRadius:8,background:'#f1f5f9',color:'#475569',fontWeight:700,fontSize:'0.85rem',textDecoration:'none'}}>
+                        Details
+                      </a>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── SHIFT ALERTS TOGGLE ── */}
+          <div style={{...sec, paddingBottom:'1.25rem'}}>
+            <div style={{background:'#1e293b',borderRadius:12,padding:'1rem 1.1rem',border:'1px solid #334155'}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'0.35rem'}}>
+                <div style={{fontWeight:700,fontSize:'0.92rem',color:'#fff'}}>Shift alerts</div>
+                <button
+                  disabled={alertSaving}
+                  onClick={() => handleAlertToggle(!alertsOn)}
+                  aria-label={alertsOn ? 'Turn off shift alerts' : 'Turn on shift alerts'}
+                  style={{width:48,height:26,borderRadius:13,border:'none',cursor:alertSaving?'default':'pointer',
+                    background:alertsOn?'#1a52a8':'#374151',position:'relative',transition:'background 0.2s',padding:0,flexShrink:0}}>
+                  <span style={{position:'absolute',top:3,left:alertsOn?24:3,width:20,height:20,
+                    borderRadius:'50%',background:'#fff',transition:'left 0.2s',display:'block'}}/>
+                </button>
+              </div>
+              <div style={{fontSize:'0.82rem',color:'#94a3b8',lineHeight:1.6}}>
+                {alertsOn
+                  ? "You're receiving shift alerts by email, text and WhatsApp."
+                  : 'Turn on to get shift alerts by email, text and WhatsApp.'}
+              </div>
+              {alertPending && (
+                <div style={{marginTop:'0.75rem',paddingTop:'0.75rem',borderTop:'1px solid #334155'}}>
+                  <div style={{fontSize:'0.85rem',color:'#e2e8f0',lineHeight:1.65,marginBottom:'0.75rem'}}>
+                    Send me shift alerts by email, text and WhatsApp. I can stop any time.
+                  </div>
+                  <div style={{display:'flex',gap:'0.5rem'}}>
+                    <button onClick={confirmAlerts} disabled={alertSaving}
+                      style={{flex:1,padding:'0.55rem',borderRadius:8,background:'#1a52a8',color:'#fff',fontWeight:700,fontSize:'0.82rem',border:'none',cursor:'pointer',fontFamily:'inherit'}}>
+                      {alertSaving ? 'Saving…' : 'Turn on'}
+                    </button>
+                    <button onClick={() => setAlertPending(false)} disabled={alertSaving}
+                      style={{flex:1,padding:'0.55rem',borderRadius:8,background:'transparent',color:'#94a3b8',fontWeight:600,fontSize:'0.82rem',border:'1px solid #334155',cursor:'pointer',fontFamily:'inherit'}}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Bottom nav */}
+      <div style={btmNav}>
+        <button style={navBtn(true)} onClick={() => navigate('/shifts')}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          Shifts
+        </button>
+        <button style={navBtn(false)} onClick={() => navigate('/dashboard')}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Profile
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }) {
   const { isLoaded, isSignedIn } = useUser();
   const location = useLocation();
@@ -7652,6 +7975,7 @@ export default function App() {
           <Route path="/callout/:token" element={<CalloutResponsePage/>}/>
           <Route path="/shift-alerts/:token" element={<ShiftAlertOptInPage/>}/>
           <Route path="/unsubscribe/:token" element={<UnsubscribePage/>}/>
+          <Route path="/shifts" element={<ProtectedRoute><MyShiftsPage/></ProtectedRoute>}/>
           <Route path="/shift-response/:token" element={<ShiftResponsePage/>}/>
           <Route path="/stop-shift-alerts/:token" element={<StopShiftAlertsPage/>}/>
           <Route path="*" element={<Navigate to="/dashboard" replace/>}/>

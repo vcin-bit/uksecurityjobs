@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="76" fill="#0E1B2E"/>
+  <path d="M256 70 L106 134 L106 262 C106 352 173 434 256 458 C339 434 406 352 406 262 L406 134 Z" fill="#1a52a8"/>
+  <text x="256" y="304" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Arial,sans-serif" font-weight="800" font-size="80" fill="#ffffff">UKSJ</text>
+</svg>
