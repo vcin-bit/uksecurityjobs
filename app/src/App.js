@@ -6795,6 +6795,58 @@ function CalloutResponsePage() {
   );
 }
 
+function UnsubscribePage() {
+  const { token } = useParams();
+  const API = 'https://uksecurityjobs-api.onrender.com';
+  const [state, setState] = React.useState('ready'); // ready | busy | done | error
+  const navStyle = { background: '#0b1222', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center' };
+  const logoStyle = { fontWeight: 800, fontSize: '1.1rem', textDecoration: 'none' };
+  const card = { maxWidth: 520, margin: '3rem auto', padding: '0 1rem' };
+  const inner = { background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '2rem', fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif' };
+  const h1s = { fontSize: '1.2rem', fontWeight: 800, color: '#0b1222', marginBottom: '0.75rem' };
+  const ps = { fontSize: '0.9rem', color: '#4a5568', lineHeight: 1.75, marginBottom: '1rem' };
+  const btn = { background: '#0b1222', color: '#fff', fontWeight: 700, fontSize: '0.92rem', padding: '0.75rem 2rem', borderRadius: 8, border: 'none', cursor: 'pointer' };
+
+  const handleUnsubscribe = async () => {
+    setState('busy');
+    try {
+      const r = await fetch(`${API}/api/unsubscribe/${token}`, { method: 'POST' });
+      const data = await r.json();
+      setState(data.ok ? 'done' : 'error');
+    } catch {
+      setState('error');
+    }
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
+      <nav style={navStyle}>
+        <a href="https://www.uksecurityjobs.co.uk" style={logoStyle}>
+          <span style={{ color: '#3b82f6' }}>UK</span><span style={{ color: '#fff' }}>Security</span><span style={{ color: '#3b82f6' }}>Jobs</span>
+        </a>
+      </nav>
+      <div style={card}>
+        <div style={inner}>
+          {state === 'ready' && (<>
+            <h1 style={h1s}>Unsubscribe from UKSecurityJobs emails?</h1>
+            <p style={ps}>Click below to stop receiving these emails. You can re-subscribe at any time from your profile.</p>
+            <button style={btn} onClick={handleUnsubscribe}>Unsubscribe</button>
+          </>)}
+          {state === 'busy' && <p style={ps}>Unsubscribing…</p>}
+          {state === 'done' && (<>
+            <h1 style={h1s}>Done</h1>
+            <p style={{ ...ps, marginBottom: 0 }}>You won't get these emails any more.</p>
+          </>)}
+          {state === 'error' && (<>
+            <h1 style={h1s}>Something went wrong</h1>
+            <p style={{ ...ps, marginBottom: 0 }}>This link may no longer be valid. Contact <a href="mailto:admin@uksecurityjobs.co.uk" style={{ color: '#1a52a8' }}>admin@uksecurityjobs.co.uk</a> if you need help.</p>
+          </>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }) {
   const { isLoaded, isSignedIn } = useUser();
   const location = useLocation();
@@ -6823,6 +6875,7 @@ export default function App() {
           <Route path="/profile" element={<ProtectedRoute><div className="page" style={{background:'var(--off)'}}><Nav/><ProfileBuilder/></div></ProtectedRoute>}/>
           <Route path="/invite/:token" element={<ProtectedRoute><InvitePage/></ProtectedRoute>}/>
           <Route path="/callout/:token" element={<CalloutResponsePage/>}/>
+          <Route path="/unsubscribe/:token" element={<UnsubscribePage/>}/>
           <Route path="*" element={<Navigate to="/dashboard" replace/>}/>
         </Routes>
       </BrowserRouter>

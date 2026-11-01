@@ -262,6 +262,10 @@ app.use('/api/employers', interviewPublicRoutes);
 const calloutRoutes = require('./routes/callout');
 app.use('/api/callout', calloutRoutes);
 
+// Public unsubscribe — no auth, validated by per-email token
+const unsubscribeRoutes = require('./routes/unsubscribe');
+app.use('/api/unsubscribe', unsubscribeRoutes);
+
 // Authenticated API routes — each mounts requireAuth explicitly.
 app.use('/api/candidates', requireAuth, candidateRoutes);
 app.use('/api/sia', requireAuth, siaRoutes);
