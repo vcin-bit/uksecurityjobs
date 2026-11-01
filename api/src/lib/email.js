@@ -431,6 +431,71 @@ async function sendShiftAlertOptIn({ to, firstName, optInUrl, unsubUrl }) {
   return send(to, 'Want shifts near you?', html);
 }
 
+// ── 13. SHIFT ALERT (GUARD) ──
+async function sendShiftAlert({
+  toEmail, firstName, employerName,
+  siteTown, shiftRange, shiftStartUtc, shiftEndUtc,
+  licenceTypes, ratePerHour, payTerms,
+  distanceMiles, respondUrl, stopAlertsPageUrl, unsubUrl,
+}) {
+  const safeEmp  = escHtml(employerName);
+  const safeTown = escHtml(siteTown);
+
+  const durationHours = (new Date(shiftEndUtc) - new Date(shiftStartUtc)) / 3_600_000;
+  const estTotal      = Math.round(ratePerHour * durationHours);
+
+  const PAY_LABELS = { next_day: 'next day', weekly: 'weekly', monthly: 'monthly' };
+  const payLabel   = PAY_LABELS[payTerms] || escHtml(payTerms);
+
+  const licenceStr = (Array.isArray(licenceTypes) ? licenceTypes : [licenceTypes])
+    .map(escHtml).join(', ');
+
+  const distRow = distanceMiles != null
+    ? `<div class="detail-row"><span class="detail-label">Distance</span><span class="detail-value">${escHtml(String(Number(distanceMiles).toFixed(1)))} miles from you</span></div>`
+    : '';
+
+  const html = baseTemplate(`
+    <h1>Shift near you: ${safeTown}</h1>
+    <p>Hi ${safeName(firstName) || 'there'},</p>
+    <p><strong>${safeEmp}</strong> needs a guard.</p>
+    <div style="background:#f8fafc;border-radius:8px;padding:1rem;margin:1rem 0;">
+      <div class="detail-row"><span class="detail-label">When</span><span class="detail-value">${escHtml(shiftRange)}</span></div>
+      <div class="detail-row"><span class="detail-label">Pay</span><span class="detail-value">£${escHtml(String(ratePerHour))} an hour, est. £${estTotal} total</span></div>
+      <div class="detail-row"><span class="detail-label">Paid</span><span class="detail-value">${payLabel}</span></div>
+      <div class="detail-row"><span class="detail-label">Licence</span><span class="detail-value">${licenceStr}</span></div>
+      ${distRow}
+    </div>
+    <a href="${respondUrl}" class="btn" style="color:#ffffff;text-decoration:none;"><span style="color:#ffffff;text-decoration:none;">See the shift →</span></a>
+    <div class="notice">Have your passport or share code ready. The company will check it before you start.</div>
+    <hr class="divider"/>
+    <p style="font-size:0.75rem;color:#94a3b8;margin-top:1rem;">
+      <a href="${stopAlertsPageUrl}" style="color:#94a3b8;">Stop shift alerts</a>
+      &nbsp;&middot;&nbsp;
+      <a href="${unsubUrl}" style="color:#94a3b8;">Unsubscribe from all emails</a>
+    </p>
+  `);
+
+  return send(toEmail, `Shift near you: ${siteTown}, ${shiftRange}`, html);
+}
+
+// ── 14. SHIFT FILLED / CANCELLED NOTICE (GUARD) ──
+async function sendShiftFilledNotice({ toEmail, firstName, siteTown, shiftRange, filled }) {
+  const heading = filled ? 'This shift has been filled' : 'This shift has been cancelled';
+  const body    = filled
+    ? `The shift in <strong>${escHtml(siteTown)}</strong> (${escHtml(shiftRange)}) has been filled. We'll let you know when another shift comes up near you.`
+    : `The shift in <strong>${escHtml(siteTown)}</strong> (${escHtml(shiftRange)}) has been cancelled by the employer.`;
+
+  const html = baseTemplate(`
+    <h1>${heading}</h1>
+    <p>Hi ${safeName(firstName) || 'there'},</p>
+    <p>${body}</p>
+    <hr class="divider"/>
+    <p style="font-size:0.82rem;color:#64748b;">You're still signed up for shift alerts. We'll be in touch when another shift matches your location.</p>
+  `);
+
+  return send(toEmail, `${heading} — UKSecurityJobs`, html);
+}
+
 module.exports = {
   baseTemplate,
   isOptedOut,
@@ -452,4 +517,6 @@ module.exports = {
   formatShiftRange,
   sendPoolCallout,
   sendShiftAlertOptIn,
+  sendShiftAlert,
+  sendShiftFilledNotice,
 };

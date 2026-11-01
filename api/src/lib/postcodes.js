@@ -31,7 +31,11 @@ async function geocodePostcode(postcode) {
     if (!res.ok) return null;                        // 404 = invalid postcode
     const body = await res.json();
     if (body.status !== 200 || !body.result?.latitude) return null;
-    return { lat: body.result.latitude, lng: body.result.longitude };
+    return {
+      lat:           body.result.latitude,
+      lng:           body.result.longitude,
+      adminDistrict: body.result.admin_district || null,
+    };
   } catch {
     return null;                                     // timeout, network error
   }

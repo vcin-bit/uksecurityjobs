@@ -270,6 +270,10 @@ app.use('/api/unsubscribe', unsubscribeRoutes);
 const shiftAlertsRoutes = require('./routes/shiftAlerts');
 app.use('/api/shift-alerts', shiftAlertsRoutes);
 
+// Public shift response — no auth, validated by per-row token
+const shiftResponseRoutes = require('./routes/shiftResponse');
+app.use('/api/shift-response', shiftResponseRoutes);
+
 // Authenticated API routes — each mounts requireAuth explicitly.
 app.use('/api/candidates', requireAuth, candidateRoutes);
 app.use('/api/sia', requireAuth, siaRoutes);
@@ -281,6 +285,10 @@ const messagingRoutes = require('./routes/messaging');
 app.use('/api/messages', requireAuth, messagingRoutes);
 const talentPoolRoutes = require('./routes/talentPool');
 app.use('/api/talent-pool', requireAuth, requireTalentPoolEmployer, talentPoolRoutes);
+
+const { requireVerifiedEmployer } = require('./middleware/employer');
+const shiftsRoutes = require('./routes/shifts');
+app.use('/api/shifts', requireAuth, requireVerifiedEmployer, shiftsRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
