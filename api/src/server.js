@@ -266,6 +266,10 @@ app.use('/api/callout', calloutRoutes);
 const unsubscribeRoutes = require('./routes/unsubscribe');
 app.use('/api/unsubscribe', unsubscribeRoutes);
 
+// Public shift-alert opt-in — no auth, validated by per-candidate token
+const shiftAlertsRoutes = require('./routes/shiftAlerts');
+app.use('/api/shift-alerts', shiftAlertsRoutes);
+
 // Authenticated API routes — each mounts requireAuth explicitly.
 app.use('/api/candidates', requireAuth, candidateRoutes);
 app.use('/api/sia', requireAuth, siaRoutes);

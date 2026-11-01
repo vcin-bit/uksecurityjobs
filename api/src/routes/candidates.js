@@ -315,7 +315,7 @@ router.patch('/me/gdpr', async (req, res) => {
 });
 
 // Consent wording version for shift-alert opt-in. Bump when copy changes.
-const SHIFT_ALERTS_WORDING_VERSION = 'shift-alerts-v1';
+const SHIFT_ALERTS_WORDING_VERSION = 'shift-alerts-v2';
 
 // GET /api/candidates/me/personal — get personal details
 router.get('/me/personal', async (req, res) => {

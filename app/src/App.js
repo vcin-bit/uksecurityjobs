@@ -674,7 +674,7 @@ function StepPersonal({ data, onChange, onBack, onNext, isComplete }) {
       <div style={{display:'flex',alignItems:'flex-start',gap:'0.75rem',padding:'0.875rem 1rem',background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'8px',marginTop:'0.5rem',marginBottom:'0.5rem'}}>
         <input type="checkbox" id="shift_alerts_opt_in" checked={form.shift_alerts_opt_in} onChange={e=>u('shift_alerts_opt_in',e.target.checked)} style={{marginTop:'2px',width:'16px',height:'16px',cursor:'pointer',accentColor:'#1a52a8'}}/>
         <label htmlFor="shift_alerts_opt_in" style={{fontSize:'0.85rem',color:'#0b1222',lineHeight:1.5,cursor:'pointer'}}>
-          Send me shift alerts by text and WhatsApp. I can stop any time by replying STOP.
+          Send me shift alerts by email, text and WhatsApp. I can stop any time.
         </label>
       </div>
 
@@ -6795,6 +6795,91 @@ function CalloutResponsePage() {
   );
 }
 
+function ShiftAlertOptInPage() {
+  const { token } = useParams();
+  const API = 'https://uksecurityjobs-api.onrender.com';
+  const [state, setState] = React.useState('loading'); // loading | ready | already | done | expired | error
+  const [firstName, setFirstName] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+
+  React.useEffect(() => {
+    fetch(`${API}/api/shift-alerts/optin/${token}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) { setState(data.error === 'expired' ? 'expired' : 'error'); return; }
+        if (data.alreadyOptedIn) { setState('already'); return; }
+        setFirstName(data.firstName || '');
+        setState('ready');
+      })
+      .catch(() => setState('error'));
+  }, [token]);
+
+  const handleOptIn = async () => {
+    setBusy(true);
+    try {
+      const r = await fetch(`${API}/api/shift-alerts/optin/${token}`, { method: 'POST' });
+      const data = await r.json();
+      if (data.ok) { setState('done'); return; }
+      setState(data.error === 'expired' ? 'expired' : 'error');
+    } catch { setState('error'); }
+    finally { setBusy(false); }
+  };
+
+  const navStyle = { background: '#0b1222', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center' };
+  const logoStyle = { fontWeight: 800, fontSize: '1.1rem', textDecoration: 'none' };
+  const card = { maxWidth: 520, margin: '3rem auto', padding: '0 1rem' };
+  const inner = { background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '2rem', fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif' };
+  const h1s = { fontSize: '1.2rem', fontWeight: 800, color: '#0b1222', marginBottom: '0.75rem' };
+  const ps = { fontSize: '0.9rem', color: '#4a5568', lineHeight: 1.75, marginBottom: '0.75rem' };
+  const btn = { background: '#1a52a8', color: '#fff', fontWeight: 700, fontSize: '0.92rem', padding: '0.75rem 2rem', borderRadius: 8, border: 'none', cursor: 'pointer', marginTop: '0.5rem' };
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
+      <nav style={navStyle}>
+        <a href="https://www.uksecurityjobs.co.uk" style={logoStyle}>
+          <span style={{ color: '#3b82f6' }}>UK</span><span style={{ color: '#fff' }}>Security</span><span style={{ color: '#3b82f6' }}>Jobs</span>
+        </a>
+      </nav>
+      <div style={card}>
+        <div style={inner}>
+          {state === 'loading' && <p style={{ ...ps, marginBottom: 0, color: '#94a3b8' }}>Loading…</p>}
+
+          {state === 'ready' && (<>
+            <h1 style={h1s}>Get shifts near you</h1>
+            <p style={ps}>Send me shift alerts by email, text and WhatsApp. I can stop any time.</p>
+            <button style={btn} onClick={handleOptIn} disabled={busy}>
+              {busy ? 'Saving…' : 'Yes, send me shifts'}
+            </button>
+          </>)}
+
+          {state === 'done' && (<>
+            <h1 style={h1s}>Done</h1>
+            <p style={ps}>We'll let you know when a shift comes up near you.</p>
+            <p style={{ ...ps, marginBottom: 0 }}>
+              <a href="https://app.uksecurityjobs.co.uk/profile" style={{ color: '#1a52a8', fontWeight: 600 }}>Finish your profile</a> to make sure employers can find you.
+            </p>
+          </>)}
+
+          {state === 'already' && (<>
+            <h1 style={h1s}>You're already signed up</h1>
+            <p style={{ ...ps, marginBottom: 0 }}>You'll receive shift alerts when employers post near you. No action needed.</p>
+          </>)}
+
+          {state === 'expired' && (<>
+            <h1 style={h1s}>This link has expired</h1>
+            <p style={{ ...ps, marginBottom: 0 }}>Opt-in links are valid for 30 days. Log in and update your notification settings from your profile if you'd still like to receive shift alerts.</p>
+          </>)}
+
+          {state === 'error' && (<>
+            <h1 style={h1s}>Something went wrong</h1>
+            <p style={{ ...ps, marginBottom: 0 }}>This link doesn't look right. Contact <a href="mailto:admin@uksecurityjobs.co.uk" style={{ color: '#1a52a8' }}>admin@uksecurityjobs.co.uk</a> if you need help.</p>
+          </>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UnsubscribePage() {
   const { token } = useParams();
   const API = 'https://uksecurityjobs-api.onrender.com';
@@ -6875,6 +6960,7 @@ export default function App() {
           <Route path="/profile" element={<ProtectedRoute><div className="page" style={{background:'var(--off)'}}><Nav/><ProfileBuilder/></div></ProtectedRoute>}/>
           <Route path="/invite/:token" element={<ProtectedRoute><InvitePage/></ProtectedRoute>}/>
           <Route path="/callout/:token" element={<CalloutResponsePage/>}/>
+          <Route path="/shift-alerts/:token" element={<ShiftAlertOptInPage/>}/>
           <Route path="/unsubscribe/:token" element={<UnsubscribePage/>}/>
           <Route path="*" element={<Navigate to="/dashboard" replace/>}/>
         </Routes>

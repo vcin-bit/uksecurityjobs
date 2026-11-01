@@ -394,6 +394,33 @@ async function isOptedOut(db, email) {
   return data !== null;
 }
 
+// ── SHIFT ALERT OPT-IN ──
+/**
+ * sendShiftAlertOptIn
+ *
+ * Sends a one-tap email opt-in invite for shift alerts.
+ *
+ * @param {object} opts
+ * @param {string} opts.to          — candidate email
+ * @param {string} opts.firstName   — candidate first name (or 'there')
+ * @param {string} opts.optInUrl    — https://app.uksecurityjobs.co.uk/shift-alerts/:token
+ * @param {string} opts.unsubUrl    — https://app.uksecurityjobs.co.uk/unsubscribe/:token
+ */
+async function sendShiftAlertOptIn({ to, firstName, optInUrl, unsubUrl }) {
+  const name = escHtml(firstName || 'there');
+  const html = baseTemplate(`
+    <h1>Want shifts near you?</h1>
+    <p>Hi ${name},</p>
+    <p>We're starting shift alerts on UKSecurityJobs. When a security company needs cover near you, we'll let you know, and you tap to say you want it.</p>
+    <p>Guards who switch this on hear about shifts first.</p>
+    <a href="${optInUrl}" class="btn">Yes, send me shifts</a>
+    <hr class="divider"/>
+    <p style="font-size:0.82rem;color:#64748b;">We'll only contact you about real shifts. No newsletters.</p>
+    <p style="font-size:0.75rem;color:#94a3b8;margin-top:1rem;"><a href="${unsubUrl}" style="color:#94a3b8;">Unsubscribe from UKSecurityJobs emails</a></p>
+  `);
+  return send(to, 'Want shifts near you?', html);
+}
+
 module.exports = {
   baseTemplate,
   isOptedOut,
@@ -413,4 +440,5 @@ module.exports = {
   sendPoolInvite,
   formatShiftRange,
   sendPoolCallout,
+  sendShiftAlertOptIn,
 };
