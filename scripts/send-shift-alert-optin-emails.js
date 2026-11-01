@@ -12,16 +12,16 @@
  *
  * Dry-run by default. Pass --send to live-send.
  *
- * --test-to=<email>
- *   Sends ONE email to the given address, using the first eligible
- *   candidate's real token. Nothing is written to guard_emails.
- *   Does not consume the token (guard_emails not updated → re-runnable).
- *   Requires --send.
+ * --test-candidate=<candidate_id>
+ *   Creates a fresh 30-day token for THAT candidate only and sends one
+ *   email to that candidate's own email address.  Does not write to
+ *   guard_emails so the test can be repeated.  Never touches any other
+ *   candidate.  Does NOT require --send — runs as a send regardless.
  *
  * Usage:
- *   node scripts/send-shift-alert-optin-emails.js              # dry run
- *   node scripts/send-shift-alert-optin-emails.js --send       # live send
- *   node scripts/send-shift-alert-optin-emails.js --send --test-to=you@example.com
+ *   node scripts/send-shift-alert-optin-emails.js                          # dry run
+ *   node scripts/send-shift-alert-optin-emails.js --send                   # live send
+ *   node scripts/send-shift-alert-optin-emails.js --test-candidate=<uuid>  # test send
  */
 
 'use strict';
@@ -40,8 +40,9 @@ const { sendShiftAlertOptIn } = require(
   path.join(__dirname, '../api/src/lib/email')
 );
 
-const SEND_LIVE  = process.argv.includes('--send');
-const TEST_TO    = (process.argv.find(a => a.startsWith('--test-to=')) || '').replace('--test-to=', '').trim() || null;
+const SEND_LIVE         = process.argv.includes('--send');
+const TEST_CANDIDATE_ID = (process.argv.find(a => a.startsWith('--test-candidate=')) || '')
+                            .replace('--test-candidate=', '').trim() || null;
 const today      = new Date().toISOString().slice(0, 10);
 const EXPIRES_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -62,22 +63,75 @@ async function getUnsubscribeUrl(email) {
   if (existing?.token) {
     return `https://app.uksecurityjobs.co.uk/unsubscribe/${existing.token}`;
   }
-  // Create a new row (token field is uuid, we generate one here).
   const token = crypto.randomUUID();
   await supabase.from('email_optouts').insert({ email, token, source: 'shift_optin_send' });
   return `https://app.uksecurityjobs.co.uk/unsubscribe/${token}`;
 }
 
+// ── Test-candidate mode ───────────────────────────────────────────────────────
+// Completely isolated from the bulk send logic. Fetches the named candidate
+// directly, creates a fresh token for them, sends to their own email.
+// Never reads or touches any other candidate row.
+
+async function runTestCandidate(candidateId) {
+  console.log(`\nsend-shift-alert-optin-emails — TEST SEND`);
+  console.log(`Candidate: ${candidateId}\n`);
+
+  const { data: candidate, error: cErr } = await supabase
+    .from('candidates')
+    .select('id, email')
+    .eq('id', candidateId)
+    .single();
+
+  if (cErr || !candidate) {
+    console.error('Candidate not found:', cErr?.message || 'no row');
+    process.exit(1);
+  }
+  if (!candidate.email) {
+    console.error('Candidate has no email address.');
+    process.exit(1);
+  }
+
+  const { data: personal } = await supabase
+    .from('personal_details')
+    .select('first_name')
+    .eq('candidate_id', candidateId)
+    .maybeSingle();
+
+  const firstName = personal?.first_name || null;
+
+  const token     = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + EXPIRES_MS).toISOString();
+
+  const { error: tokenErr } = await supabase
+    .from('shift_alert_opt_in_tokens')
+    .insert({ candidate_id: candidateId, token, expires_at: expiresAt });
+
+  if (tokenErr) {
+    console.error('Token insert failed:', tokenErr.message);
+    process.exit(1);
+  }
+
+  const optInUrl = `https://app.uksecurityjobs.co.uk/shift-alerts/${token}`;
+  const unsubUrl = await getUnsubscribeUrl(candidate.email);
+
+  const ok = await sendShiftAlertOptIn({ to: candidate.email, firstName, optInUrl, unsubUrl });
+
+  console.log(`Test email ${ok ? 'SENT' : 'FAILED'} → ${candidate.email}`);
+  console.log(`First name used: ${firstName || '(blank — "Hi there," used)'}`);
+  console.log(`Opt-in URL: ${optInUrl}`);
+  console.log('guard_emails NOT updated (test mode).');
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log(`\nsend-shift-alert-optin-emails — ${SEND_LIVE ? (TEST_TO ? `TEST SEND → ${TEST_TO}` : 'LIVE SEND') : 'DRY RUN'}`);
-  console.log(`Today: ${today}\n`);
-
-  if (TEST_TO && !SEND_LIVE) {
-    console.error('--test-to requires --send');
-    process.exit(1);
+  if (TEST_CANDIDATE_ID) {
+    return runTestCandidate(TEST_CANDIDATE_ID);
   }
+
+  console.log(`\nsend-shift-alert-optin-emails — ${SEND_LIVE ? 'LIVE SEND' : 'DRY RUN'}`);
+  console.log(`Today: ${today}\n`);
 
   // 1. Eligible candidates: verified licence, not opted in, not opted out,
   //    not already sent this email.
@@ -145,35 +199,13 @@ async function main() {
     return;
   }
 
-  // ── Test-to mode ──────────────────────────────────────────────────────────
-  if (TEST_TO) {
-    const candidate = pending[0];
-    const firstName = personalMap[candidate.id] || 'there';
-    const token     = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + EXPIRES_MS).toISOString();
-
-    const { error: insertErr } = await supabase
-      .from('shift_alert_opt_in_tokens')
-      .insert({ candidate_id: candidate.id, token, expires_at: expiresAt });
-
-    if (insertErr) { console.error('Token insert failed:', insertErr.message); process.exit(1); }
-
-    const optInUrl  = `https://app.uksecurityjobs.co.uk/shift-alerts/${token}`;
-    const unsubUrl  = await getUnsubscribeUrl(TEST_TO);
-
-    const ok = await sendShiftAlertOptIn({ to: TEST_TO, firstName, optInUrl, unsubUrl });
-    console.log(`Test email ${ok ? 'sent' : 'FAILED'} → ${TEST_TO} (token for candidate ${candidate.id.slice(0, 8)})`);
-    console.log('guard_emails NOT updated (test mode).');
-    return;
-  }
-
   // ── Live send ─────────────────────────────────────────────────────────────
   console.log('\n--- LIVE SEND ---');
   let sent = 0, failed = 0;
 
   for (const candidate of pending) {
     try {
-      const firstName = personalMap[candidate.id] || 'there';
+      const firstName = personalMap[candidate.id] || null;
       const token     = crypto.randomUUID();
       const expiresAt = new Date(Date.now() + EXPIRES_MS).toISOString();
 

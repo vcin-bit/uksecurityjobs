@@ -407,10 +407,11 @@ async function isOptedOut(db, email) {
  * @param {string} opts.unsubUrl    — https://app.uksecurityjobs.co.uk/unsubscribe/:token
  */
 async function sendShiftAlertOptIn({ to, firstName, optInUrl, unsubUrl }) {
-  const name = escHtml(firstName || 'there');
+  const name     = firstName ? escHtml(firstName) : null;
+  const greeting = name ? `Hi ${name},` : 'Hi there,';
   const html = baseTemplate(`
     <h1>Want shifts near you?</h1>
-    <p>Hi ${name},</p>
+    <p>${greeting}</p>
     <p>We're starting shift alerts on UKSecurityJobs. When a security company needs cover near you, we'll let you know, and you tap to say you want it.</p>
     <p>Guards who switch this on hear about shifts first.</p>
     <a href="${optInUrl}" class="btn">Yes, send me shifts</a>
