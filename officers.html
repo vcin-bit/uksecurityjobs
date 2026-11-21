@@ -252,6 +252,57 @@ footer nav{background:transparent;border:none;height:auto;position:static;backdr
   </div>
 </section>
 
+<!-- APP SCREENS SLIDER -->
+<style>
+.appshots{padding:4.5rem 2rem;background:#f9fafb;}
+.appshots-head{max-width:1160px;margin:0 auto 2.25rem;}
+.appshots-head h2{margin-bottom:.5rem;}
+.appshots-head p{color:#4a5568;font-size:1rem;line-height:1.7;max-width:560px;}
+.appshots-track{max-width:1160px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:1.75rem;}
+.appshot{margin:0;display:flex;flex-direction:column;align-items:center;text-align:center;}
+.appshot-phone{width:100%;max-width:250px;border-radius:30px;padding:9px;background:#0b1222;box-shadow:0 18px 40px rgba(11,18,34,.18);}
+.appshot-phone img{display:block;width:100%;height:auto;border-radius:22px;background:#f9fafb;}
+.appshot figcaption{margin-top:1.1rem;max-width:250px;}
+.appshot figcaption strong{display:block;color:#0b1222;font-size:1.02rem;font-weight:800;margin-bottom:.3rem;}
+.appshot figcaption span{display:block;color:#4a5568;font-size:.88rem;line-height:1.6;}
+.appshots-note{max-width:1160px;margin:1.75rem auto 0;color:#8a97a8;font-size:.78rem;}
+.appshots-hint{display:none;}
+@media(max-width:900px){
+  .appshots{padding:3.5rem 0;}
+  .appshots-head,.appshots-note{padding:0 1.5rem;}
+  .appshots-track{display:flex;gap:1.25rem;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:0 1.5rem 1rem;scrollbar-width:none;}
+  .appshots-track::-webkit-scrollbar{display:none;}
+  .appshot{flex:0 0 72%;max-width:270px;scroll-snap-align:center;}
+  .appshots-hint{display:block;padding:0 1.5rem;margin:.25rem 0 0;color:#8a97a8;font-size:.8rem;}
+}
+</style>
+<section class="appshots" aria-label="Screens from the UKSecurityJobs platform">
+  <div class="appshots-head">
+    <h2>See It Before You Sign Up</h2>
+    <p>This is what you get as an officer. Four screens from inside the platform.</p>
+  </div>
+  <div class="appshots-track">
+      <figure class="appshot">
+        <div class="appshot-phone"><img src="/img/app/profile-bs7858-ready.webp" alt="A completed candidate profile showing 100% complete and BS7858 Ready" width="360" height="720" loading="lazy" decoding="async"></div>
+        <figcaption><strong>Fill in once. Ready for every job.</strong><span>Complete your profile one time and earn the BS7858 Ready badge. Employers see badged officers first.</span></figcaption>
+      </figure>
+      <figure class="appshot">
+        <div class="appshot-phone"><img src="/img/app/talent-pool.webp" alt="The talent pool screen explaining how companies can invite you" width="360" height="720" loading="lazy" decoding="async"></div>
+        <figcaption><strong>Work comes to you.</strong><span>Join the talent pool and security companies can invite you for cover shifts and permanent roles. You choose who sees you.</span></figcaption>
+      </figure>
+      <figure class="appshot">
+        <div class="appshot-phone"><img src="/img/app/job-listing.webp" alt="A security officer job listing showing pay, location and an Apply Now button" width="360" height="720" loading="lazy" decoding="async"></div>
+        <figcaption><strong>Security jobs only. Pay up front.</strong><span>Every role needs an SIA licence, comes from a checked employer, and shows the hourly rate before you apply.</span></figcaption>
+      </figure>
+      <figure class="appshot">
+        <div class="appshot-phone"><img src="/img/app/application-interview-confirmed.webp" alt="An application marked Interview Confirmed with the interview date" width="360" height="720" loading="lazy" decoding="async"></div>
+        <figcaption><strong>Apply, then track it.</strong><span>See every application and your confirmed interview time in one place. No chasing.</span></figcaption>
+      </figure>
+  </div>
+  <p class="appshots-hint">Swipe to see more &rarr;</p>
+  <p class="appshots-note">Screens shown with a sample account.</p>
+</section>
+
 <!-- TALENT POOL -->
 <section class="section section-white">
   <div class="container">
