@@ -118,9 +118,6 @@ function ProgressRings({ sections, onGoToStep }) {
             strokeDashoffset={offset}
             style={{transform:'rotate(-90deg)',transformOrigin:'center',transition:'stroke-dashoffset 0.6s ease'}}
           />
-          {overallPct === 100 && (
-            <path d="M70 100 L80 110 L110 80" stroke="#10b981" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-          )}
         </svg>
         <div className="ring-label">
           <div className="ring-pct" style={{color}}>{overallPct}%</div>
@@ -6757,9 +6754,9 @@ function JobListingsPage() {
         <div style={{maxWidth:'1100px',margin:'0 auto'}}>
           <div style={{fontSize:'0.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.15em',color:'#1a52a8',marginBottom:'0.5rem'}}>UK Security Jobs</div>
           <h1 style={{fontSize:'2rem',fontWeight:900,color:'#fff',marginBottom:'0.5rem',lineHeight:1.2}}>Security Jobs — SIA Licensed Candidates Only</h1>
-          <p style={{color:'#94a3b8',fontSize:'0.9rem',maxWidth:'600px',lineHeight:1.7}}>Every role on this platform requires a valid SIA licence. Candidates are BS7858 ready — profile complete, address history verified, employment history checked. No unsuitable applications.</p>
+          <p style={{color:'#94a3b8',fontSize:'0.9rem',maxWidth:'600px',lineHeight:1.7}}>Every role on this platform requires a valid SIA licence. BS7858 Ready candidates have completed their full profile, including 5-year address and employment history.</p>
           <div style={{display:'flex',flexWrap:'wrap',gap:'0.5rem',marginTop:'1.25rem'}}>
-            {['SIA Licence Verified','BS7858 Ready','5-Year History Checked','Reference Contacts Provided','Right to Work Confirmed'].map(t=>(
+            {['SIA Licence Verified','BS7858 Ready','5-Year History Provided','Right to Work Declared'].map(t=>(
               <span key={t} style={{fontSize:'0.72rem',fontWeight:600,padding:'0.3rem 0.75rem',borderRadius:'999px',background:'rgba(26,82,168,0.3)',color:'#93c5fd',border:'1px solid rgba(26,82,168,0.5)'}}>{t}</span>
             ))}
           </div>
@@ -6824,7 +6821,7 @@ function JobListingsPage() {
                         {job.rate_from && <span>£{job.rate_from}{job.rate_to?'–£'+job.rate_to:''}/hr</span>}
                         {job.employment_type && <span>{job.employment_type}</span>}
                         {job.contract_type && <span>{job.contract_type}</span>}
-                        {job.min_hours && <span>Min {job.min_hours}hrs/wk</span>}
+                        {job.min_hours > 0 && <span>Min {job.min_hours}hrs/wk</span>}
                         {job.sector && <span>{job.sector}</span>}
                         {job.start_date && <span>Start: {job.start_date}</span>}
                         {job.parking && job.parking!=='No parking available' && <span>{job.parking}</span>}

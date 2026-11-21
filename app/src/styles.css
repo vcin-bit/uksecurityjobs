@@ -214,6 +214,7 @@ input[type="checkbox"]{-webkit-appearance:checkbox;appearance:checkbox;}
 .dash-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;gap:1rem;}
 .dash-progress-label{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.16em;color:var(--mid);margin-bottom:0.2rem;}
 .dash-progress-status{font-size:0.88rem;font-weight:600;}
+@media(max-width:640px){.dash-card-top{flex-direction:column;align-items:flex-start;}}
 
 /* SUBTLE FACT STRIP */
 .dash-fact-subtle{padding:1rem 1.2rem;background:#fff;border:1px solid var(--border);border-radius:8px;margin-bottom:1.5rem;}
